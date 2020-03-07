@@ -5,46 +5,31 @@ const { createPopup } = require('./extensions.browser.js')
 
 // app.commandLine.appendSwitch('remote-debugging-port', '9222')
 
-function createWindow() {
-  // Create the browser window.
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+let extension
+let mainWindow
+
+async function main() {
+  const rect = { width: 1280, height: 720 }
+  
+  session.defaultSession.setPreloads([path.join(__dirname, 'extensions.renderer.js')])
+  // extension = await session.defaultSession.loadExtension(path.join(__dirname, 'cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
+  mainWindow = new BrowserWindow({
+    width: rect.width,
+    height: rect.height,
     webPreferences: {
       nodeIntegration: false,
       // extensionViewType: 'EXTENSION_DIALOG'
     }
   })
-
-  // win.webContents.openDevTools()
-
-  // and load the index.html of the app.
-  // setTimeout(() => {
-
+  // mainWindow.loadURL(`https://www.youtube.com`)
+  mainWindow.loadFile(path.join(__dirname, 'shell/webui.html'))
   
-  // }, 1000);
-
-  // Open the DevTools.
-  return win
-}
-
-let extension
-let mainWindow
-
-async function main() {
-  // await new Promise(resolve => setTimeout(resolve, 15e3))
-  
-  session.defaultSession.setPreloads([path.join(__dirname, 'extensions.renderer.js')])
-
-  extension = await session.defaultSession.loadExtension(
-    // path.join(__dirname, 'extension')
-    path.join(__dirname, 'cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0')
-  )
-
-  mainWindow = createWindow()
-
-  // await new Promise(resolve => setTimeout(resolve, 5e3))
-  mainWindow.loadURL(`https://www.youtube.com`)
+  const toolbarHeight = 62
+  const contentView = new BrowserView();
+  mainWindow.addBrowserView(contentView);
+  contentView.setBounds({ x: 0, y: toolbarHeight, width: rect.width, height: rect.height - toolbarHeight });
+  contentView.setAutoResize({ width: true, height: true })
+  contentView.webContents.loadURL('https://google.com')
 }
 
 // This method will be called when Electron has finished

@@ -1,9 +1,7 @@
 const isExtensionPage = location.href.startsWith('chrome-extension://')
 if (!isExtensionPage) return
 
-const { ipcRenderer, webFrame } = require('electron')
-
-ipcRenderer.addListener
+const { ipcRenderer } = require('electron')
 
 class Event {
   constructor(name) {
@@ -23,6 +21,8 @@ class Event {
     ipcRenderer.removeListener(this.name, callback)
   }
 }
+
+const TODO_NOOP = true
 
 const extMessage = (fnName, noop) =>
   async function() {
@@ -57,14 +57,16 @@ const webNavigation = {
 const browserAction = {
   setBadgeBackgroundColor: extMessage('browserAction.setBadgeBackgroundColor'),
   setBadgeText: extMessage('browserAction.setBadgeText'),
-  setIcon: extMessage('browserAction.setIcon', true),
+  // TODO: serialize ImageDataType
+  // https://developer.chrome.com/extensions/browserAction#method-setIcon
+  setIcon: extMessage('browserAction.setIcon', TODO_NOOP),
   setTitle: extMessage('browserAction.setTitle'),
   onClicked: new Event('browserAction.onClicked')
 }
 
 const contextMenus = {
-  create: extMessage('contextMenus.create', true),
-  remove: extMessage('contextMenus.remove', true),
+  create: extMessage('contextMenus.create', TODO_NOOP),
+  remove: extMessage('contextMenus.remove', TODO_NOOP),
   onClicked: new Event('contextMenus.onClicked')
 }
 
