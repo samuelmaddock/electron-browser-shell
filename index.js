@@ -26,7 +26,7 @@ async function main() {
   const webuiExtension = await session.defaultSession.loadExtension(
     path.join(__dirname, 'shell')
   )
-  // extension = await session.defaultSession.loadExtension(path.join(__dirname, 'extensions/cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
+  extension = await session.defaultSession.loadExtension(path.join(__dirname, 'extensions/cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -50,9 +50,25 @@ async function main() {
 
   tabs = new Tabs(mainWindow)
 
+  extensions.tabs.on('create-tab', (props, callback) => {
+    const tab = tabs.create()
+    if (props.url) tab.loadURL(props.url)
+    if (props.active) tabs.select(tab.id)
+    callback(null, tab.id)
+  })
+
+  // don't make a window, just make a tab for now
+  extensions.windows.on('create-window', (props, callback) => {
+    const tab = tabs.create()
+    if (props.url) tab.loadURL(props.url)
+    if (props.active) tabs.select(tab.id)
+    callback(null, tab.id)
+  })
+
   extensions.tabs.on('create-tab-info', tabInfo => {
+    const selectedId = tabs.selected ? tabs.selected.id : -1
     Object.assign(tabInfo, {
-      active: tabInfo.id === tabs.selected.id
+      active: tabInfo.id === selectedId
     })
   })
 

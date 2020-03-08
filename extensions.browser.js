@@ -7,7 +7,7 @@ const extensionHosts = new Set()
 
 exports.createPopup = (win, extension) => {
   popup = new BrowserView()
-  popup.setBounds({ x: 0, y: 0, width: 256, height: 400 })
+  popup.setBounds({ x: win.getSize()[0] - 256, y: 62, width: 256, height: 400 })
   // popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html?tabId=${win.webContents.id}`)
   popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html`)
   popup.webContents.openDevTools({ mode: 'detach', activate: true })
@@ -158,8 +158,16 @@ class TabsAPI extends EventEmitter {
   }
 
   create(sender, details) {
-    const win = new BrowserWindow()
-    win.loadURL(details.url)
+    return new Promise((resolve, reject) => {
+      this.emit('create-tab', details, (err, tabId) => {
+        if (err) {
+          reject()
+        } else {
+          const tab = this.getTabById(tabId)
+          resolve(this.getTabDetails(tab))
+        }
+      })
+    })
   }
 
   insertCSS(sender, tabId, details) {
@@ -197,16 +205,18 @@ class TabsAPI extends EventEmitter {
     }
   }
 
-  update(sender, tabId, updateProperties) {
+  async update(sender, tabId, updateProperties) {
     const tab = this.getTabById(tabId)
     if (!tab) return
 
     const props = updateProperties
 
     // TODO: validate URL, prevent 'javascript:'
-    if (props.url) tab.loadURL(props.url)
+    if (props.url) await tab.loadURL(props.url)
 
     if (props.muted) tab.setAudioMuted(props.muted)
+
+    return this.createTabDetails(tab)
   }
 
   onCreated(tab) {
@@ -288,17 +298,26 @@ class TabsAPI extends EventEmitter {
   }
 }
 
-class WindowsAPI {
+class WindowsAPI extends EventEmitter {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
   constructor() {
+    super()
     ipcMain.handle('windows.create', this.create.bind(this))
   }
 
   create(sender, details) {
-    const win = new BrowserWindow()
-    win.loadURL(details.url)
+    return new Promise((resolve, reject) => {
+      this.emit('create-window', details, (err, tabId) => {
+        if (err) {
+          reject()
+        } else {
+          const tab = this.getTabById(tabId)
+          resolve(this.getTabDetails(tab))
+        }
+      })
+    })
   }
 
   // onRemoved(win) {
