@@ -1,41 +1,48 @@
 const path = require('path')
-const { app, session, ipcMain, BrowserWindow, BrowserView } = require('electron')
+const {
+  app,
+  session,
+  ipcMain,
+  BrowserWindow,
+  BrowserView
+} = require('electron')
 
-const { createPopup } = require('./extensions.browser.js')
-
-// app.commandLine.appendSwitch('remote-debugging-port', '9222')
+const { Tabs } = require('./tabs')
+const {
+  createPopup,
+  observeTab,
+  observeExtensionHost
+} = require('./extensions.browser.js')
 
 let extension
 let mainWindow
+let tabs
 
 async function main() {
-  const rect = { width: 1280, height: 720 }
-  
-  session.defaultSession.setPreloads([path.join(__dirname, 'extensions.renderer.js')])
-  // extension = await session.defaultSession.loadExtension(path.join(__dirname, 'cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
+  session.defaultSession.setPreloads([
+    path.join(__dirname, 'extensions.renderer.js')
+  ])
+  const webuiExtension = await session.defaultSession.loadExtension(
+    path.join(__dirname, 'shell')
+  )
+  // extension = await session.defaultSession.loadExtension(path.join(__dirname, 'extensions/cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
   mainWindow = new BrowserWindow({
-    width: rect.width,
-    height: rect.height,
+    width: 1280,
+    height: 720,
     webPreferences: {
-      nodeIntegration: false,
-      // extensionViewType: 'EXTENSION_DIALOG'
+      nodeIntegration: true
     }
   })
-  // mainWindow.loadURL(`https://www.youtube.com`)
-  mainWindow.loadFile(path.join(__dirname, 'shell/webui.html'))
-  
-  const toolbarHeight = 62
-  const contentView = new BrowserView();
-  mainWindow.addBrowserView(contentView);
-  contentView.setBounds({ x: 0, y: toolbarHeight, width: rect.width, height: rect.height - toolbarHeight });
-  contentView.setAutoResize({ width: true, height: true })
-  contentView.webContents.loadURL('https://google.com')
-}
+  mainWindow.loadURL(
+    path.join('chrome-extension://', webuiExtension.id, '/webui.html')
+  )
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(main)
+  tabs = new Tabs(mainWindow)
+
+  // TODO: fix race condition where webui doesn't pickup on new tab
+  const initialTab = tabs.create()
+  initialTab.loadURL('https://www.google.com')
+}
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -46,13 +53,8 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
+const TAB_TYPES = new Set(['window', 'browserView', 'webview'])
+let isCreatingPopup
 
 app.on('web-contents-created', async (event, webContents) => {
   console.log(webContents.getType(), webContents.getURL())
@@ -61,19 +63,23 @@ app.on('web-contents-created', async (event, webContents) => {
     webContents.openDevTools({ mode: 'detach', activate: true })
     await new Promise(resolve => setTimeout(resolve, 5e3))
 
+    isCreatingPopup = true
     const popupView = createPopup(mainWindow, extension)
+    isCreatingPopup = false
     mainWindow.addBrowserView(popupView)
   }
-})
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
-ipcMain.handle('get-extension', async (event, extensionId) => {
-  try {
-    const extension = await session.defaultSession.getExtension(extensionId)
-    return extension
-  } catch (e) {
-    return {}
+  if (!mainWindow || webContents === mainWindow.webContents) {
+    // this is the main webUI webcontents
+    observeExtensionHost(webContents)
+  } else if (isCreatingPopup || webContents.getType() === 'backgroundPage') {
+    observeExtensionHost(webContents)
+  } else if (TAB_TYPES.has(webContents.getType())) {
+    observeTab(webContents)
   }
 })
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(main)

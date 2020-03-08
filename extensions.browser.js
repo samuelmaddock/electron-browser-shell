@@ -1,22 +1,30 @@
-const { app, ipcMain, BrowserWindow, BrowserView } = require('electron')
-
-const TAB_TYPES = new Set(['window', 'browserView', 'webview'])
+const { ipcMain, BrowserWindow, BrowserView } = require('electron')
 
 let popup
 const tabs = new Set()
 const extensionHosts = new Set()
 
-let isCreatingPopup
 exports.createPopup = (win, extension) => {
-  isCreatingPopup = true
   popup = new BrowserView()
-  isCreatingPopup = false
   popup.setBounds({ x: 0, y: 0, width: 256, height: 400 })
   // popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html?tabId=${win.webContents.id}`)
   popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html`)
   popup.webContents.openDevTools({ mode: 'detach', activate: true })
   popup.setBackgroundColor('#ff0000')
   return popup
+}
+
+const getParentWindowOfTab = tab => {
+  switch (tab.getType()) {
+    case 'window':
+      return BrowserWindow.fromWebContents(tab)
+    case 'browserView': {
+      const browserView = BrowserView.fromWebContents(tab)
+      return BrowserWindow.getAllWindows().find(win =>
+        win.getBrowserViews().includes(browserView)
+      )
+    }
+  }
 }
 
 const sendToHosts = (eventName, ...args) => {
@@ -71,11 +79,12 @@ class WebNavigationAPI {
 
 class TabsAPI {
   static TAB_ID_NONE = -1
-  
+
   constructor() {
     this.detailsCache = new Map()
-    
+
     ipcMain.handle('tabs.get', this.get.bind(this))
+    ipcMain.handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
     ipcMain.handle('tabs.create', this.create.bind(this))
     ipcMain.handle('tabs.insertCSS', this.insertCSS.bind(this))
     ipcMain.handle('tabs.query', this.query.bind(this))
@@ -89,7 +98,7 @@ class TabsAPI {
 
   createTabDetails(tab) {
     const win = BrowserWindow.fromWebContents(tab)
-    const isMainFrame = win.webContents === tab
+    const isMainFrame = win ? win.webContents === tab : false
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details = {
@@ -103,7 +112,7 @@ class TabsAPI {
       id: tab.id,
       incognito: false,
       // index: 0,
-      mutedInfo: { muted: tab.isAudioMuted() },
+      mutedInfo: { muted: tab.audioMuted },
       pinned: false,
       selected: true,
       status: tab.isLoading() ? 'loading' : 'complete',
@@ -131,6 +140,19 @@ class TabsAPI {
     return this.getTabDetails(tab)
   }
 
+  getAllInWindow(event, windowId) {
+    let senderWindow = getParentWindowOfTab(event.sender)
+
+    const tabsInWindow = Array.from(tabs)
+      .filter(tab => {
+        const tabWindow = getParentWindowOfTab(tab)
+        return senderWindow.id === tabWindow.id
+      })
+      .map(tab => this.getTabDetails(tab))
+
+    return tabsInWindow
+  }
+
   create(sender, details) {
     const win = new BrowserWindow()
     win.loadURL(details.url)
@@ -145,11 +167,14 @@ class TabsAPI {
   }
 
   query(sender, details) {
+    const isSet = value => typeof value !== 'undefined'
+
     const filteredTabs = Array.from(tabs)
       .map(this.getTabDetails.bind(this))
       .filter(tab => {
-        if (details.active && tab.active) return true
+        if (isSet(details.active) && details.active === tab.active) return true
         // if (details.currentWindow && tab.active) return true
+        return true
       })
       .map((tab, index) => {
         tab.index = index
@@ -178,6 +203,11 @@ class TabsAPI {
     if (props.url) tab.loadURL(props.url)
 
     if (props.muted) tab.setAudioMuted(props.muted)
+  }
+
+  onCreated(tab) {
+    const tabDetails = this.getTabDetails(tab)
+    sendToHosts('tabs.onCreated', tabDetails)
   }
 
   onUpdated(tab) {
@@ -212,23 +242,25 @@ class TabsAPI {
     }
 
     if (!didUpdate) return
-    
+
     sendToHosts('tabs.onUpdated', tab.id, changeInfo, details)
   }
 
   onRemoved(tab, tabId) {
-    const details = this.detailsCache.has(tab) ? this.detailsCache.get(tab) : null
+    const details = this.detailsCache.has(tab)
+      ? this.detailsCache.get(tab)
+      : null
     this.detailsCache.delete(tab)
 
     const windowId = details ? details.windowId : WindowsAPI.WINDOW_ID_NONE
-    const win = windowId > -1 ? BrowserWindow.getAllWindows().find(win => win.id === windowId) : null
-    
-    sendToHosts('tabs.onRemoved', {
-      tabId: tabId,
-      removeInfo: {
-        windowId,
-        isWindowClosing: win ? win.isDestroyed() : false
-      }
+    const win =
+      windowId > -1
+        ? BrowserWindow.getAllWindows().find(win => win.id === windowId)
+        : null
+
+    sendToHosts('tabs.onRemoved', tabId, {
+      windowId,
+      isWindowClosing: win ? win.isDestroyed() : false
     })
   }
 }
@@ -236,7 +268,7 @@ class TabsAPI {
 class WindowsAPI {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
-  
+
   constructor() {
     ipcMain.handle('windows.create', this.create.bind(this))
   }
@@ -253,7 +285,7 @@ class WindowsAPI {
   // }
 }
 
-const electron = {
+const extensions = {
   browserAction: new BrowserActionAPI(),
   tabs: new TabsAPI(),
   windows: new WindowsAPI()
@@ -273,25 +305,26 @@ function observeTab(tab) {
     'media-paused', // audible
     'did-start-navigation', // url
     'did-redirect-navigation', // url
-    'did-navigate-in-page', // url
+    'did-navigate-in-page' // url
   ]
 
   updateEvents.forEach(eventName => {
     tab.on(eventName, () => {
-      electron.tabs.onUpdated(tab)
+      extensions.tabs.onUpdated(tab)
     })
   })
 
   tab.on('page-favicon-updated', (event, favicons) => {
     tab.favicon = favicons[0]
-    electron.tabs.onUpdated(tab)
+    extensions.tabs.onUpdated(tab)
   })
 
   tab.once('destroyed', () => {
     tabs.delete(tab)
-    electron.tabs.onRemoved(tab, tabId)
+    extensions.tabs.onRemoved(tab, tabId)
   })
 
+  extensions.tabs.onCreated(tab)
   console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
 }
 
@@ -307,10 +340,5 @@ function observeExtensionHost(host) {
   )
 }
 
-app.on('web-contents-created', async (event, webContents) => {
-  if (isCreatingPopup || webContents.getType() === 'backgroundPage') {
-    observeExtensionHost(webContents)
-  } else if (TAB_TYPES.has(webContents.getType())) {
-    observeTab(webContents)
-  }
-})
+exports.observeTab = observeTab
+exports.observeExtensionHost = observeExtensionHost

@@ -74,10 +74,12 @@ const tabs = {
   ...chrome.tabs,
   create: extMessage('tabs.create'),
   get: extMessage('tabs.get'),
+  getAllInWindow: extMessage('tabs.getAllInWindow'),
   insertCSS: extMessage('tabs.insertCSS'),
   query: extMessage('tabs.query'),
   reload: extMessage('tabs.reload'),
   update: extMessage('tabs.update'),
+  onCreated: new Event('tabs.onCreated'),
   onRemoved: new Event('tabs.onRemoved'),
   onUpdated: new Event('tabs.onUpdated'),
   onActivated: new Event('tabs.onActivated')

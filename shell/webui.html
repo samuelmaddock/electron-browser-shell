@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>Shell Browser</title>
     <style>
       :root {
@@ -49,6 +50,12 @@
         flex-direction: row;
       }
 
+      .tab-list {
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+      }
+
       .tab {
         background: var(--tab-color);
         padding: 0.2rem 0.4rem;
@@ -57,13 +64,13 @@
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
-        max-width: 12rem;
+        width: 12rem;
         box-shadow: inset -1px 0 0 0 rgba(0,0,0,0.33);
       }
 
       .tab .title {
         white-space: nowrap;
-        flex: 0 1 auto;
+        flex: 1 1 auto;
         min-width: 0;
         text-overflow: ellipsis;
         overflow: hidden;
@@ -74,11 +81,6 @@
       .tab .controls {
         flex: 0 0 auto;
         font-size: 0;
-        display: none;
-      }
-
-      .tab:hover .controls {
-        display: block;
       }
 
       .tab .controls .control {
@@ -142,26 +144,21 @@
   </head>
   <body>
     <div class="topbar">
-      <ul id="tabstrip">
-        <template id="tabtemplate">
-          <li class="tab">
-            <img class="favicon" />
-            <span class="title"></span>
-            <div class="controls">
-              <button class="control audio" disabled>🔊</button>
-              <button class="control close">🗙</button>
-            </div>
-          </li>
-        </template>
-        <li class="tab">
-          <img class="favicon" />
-          <span class="title">Hello world with a long title wow look at it go</span>
-          <div class="controls">
-            <button class="control audio" disabled>🔊</button>
-            <button class="control close">🗙</button>
-          </div>
-        </li>
-      </ul>
+      <div id="tabstrip">
+        <ul class="tab-list">
+          <template id="tabtemplate">
+            <li class="tab">
+              <img class="favicon" />
+              <span class="title"></span>
+              <div class="controls">
+                <button class="control audio" disabled>🔊</button>
+                <button class="control close">🗙</button>
+              </div>
+            </li>
+          </template>
+        </ul>
+        <button id="createtab">+</button>
+      </div>
       <div class="toolbar">
         <div class="page-controls">
           <button id="reload" class="control">🔄</button>
@@ -173,5 +170,6 @@
       </div>
     </div>
   </div>
+  <script src="./webui.js"></script>
   </body>
 </html>
