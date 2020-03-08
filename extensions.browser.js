@@ -30,6 +30,7 @@ const getParentWindowOfTab = tab => {
 
 const sendToHosts = (eventName, ...args) => {
   extensionHosts.forEach(host => {
+    if (host.isDestroyed()) return
     host.send(eventName, ...args)
   })
 }
