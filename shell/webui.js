@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron')
 
 class WebUI {
+  activeTabId = -1
   tabList = []
   
   constructor() {
@@ -11,12 +12,20 @@ class WebUI {
       tabTemplate: $('#tabtemplate'),
       createTabButton: $('#createtab'),
       reloadButton: $('#reload'),
-      addressUrl: $('#addressurl')
+      addressUrl: $('#addressurl'),
+
+      minimizeButton: $('#minimize'),
+      maximizeButton: $('#maximize'),
+      closeButton: $('#close'),
     }
 
     this.$.createTabButton.addEventListener('click', this.onCreateTab.bind(this))
     this.$.reloadButton.addEventListener('click', this.reloadTab.bind(this))
     this.$.addressUrl.addEventListener('keypress', this.onAddressUrlKeyPress.bind(this))
+
+    this.$.minimizeButton.addEventListener('click', () => ipcRenderer.invoke('minimize-window'))
+    this.$.maximizeButton.addEventListener('click', () => ipcRenderer.invoke('maximize-window'))
+    this.$.closeButton.addEventListener('click', () => window.close())
 
     this.setupBrowserListeners()
     this.initTabs()
@@ -28,7 +37,12 @@ class WebUI {
       this.renderTabs()
     })
 
-    chrome.tabs.onActivated.addListener(() => {
+    chrome.tabs.onActivated.addListener(activeInfo => {
+      this.activeTabId = activeInfo.tabId
+      
+      const tab = this.tabList.find(tab => tab.id === this.activeTabId)
+      if (tab) this.renderToolbar(tab)
+
       this.initTabs() // get updated info on all tabs
     })
     
@@ -37,6 +51,7 @@ class WebUI {
       if (!tab) return
       Object.assign(tab, changeInfo)
       this.renderTabs()
+      if (tabId === this.activeTabId) this.renderToolbar(tab)
     })
 
     chrome.tabs.onRemoved.addListener(tabId => {
@@ -94,6 +109,10 @@ class WebUI {
       tabElem.querySelector('.title').textContent = tab.title
       tabElem.querySelector('.audio').disabled = !tab.audible
     })
+  }
+
+  renderToolbar(tab) {
+    this.$.addressUrl.value = tab.url
   }
 }
 

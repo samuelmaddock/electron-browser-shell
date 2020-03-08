@@ -30,6 +30,7 @@ async function main() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
+    frame: false,
     webPreferences: {
       nodeIntegration: true
     }
@@ -37,6 +38,15 @@ async function main() {
   mainWindow.loadURL(
     path.join('chrome-extension://', webuiExtension.id, '/webui.html')
   )
+
+  ipcMain.handle('minimize-window', () => mainWindow.minimize())
+  ipcMain.handle('maximize-window', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore()
+    } else {
+      mainWindow.maximize()
+    }
+  })
 
   tabs = new Tabs(mainWindow)
 
@@ -57,7 +67,7 @@ async function main() {
   const initialTab = tabs.create()
   initialTab.loadURL('https://www.google.com')
 
-  mainWindow.openDevTools()
+  mainWindow.openDevTools({ mode: 'detach' })
 }
 
 // Quit when all windows are closed.

@@ -104,6 +104,21 @@
         display: none;
       }
 
+      .app-drag {
+        flex: 1 1 auto;
+        -webkit-app-region: drag;
+        height: 100%;
+      }
+      
+      .window-controls {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .window-controls .control {
+        
+      }
+
       /*----- TOOLBAR -----*/
 
       .toolbar {
@@ -161,13 +176,19 @@
           </template>
         </ul>
         <button id="createtab">+</button>
+        <div class="app-drag"></div>
+        <div class="window-controls">
+          <button id="minimize" class="control">🗕</button>
+          <button id="maximize" class="control">🗖</button>
+          <button id="close" class="control">🗙</button>
+        </div>
       </div>
       <div class="toolbar">
         <div class="page-controls">
           <button id="reload" class="control">🔄</button>
         </div>
         <div class="address-bar">
-          <input id="addressurl" />
+          <input id="addressurl" spellcheck="false" />
         </div>
         <div class="badges"></div>
       </div>

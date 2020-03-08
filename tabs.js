@@ -25,7 +25,7 @@ class Tab {
 
   show() {
     const [width, height] = this.window.getSize()
-    this.view.setBounds({ x: 0, y: toolbarHeight, width: width / 2, height: height - toolbarHeight });
+    this.view.setBounds({ x: 0, y: toolbarHeight, width: width, height: height - toolbarHeight });
     this.view.setAutoResize({ width: true, height: true })
   }
 
