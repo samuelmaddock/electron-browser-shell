@@ -1,1 +1,2 @@
-extensions/
+extensions/*
+!extensions/.gitkeep

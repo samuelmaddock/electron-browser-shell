@@ -1,23 +1,68 @@
 const path = require('path')
+const { promises: fs } = require('fs')
 const {
   app,
   session,
   ipcMain,
-  BrowserWindow,
-  BrowserView
+  BrowserWindow
 } = require('electron')
 
 const { Tabs } = require('./tabs')
 const {
   extensions,
-  createPopup,
   observeTab,
   observeExtensionHost
 } = require('./extensions.browser.js')
 
-let extension
 let mainWindow
 let tabs
+
+const manifestExists = async dirPath => {
+  const manifestPath = path.join(dirPath, 'manifest.json')
+  try {
+    return (await fs.stat(manifestPath)).isFile()
+  } catch {
+    return false
+  }
+}
+
+async function loadExtensions(extensionsPath) {
+  const subDirectories = await fs.readdir(extensionsPath, {
+    withFileTypes: true
+  })
+
+  const extensionDirectories = await Promise.all(
+    subDirectories
+      .filter(dirEnt => dirEnt.isDirectory())
+      .map(async dirEnt => {
+        const extPath = path.join(extensionsPath, dirEnt.name)
+
+        if (await manifestExists(extPath)) {
+          return extPath
+        }
+
+        const extSubDirs = await fs.readdir(extPath, {
+          withFileTypes: true
+        })
+
+        const versionDirPath =
+          extSubDirs.length === 1 && extSubDirs[0].isDirectory()
+            ? path.join(extPath, extSubDirs[0].name)
+            : null
+
+        if (await manifestExists(versionDirPath)) {
+          return versionDirPath
+        }
+      })
+      .filter(Boolean)
+  )
+
+  return await Promise.all(
+    extensionDirectories.map(extPath =>
+      session.defaultSession.loadExtension(extPath)
+    )
+  )
+}
 
 async function main() {
   session.defaultSession.setPreloads([
@@ -26,7 +71,9 @@ async function main() {
   const webuiExtension = await session.defaultSession.loadExtension(
     path.join(__dirname, 'shell')
   )
-  extension = await session.defaultSession.loadExtension(path.join(__dirname, 'extensions/cjpalhdlnbpafiamejdnhcphjbkeiagm', '1.24.4_0'))
+
+  await loadExtensions(path.join(__dirname, 'extensions'))
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -79,7 +126,7 @@ async function main() {
   tabs.on('tab-created', tab => {
     observeTab(tab.webContents)
   })
-  
+
   const initialTab = tabs.create()
   initialTab.loadURL('https://www.google.com')
 
@@ -95,19 +142,11 @@ app.on('window-all-closed', () => {
   }
 })
 
-let isCreatingPopup
-
 app.on('web-contents-created', async (event, webContents) => {
   console.log(webContents.getType(), webContents.getURL())
 
   if (webContents.getType() === 'backgroundPage') {
     webContents.openDevTools({ mode: 'detach', activate: true })
-    await new Promise(resolve => setTimeout(resolve, 5e3))
-
-    isCreatingPopup = true
-    const popupView = createPopup(mainWindow, extension)
-    isCreatingPopup = false
-    mainWindow.addBrowserView(popupView)
   }
 
   if (!mainWindow || webContents === mainWindow.webContents) {
@@ -117,18 +156,21 @@ app.on('web-contents-created', async (event, webContents) => {
     observeExtensionHost(webContents)
   }
 
-  webContents.on('new-window', (event, url, frameName, disposition, options) => {
-    event.preventDefault()
+  webContents.on(
+    'new-window',
+    (event, url, frameName, disposition, options) => {
+      event.preventDefault()
 
-    switch (disposition) {
-      case 'foreground-tab':
-      case 'background-tab':
-      case 'new-window':
-        const tab = tabs.create()
-        tab.loadURL(url)
-        break
+      switch (disposition) {
+        case 'foreground-tab':
+        case 'background-tab':
+        case 'new-window':
+          const tab = tabs.create()
+          tab.loadURL(url)
+          break
+      }
     }
-  })
+  )
 })
 
 // This method will be called when Electron has finished
