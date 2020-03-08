@@ -67,6 +67,9 @@ class WebUI {
     const tabs = await new Promise(resolve => chrome.tabs.getAllInWindow(resolve))
     this.tabList = [...tabs]
     this.renderTabs()
+
+    const activeTab = this.tabList.find(tab => tab.active)
+    this.renderToolbar(activeTab)
   }
   
   onCreateTab() {

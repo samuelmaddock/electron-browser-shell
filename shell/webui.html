@@ -56,6 +56,18 @@
         flex-direction: row;
       }
 
+      #createtab {
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-weight: bold;
+        font-family: 'Courier New', Courier, monospace;
+      }
+
+      #createtab:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
       .tab {
         padding: 0.2rem 0.4rem;
         height: 100%;
@@ -107,7 +119,8 @@
       .app-drag {
         flex: 1 1 auto;
         -webkit-app-region: drag;
-        height: 100%;
+        height: calc(100% - 5px);
+        align-self: flex-end;
       }
       
       .window-controls {
@@ -116,7 +129,14 @@
       }
 
       .window-controls .control {
-        
+        width: 2.5rem;
+        background: none;
+        border: none;
+        color: #fff;
+      }
+
+      .window-controls .control:hover {
+        background: rgba(255, 255, 255, 0.2);
       }
 
       /*----- TOOLBAR -----*/

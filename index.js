@@ -116,6 +116,19 @@ app.on('web-contents-created', async (event, webContents) => {
   } else if (isCreatingPopup || webContents.getType() === 'backgroundPage') {
     observeExtensionHost(webContents)
   }
+
+  webContents.on('new-window', (event, url, frameName, disposition, options) => {
+    event.preventDefault()
+
+    switch (disposition) {
+      case 'foreground-tab':
+      case 'background-tab':
+      case 'new-window':
+        const tab = tabs.create()
+        tab.loadURL(url)
+        break
+    }
+  })
 })
 
 // This method will be called when Electron has finished
