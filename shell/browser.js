@@ -1,6 +1,12 @@
 const path = require('path')
 const { promises: fs } = require('fs')
-const { app, session, ipcMain, BrowserWindow } = require('electron')
+const {
+  app,
+  session,
+  ipcMain,
+  BrowserWindow,
+  BrowserView
+} = require('electron')
 
 const { Tabs } = require('./tabs')
 const {
@@ -223,7 +229,8 @@ class Browser {
           case 'foreground-tab':
           case 'background-tab':
           case 'new-window':
-            const tab = tabs.create()
+            const win = this.getIpcWindow(event)
+            const tab = win.tabs.create()
             tab.loadURL(url)
             break
         }
