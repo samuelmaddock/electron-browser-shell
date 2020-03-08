@@ -178,14 +178,27 @@ class TabsAPI extends EventEmitter {
     tab.insertCSS(details.code)
   }
 
-  query(sender, details = {}) {
+  query(event, info = {}) {
     const isSet = value => typeof value !== 'undefined'
 
     const filteredTabs = Array.from(tabs)
       .map(this.getTabDetails.bind(this))
       .filter(tab => {
-        if (isSet(details.active) && details.active === tab.active) return true
-        // if (details.currentWindow && tab.active) return true
+        if (isSet(info.active) && info.active !== tab.active) return false
+        if (isSet(info.pinned) && info.pinned !== tab.pinned) return false
+        if (isSet(info.audible) && info.audible !== tab.audible) return false
+        if (isSet(info.muted) && info.muted !== tab.mutedInfo.muted) return false
+        if (isSet(info.highlighted) && info.highlighted !== tab.highlighted) return false
+        if (isSet(info.discarded) && info.discarded !== tab.discarded) return false
+        if (isSet(info.autoDiscardable) && info.autoDiscardable !== tab.autoDiscardable) return false
+        // if (isSet(info.currentWindow)) return false
+        // if (isSet(info.lastFocusedWindow)) return false
+        if (isSet(info.status) && info.status !== tab.status) return false
+        if (isSet(info.title) && info.title !== tab.title) return false // TODO: pattern match
+        if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
+        // if (isSet(info.windowId) && info.windowId !== tab.windowId) return false
+        // if (isSet(info.windowType) && info.windowType !== tab.windowType) return false
+        // if (isSet(info.index) && info.index !== tab.index) return false
         return true
       })
       .map((tab, index) => {
@@ -227,7 +240,7 @@ class TabsAPI extends EventEmitter {
   onUpdated(tabId) {
     const tab = this.getTabById(tabId)
     if (!tab) return
-    
+
     let prevDetails
     if (this.detailsCache.has(tab)) {
       prevDetails = this.detailsCache.get(tab)
