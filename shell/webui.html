@@ -57,7 +57,6 @@
       }
 
       .tab {
-        background: var(--tab-color);
         padding: 0.2rem 0.4rem;
         height: 100%;
         overflow: hidden;
@@ -66,6 +65,10 @@
         align-items: center;
         width: 12rem;
         box-shadow: inset -1px 0 0 0 rgba(0,0,0,0.33);
+      }
+
+      .tab[data-active] {
+        background: var(--tab-color);
       }
 
       .tab .title {

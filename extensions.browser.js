@@ -1,4 +1,5 @@
 const { ipcMain, BrowserWindow, BrowserView } = require('electron')
+const { EventEmitter } = require('events')
 
 let popup
 const tabs = new Set()
@@ -77,10 +78,11 @@ class WebNavigationAPI {
   }
 }
 
-class TabsAPI {
+class TabsAPI extends EventEmitter {
   static TAB_ID_NONE = -1
 
   constructor() {
+    super()
     this.detailsCache = new Map()
 
     ipcMain.handle('tabs.get', this.get.bind(this))
@@ -102,7 +104,7 @@ class TabsAPI {
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details = {
-      active: true,
+      active: false,
       audible: tab.isCurrentlyAudible(),
       autoDiscardable: true,
       discarded: false,
@@ -121,6 +123,8 @@ class TabsAPI {
       width,
       windowId: win ? win.id : -1
     }
+
+    this.emit('create-tab-info', details)
 
     this.detailsCache.set(tab, details)
     return details
@@ -166,7 +170,7 @@ class TabsAPI {
     tab.insertCSS(details.code)
   }
 
-  query(sender, details) {
+  query(sender, details = {}) {
     const isSet = value => typeof value !== 'undefined'
 
     const filteredTabs = Array.from(tabs)
@@ -210,7 +214,10 @@ class TabsAPI {
     sendToHosts('tabs.onCreated', tabDetails)
   }
 
-  onUpdated(tab) {
+  onUpdated(tabId) {
+    const tab = this.getTabById(tabId)
+    if (!tab) return
+    
     let prevDetails
     if (this.detailsCache.has(tab)) {
       prevDetails = this.detailsCache.get(tab)
@@ -263,6 +270,22 @@ class TabsAPI {
       isWindowClosing: win ? win.isDestroyed() : false
     })
   }
+
+  onActivated(tabId) {
+    const tab = this.getTabById(tabId)
+    if (!tab) return
+    const win = getParentWindowOfTab(tab)
+
+    // invalidate cache since 'active' has changed
+    this.detailsCache.forEach((tabInfo, cacheTab) => {
+      tabInfo.active = tabId === cacheTab.id
+    })
+
+    sendToHosts('tabs.onActivated', {
+      tabId,
+      windowId: win.id
+    })
+  }
 }
 
 class WindowsAPI {
@@ -310,13 +333,13 @@ function observeTab(tab) {
 
   updateEvents.forEach(eventName => {
     tab.on(eventName, () => {
-      extensions.tabs.onUpdated(tab)
+      extensions.tabs.onUpdated(tab.id)
     })
   })
 
   tab.on('page-favicon-updated', (event, favicons) => {
     tab.favicon = favicons[0]
-    extensions.tabs.onUpdated(tab)
+    extensions.tabs.onUpdated(tab.id)
   })
 
   tab.once('destroyed', () => {
@@ -340,5 +363,6 @@ function observeExtensionHost(host) {
   )
 }
 
+exports.extensions = extensions
 exports.observeTab = observeTab
 exports.observeExtensionHost = observeExtensionHost

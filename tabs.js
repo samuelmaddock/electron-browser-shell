@@ -8,9 +8,11 @@ class Tab {
     this.view = new BrowserView()
     this.id = this.view.webContents.id
     this.window = parentWindow
+    this.webContents = this.view.webContents
   }
 
   destroy() {
+    this.webContents = undefined
     this.window.removeBrowserView(this.view)
     this.window = undefined
     this.view.destroy()
@@ -68,9 +70,10 @@ class Tabs extends EventEmitter {
     const tab = new Tab(this.window)
     this.tabList.push(tab)
     this.window.addBrowserView(tab.view)
-    this.select(tab.id)
     tab.loadURL('about:blank')
+    if (!this.selected) this.selected = tab
     this.emit('tab-created', tab)
+    this.select(tab.id)
     return tab
   }
 
@@ -94,9 +97,10 @@ class Tabs extends EventEmitter {
   select(tabId) {
     const tab = this.get(tabId)
     if (!tab) return
-    tab.show()
     if (this.selected) this.selected.hide()
+    tab.show()
     this.selected = tab
+    this.emit('tab-selected', tab)
   }
 }
 

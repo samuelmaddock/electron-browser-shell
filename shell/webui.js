@@ -28,6 +28,10 @@ class WebUI {
       this.renderTabs()
     })
 
+    chrome.tabs.onActivated.addListener(() => {
+      this.initTabs() // get updated info on all tabs
+    })
+    
     chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
       const tab = this.tabList.find(tab => tab.id === tabId)
       if (!tab) return
@@ -81,6 +85,12 @@ class WebUI {
       let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
       if (!tabElem) tabElem = this.createTabNode(tab)
 
+      if (tab.active) {
+        tabElem.dataset.active = ''
+      } else {
+        delete tabElem.dataset.active
+      }
+      
       tabElem.querySelector('.title').textContent = tab.title
       tabElem.querySelector('.audio').disabled = !tab.audible
     })

@@ -9,6 +9,7 @@ const {
 
 const { Tabs } = require('./tabs')
 const {
+  extensions,
   createPopup,
   observeTab,
   observeExtensionHost
@@ -39,9 +40,24 @@ async function main() {
 
   tabs = new Tabs(mainWindow)
 
-  // TODO: fix race condition where webui doesn't pickup on new tab
+  extensions.tabs.on('create-tab-info', tabInfo => {
+    Object.assign(tabInfo, {
+      active: tabInfo.id === tabs.selected.id
+    })
+  })
+
+  tabs.on('tab-selected', tab => {
+    extensions.tabs.onActivated(tab.id)
+  })
+
+  tabs.on('tab-created', tab => {
+    observeTab(tab.webContents)
+  })
+  
   const initialTab = tabs.create()
   initialTab.loadURL('https://www.google.com')
+
+  mainWindow.openDevTools()
 }
 
 // Quit when all windows are closed.
@@ -53,7 +69,6 @@ app.on('window-all-closed', () => {
   }
 })
 
-const TAB_TYPES = new Set(['window', 'browserView', 'webview'])
 let isCreatingPopup
 
 app.on('web-contents-created', async (event, webContents) => {
@@ -74,8 +89,6 @@ app.on('web-contents-created', async (event, webContents) => {
     observeExtensionHost(webContents)
   } else if (isCreatingPopup || webContents.getType() === 'backgroundPage') {
     observeExtensionHost(webContents)
-  } else if (TAB_TYPES.has(webContents.getType())) {
-    observeTab(webContents)
   }
 })
 
