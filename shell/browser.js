@@ -140,7 +140,7 @@ class Browser {
       path.join(__dirname, 'extensions.renderer.js')
     ])
     const webuiExtension = await session.defaultSession.loadExtension(
-      path.join(__dirname, 'shell')
+      path.join(__dirname, 'ui')
     )
     webuiExtensionId = webuiExtension.id
 
@@ -150,7 +150,7 @@ class Browser {
       'new-tab.html'
     )
 
-    await loadExtensions(path.join(__dirname, 'extensions'))
+    await loadExtensions(path.join(__dirname, '..', 'extensions'))
 
     ipcMain.handle('minimize-window', event =>
       this.getIpcWindow(event).window.minimize()
