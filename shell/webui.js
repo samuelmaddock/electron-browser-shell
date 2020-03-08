@@ -109,6 +109,13 @@ class WebUI {
         delete tabElem.dataset.active
       }
       
+      const favicon = tabElem.querySelector('.favicon')
+      if (tab.favIconUrl) {
+        favicon.src = tab.favIconUrl
+      } else {
+        delete favicon.src
+      }
+      
       tabElem.querySelector('.title').textContent = tab.title
       tabElem.querySelector('.audio').disabled = !tab.audible
     })

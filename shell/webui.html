@@ -17,13 +17,13 @@
       }
 
       html {
+        background: #ececec;
         height: 100%;
         margin: 0;
         padding: 0;
       }
 
       body {
-        background: var(--bg-color);
         padding: 0;
         margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
@@ -38,6 +38,7 @@
       }
 
       .topbar {
+        background: var(--bg-color);
         height: 2rem;
       }
 
@@ -83,6 +84,12 @@
         background: var(--tab-color);
       }
 
+      .tab .favicon[src] {
+        width: 16px;
+        height: 16px;
+        margin-right: 0.2rem;
+      }
+      
       .tab .title {
         white-space: nowrap;
         flex: 1 1 auto;
