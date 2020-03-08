@@ -1,5 +1,5 @@
-const isExtensionPage = location.href.startsWith('chrome-extension://')
-if (!isExtensionPage) return
+// Only load within extension page context
+if (!location.href.startsWith('chrome-extension://')) return
 
 const { ipcRenderer } = require('electron')
 

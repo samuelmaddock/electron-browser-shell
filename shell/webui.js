@@ -3,10 +3,10 @@ const { ipcRenderer } = require('electron')
 class WebUI {
   activeTabId = -1
   tabList = []
-  
+
   constructor() {
     const $ = document.querySelector.bind(document)
-    
+
     this.$ = {
       tabList: $('#tabstrip .tab-list'),
       tabTemplate: $('#tabtemplate'),
@@ -16,15 +16,25 @@ class WebUI {
 
       minimizeButton: $('#minimize'),
       maximizeButton: $('#maximize'),
-      closeButton: $('#close'),
+      closeButton: $('#close')
     }
 
-    this.$.createTabButton.addEventListener('click', this.onCreateTab.bind(this))
+    this.$.createTabButton.addEventListener(
+      'click',
+      this.onCreateTab.bind(this)
+    )
     this.$.reloadButton.addEventListener('click', this.reloadTab.bind(this))
-    this.$.addressUrl.addEventListener('keypress', this.onAddressUrlKeyPress.bind(this))
+    this.$.addressUrl.addEventListener(
+      'keypress',
+      this.onAddressUrlKeyPress.bind(this)
+    )
 
-    this.$.minimizeButton.addEventListener('click', () => ipcRenderer.invoke('minimize-window'))
-    this.$.maximizeButton.addEventListener('click', () => ipcRenderer.invoke('maximize-window'))
+    this.$.minimizeButton.addEventListener('click', () =>
+      ipcRenderer.invoke('minimize-window')
+    )
+    this.$.maximizeButton.addEventListener('click', () =>
+      ipcRenderer.invoke('maximize-window')
+    )
     this.$.closeButton.addEventListener('click', () => window.close())
 
     this.setupBrowserListeners()
@@ -39,13 +49,13 @@ class WebUI {
 
     chrome.tabs.onActivated.addListener(activeInfo => {
       this.activeTabId = activeInfo.tabId
-      
+
       const tab = this.tabList.find(tab => tab.id === this.activeTabId)
       if (tab) this.renderToolbar(tab)
 
       this.initTabs() // get updated info on all tabs
     })
-    
+
     chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
       const tab = this.tabList.find(tab => tab.id === tabId)
       if (!tab) return
@@ -64,14 +74,17 @@ class WebUI {
   }
 
   async initTabs() {
-    const tabs = await new Promise(resolve => chrome.tabs.getAllInWindow(resolve))
+    const tabs = await new Promise(resolve =>
+      chrome.tabs.getAllInWindow(resolve)
+    )
     this.tabList = [...tabs]
     this.renderTabs()
 
     const activeTab = this.tabList.find(tab => tab.active)
+    this.activeTabId = activeTab.id
     this.renderToolbar(activeTab)
   }
-  
+
   onCreateTab() {
     ipcRenderer.invoke('create-tab')
   }
@@ -90,10 +103,14 @@ class WebUI {
   createTabNode(tab) {
     const tabElem = this.$.tabTemplate.content.cloneNode(true).firstElementChild
     tabElem.dataset.tabId = tab.id
-    
-    tabElem.addEventListener('click', () => { ipcRenderer.invoke('select-tab', tab.id) })
-    tabElem.querySelector('.close').addEventListener('click', () => { ipcRenderer.invoke('remove-tab', tab.id) })
-    
+
+    tabElem.addEventListener('click', () => {
+      ipcRenderer.invoke('select-tab', tab.id)
+    })
+    tabElem.querySelector('.close').addEventListener('click', () => {
+      ipcRenderer.invoke('remove-tab', tab.id)
+    })
+
     this.$.tabList.appendChild(tabElem)
     return tabElem
   }
@@ -108,14 +125,14 @@ class WebUI {
       } else {
         delete tabElem.dataset.active
       }
-      
+
       const favicon = tabElem.querySelector('.favicon')
       if (tab.favIconUrl) {
         favicon.src = tab.favIconUrl
       } else {
         delete favicon.src
       }
-      
+
       tabElem.querySelector('.title').textContent = tab.title
       tabElem.querySelector('.audio').disabled = !tab.audible
     })

@@ -79,6 +79,7 @@ class TabbedBrowserWindow {
 
     this.tabs.on('tab-created', function onTabCreated(tab) {
       observeTab(tab.webContents)
+      if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
@@ -129,7 +130,9 @@ class Browser {
       }
     }
 
-    return senderWindow ? this.windows.find(win => win.id === senderWindow.id) : null
+    return senderWindow
+      ? this.windows.find(win => win.id === senderWindow.id)
+      : null
   }
 
   async init() {
@@ -140,6 +143,12 @@ class Browser {
       path.join(__dirname, 'shell')
     )
     webuiExtensionId = webuiExtension.id
+
+    const newTabUrl = path.join(
+      'chrome-extension://',
+      webuiExtensionId,
+      'new-tab.html'
+    )
 
     await loadExtensions(path.join(__dirname, 'extensions'))
 
@@ -159,14 +168,14 @@ class Browser {
       // TODO: create in other windows
       const tabs = this.windows[0].tabs
       const tab = tabs.create()
-      if (props.url) tab.loadURL(props.url)
+      if (props.url) tab.loadURL(props.url || newTabUrl)
       if (props.active) tabs.select(tab.id)
       callback(null, tab.id)
     })
 
     extensions.windows.on('create-window', (props, callback) => {
       const win = this.createWindow({
-        initialUrl: props.url
+        initialUrl: props.url || newTabUrl
       })
       // if (props.active) tabs.select(tab.id)
       callback(null, win.id) // TODO: return tab or window id?
@@ -180,7 +189,7 @@ class Browser {
       })
     })
 
-    this.createWindow({ initialUrl: 'https://www.google.com/' })
+    this.createWindow({ initialUrl: newTabUrl })
   }
 
   createWindow(options) {
@@ -190,7 +199,8 @@ class Browser {
       height: 720,
       frame: false,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        enableRemoteModule: false
       }
     })
     this.windows.push(win)
