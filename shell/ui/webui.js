@@ -89,8 +89,10 @@ class WebUI {
     this.renderTabs()
 
     const activeTab = this.tabList.find(tab => tab.active)
-    this.activeTabId = activeTab.id
-    this.renderToolbar(activeTab)
+    if (activeTab) {
+      this.activeTabId = activeTab.id
+      this.renderToolbar(activeTab)
+    }
   }
 
   onCreateTab() {
@@ -170,7 +172,7 @@ class WebUI {
       const src = this.activeTabId > -1 && action.tabs[this.activeTabId] || action
       actionElem.title = src.title
 
-      actionElem.style.backgroundImage = `url(${src.imageData['32']})`
+      actionElem.style.backgroundImage = src.imageData ? `url(${src.imageData['32']})` : null
       
       const badge = actionElem.querySelector('.badge')
       badge.style.display = src.text ? 'block' : 'none'

@@ -120,27 +120,26 @@ class Browser {
     app.quit()
   }
 
-  getIpcWindow(event) {
-    const { sender } = event
-    if (!sender) return
-
-    let senderWindow
-    switch (sender.getType()) {
+  getWindowFromWebContents(webContents) {
+    let window
+    switch (webContents.getType()) {
       case 'window':
-        senderWindow = BrowserWindow.fromWebContents(sender)
+        window = BrowserWindow.fromWebContents(webContents)
         break
       case 'browserView': {
-        const browserView = BrowserView.fromWebContents(sender)
-        senderWindow = BrowserWindow.getAllWindows().find(win =>
+        const browserView = BrowserView.fromWebContents(webContents)
+        window = BrowserWindow.getAllWindows().find(win =>
           win.getBrowserViews().includes(browserView)
         )
         break
       }
     }
 
-    return senderWindow
-      ? this.windows.find(win => win.id === senderWindow.id)
-      : null
+    return window ? this.windows.find(win => win.id === window.id) : null
+  }
+
+  getIpcWindow(event) {
+    return event.sender ? this.getWindowFromWebContents(event.sender) : null
   }
 
   async init() {
@@ -172,12 +171,33 @@ class Browser {
       }
     })
 
-    extensions.tabs.on('create-tab', (props, callback) => {
-      // TODO: create in other windows
-      const tabs = this.windows[0].tabs
-      const tab = tabs.create()
+    ipcMain.handle('create-tab', event => {
+      const win = this.getIpcWindow(event)
+      win.tabs.create()
+    })
+    ipcMain.handle('remove-tab', (event, tabId) => {
+      const win = this.getIpcWindow(event)
+      win.tabs.remove(tabId)
+    })
+    ipcMain.handle('reload-tab', event => {
+      const win = this.getIpcWindow(event)
+      win.tabs.selected.reload()
+    })
+    ipcMain.handle('select-tab', (event, tabId) => {
+      const win = this.getIpcWindow(event)
+      win.tabs.select(tabId)
+    })
+    ipcMain.handle('navigate-tab', (event, url) => {
+      const win = this.getIpcWindow(event)
+      win.tabs.selected.loadURL(url)
+    })
+
+    extensions.tabs.on('create-tab', (event, props, callback) => {
+      // TODO: support creating in other windows
+      const win = this.windows[0]
+      const tab = win.tabs.create()
       if (props.url) tab.loadURL(props.url || newTabUrl)
-      if (props.active) tabs.select(tab.id)
+      if (props.active) win.tabs.select(tab.id)
       callback(null, tab.id)
     })
 
@@ -189,20 +209,28 @@ class Browser {
       callback(null, win.id) // TODO: return tab or window id?
     })
 
-    extensions.tabs.on('create-tab-info', tabInfo => {
-      const tabs = this.windows[0].tabs
-      const selectedId = tabs.selected ? tabs.selected.id : -1
+    extensions.tabs.on('create-tab-info', (tabInfo, webContents) => {
+      const win = this.getWindowFromWebContents(webContents)
+      const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
       Object.assign(tabInfo, {
-        active: tabInfo.id === selectedId
+        active: tabInfo.id === selectedId,
+        windowId: win.id,
+        windowType: 'normal' // TODO
       })
     })
 
     extensions.browserAction.on('clicked', extensionId => {
-      if (this.popupView) this.popupView.destroy()
-      
       // TODO: create in other windows
       const win = this.windows[0].window
-      this.popupView = createPopup(win, { id: extensionId })
+
+      if (this.popupView) {
+        // NOTE: Electron will crash if resized without calling 'removeBrowserView'
+        win.removeBrowserView(this.popupView)
+        this.popupView.destroy()
+        this.popupView = undefined
+      } else {
+        this.popupView = createPopup(win, { id: extensionId })
+      }
     })
 
     this.createWindow({ initialUrl: newTabUrl })

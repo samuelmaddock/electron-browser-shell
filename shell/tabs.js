@@ -46,12 +46,6 @@ class Tabs extends EventEmitter {
   constructor(browserWindow) {
     super()
     this.window = browserWindow
-
-    ipcMain.handle('create-tab', () => { this.create() })
-    ipcMain.handle('remove-tab', (_, tabId) => { this.remove(tabId) })
-    ipcMain.handle('reload-tab', () => { this.selected.reload() })
-    ipcMain.handle('select-tab', (_, tabId) => { this.select(tabId) })
-    ipcMain.handle('navigate-tab', (_, url) => { this.selected.loadURL(url) })
   }
   
   destroy() {

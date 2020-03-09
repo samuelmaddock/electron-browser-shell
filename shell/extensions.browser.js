@@ -178,7 +178,7 @@ class TabsAPI extends EventEmitter {
       windowId: win ? win.id : -1
     }
 
-    this.emit('create-tab-info', details)
+    this.emit('create-tab-info', details, tab)
 
     this.detailsCache.set(tab, details)
     return details
@@ -211,7 +211,7 @@ class TabsAPI extends EventEmitter {
     return tabsInWindow
   }
 
-  create(sender, details) {
+  create(event, details) {
     return new Promise((resolve, reject) => {
       this.emit('create-tab', details, (err, tabId) => {
         if (err) {
@@ -257,7 +257,7 @@ class TabsAPI extends EventEmitter {
         if (isSet(info.status) && info.status !== tab.status) return false
         if (isSet(info.title) && info.title !== tab.title) return false // TODO: pattern match
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
-        // if (isSet(info.windowId) && info.windowId !== tab.windowId) return false
+        if (isSet(info.windowId) && info.windowId !== tab.windowId) return false
         // if (isSet(info.windowType) && info.windowType !== tab.windowType) return false
         // if (isSet(info.index) && info.index !== tab.index) return false
         return true
