@@ -172,7 +172,11 @@ class WebUI {
       const src = this.activeTabId > -1 && action.tabs[this.activeTabId] || action
       actionElem.title = src.title
 
-      actionElem.style.backgroundImage = src.imageData ? `url(${src.imageData['32']})` : null
+      if (src.imageData) {
+        actionElem.style.backgroundImage = src.imageData ? `url(${src.imageData['32']})` : null
+      } else if (src.icon) {
+        actionElem.style.backgroundImage = `url(${src.icon})`
+      }
       
       const badge = actionElem.querySelector('.badge')
       badge.style.display = src.text ? 'block' : 'none'

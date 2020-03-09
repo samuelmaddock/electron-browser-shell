@@ -1,4 +1,4 @@
-const { ipcMain, BrowserWindow, BrowserView } = require('electron')
+const { ipcMain, session, BrowserWindow, BrowserView } = require('electron')
 const { EventEmitter } = require('events')
 
 // TODO: support for non-default session
@@ -44,7 +44,8 @@ class BrowserActionAPI extends EventEmitter {
     super()
 
     const setter = propName => (event, extensionId, details) => {
-      const action = this.getAction(event.session, extensionId)
+      const senderSession = event.sender.webContents.session || session.defaultSession
+      const action = this.getAction(senderSession, extensionId)
       const { tabId, ...rest } = details
 
       if (details.tabId) {
@@ -87,8 +88,20 @@ class BrowserActionAPI extends EventEmitter {
     return action
   }
 
+  processExtensions(session, extensions) {
+    extensions.forEach(extension => {
+      const { browser_action } = extension.manifest || {}
+      if (browser_action) {
+        const action = this.getAction(session, extension.id)
+        action.icon = `chrome-extension://${extension.id}/${browser_action.default_icon}`
+        console.log('***ACTION', action)
+      }
+    })
+  }
+  
   getAll(event) {
-    let sessionActions = this.sessionActionMap.get(event.session)
+    const senderSession = event.sender.webContents.session || session.defaultSession
+    let sessionActions = this.sessionActionMap.get(senderSession)
     if (!sessionActions) return []
 
     return Array.from(sessionActions.entries()).reduce((acc, val) => {

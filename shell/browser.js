@@ -67,6 +67,8 @@ async function loadExtensions(extensionsPath) {
 
 class TabbedBrowserWindow {
   constructor(options) {
+    this.session = options.session || session.defaultSession
+    
     // Can't inheret BrowserWindow
     // https://github.com/electron/electron/issues/23#issuecomment-19613241
     this.window = new BrowserWindow(options)
@@ -157,7 +159,8 @@ class Browser {
       'new-tab.html'
     )
 
-    await loadExtensions(path.join(__dirname, '..', 'extensions'))
+    const installedExtensions = await loadExtensions(path.join(__dirname, '..', 'extensions'))
+    extensions.browserAction.processExtensions(session.defaultSession, installedExtensions)
 
     ipcMain.handle('minimize-window', event =>
       this.getIpcWindow(event).window.minimize()
