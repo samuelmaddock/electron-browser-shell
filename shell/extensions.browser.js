@@ -1,17 +1,19 @@
 const { ipcMain, BrowserWindow, BrowserView } = require('electron')
 const { EventEmitter } = require('events')
 
-let popup
+// TODO: support for non-default session
+
 const tabs = new Set()
 const extensionHosts = new Set()
 
 exports.createPopup = (win, extension) => {
-  popup = new BrowserView()
+  const popup = new BrowserView()
   popup.setBounds({ x: win.getSize()[0] - 256, y: 62, width: 256, height: 400 })
   // popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html?tabId=${win.webContents.id}`)
   popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html`)
   popup.webContents.openDevTools({ mode: 'detach', activate: true })
   popup.setBackgroundColor('#ff0000')
+  win.addBrowserView(popup)
   return popup
 }
 
@@ -35,17 +37,68 @@ const sendToHosts = (eventName, ...args) => {
   })
 }
 
-class BrowserActionAPI {
+class BrowserActionAPI extends EventEmitter {
+  sessionActionMap = new Map()
+
   constructor() {
-    ipcMain.handle('browserAction.setBadgeBackgroundColor', () => {
-      return true
+    super()
+
+    const setter = propName => (event, extensionId, details) => {
+      const action = this.getAction(event.session, extensionId)
+      const { tabId, ...rest } = details
+
+      if (details.tabId) {
+        const tabAction = action.tabs[details.tabId] || (action.tabs[details.tabId] = {})
+        Object.assign(tabAction, rest)
+      } else {
+        Object.assign(action, rest)
+      }
+    }
+
+    ipcMain.handle(
+      'browserAction.setBadgeBackgroundColor',
+      setter('backgroundColor')
+    )
+    ipcMain.handle('browserAction.setBadgeText', setter('text'))
+    ipcMain.handle('browserAction.setTitle', setter('title'))
+    ipcMain.handle('browserAction.setIcon', setter('icon'))
+
+    // extended methods for webui
+    ipcMain.handle('browserAction.getAll', this.getAll.bind(this))
+
+    ipcMain.handle('click-action', (event, extensionId) => {
+      this.onClicked(extensionId)
     })
-    ipcMain.handle('browserAction.setBadgeText', () => {
-      return true
-    })
-    ipcMain.handle('browserAction.setTitle', () => {
-      return true
-    })
+  }
+
+  getAction(session, extensionId) {
+    let sessionActions = this.sessionActionMap.get(session)
+    if (!sessionActions) {
+      sessionActions = new Map()
+      this.sessionActionMap.set(session, sessionActions)
+    }
+
+    let action = sessionActions.get(extensionId)
+    if (!action) {
+      action = { tabs: {} }
+      sessionActions.set(extensionId, action)
+    }
+
+    return action
+  }
+
+  getAll(event) {
+    let sessionActions = this.sessionActionMap.get(event.session)
+    if (!sessionActions) return []
+
+    return Array.from(sessionActions.entries()).reduce((acc, val) => {
+      acc.push({ id: val[0], ...val[1] })
+      return acc
+    }, [])
+  }
+
+  onClicked(extensionId) {
+    this.emit('clicked', extensionId)
   }
 }
 
@@ -188,10 +241,17 @@ class TabsAPI extends EventEmitter {
         if (isSet(info.active) && info.active !== tab.active) return false
         if (isSet(info.pinned) && info.pinned !== tab.pinned) return false
         if (isSet(info.audible) && info.audible !== tab.audible) return false
-        if (isSet(info.muted) && info.muted !== tab.mutedInfo.muted) return false
-        if (isSet(info.highlighted) && info.highlighted !== tab.highlighted) return false
-        if (isSet(info.discarded) && info.discarded !== tab.discarded) return false
-        if (isSet(info.autoDiscardable) && info.autoDiscardable !== tab.autoDiscardable) return false
+        if (isSet(info.muted) && info.muted !== tab.mutedInfo.muted)
+          return false
+        if (isSet(info.highlighted) && info.highlighted !== tab.highlighted)
+          return false
+        if (isSet(info.discarded) && info.discarded !== tab.discarded)
+          return false
+        if (
+          isSet(info.autoDiscardable) &&
+          info.autoDiscardable !== tab.autoDiscardable
+        )
+          return false
         // if (isSet(info.currentWindow)) return false
         // if (isSet(info.lastFocusedWindow)) return false
         if (isSet(info.status) && info.status !== tab.status) return false

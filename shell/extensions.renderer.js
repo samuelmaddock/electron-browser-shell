@@ -3,6 +3,10 @@ if (!location.href.startsWith('chrome-extension://')) return
 
 const { ipcRenderer } = require('electron')
 
+const extensionId =
+  typeof chrome !== 'undefined' ? chrome.runtime.id : undefined
+const manifest = extensionId ? chrome.runtime.getManifest() : {}
+
 class Event {
   constructor(name) {
     this.name = name
@@ -22,18 +26,35 @@ class Event {
   }
 }
 
-const TODO_NOOP = true
+function imageData2base64(imageData) {
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d');
+  canvas.width = imageData.width;
+  canvas.height = imageData.height;
+  ctx.putImageData(imageData, 0, 0);
 
-const extMessage = (fnName, noop) =>
+  var image = new Image();
+  return canvas.toDataURL();
+}
+
+const extMessage = (fnName, options = {}) =>
   async function() {
-    const args = [...arguments]
+    let args = [...arguments]
     const callback =
       typeof args[args.length - 1] === 'function' ? args.pop() : undefined
     console.log(fnName, args)
 
-    if (noop) {
+    if (options.noop) {
       if (callback) callback()
       return
+    }
+
+    if (options.serialize) {
+      args = options.serialize(...args)
+    }
+
+    if (options.includeId) {
+      args.splice(0, 0, extensionId)
     }
 
     const result = await ipcRenderer.invoke(fnName, ...args)
@@ -55,18 +76,42 @@ const webNavigation = {
 }
 
 const browserAction = {
-  setBadgeBackgroundColor: extMessage('browserAction.setBadgeBackgroundColor'),
-  setBadgeText: extMessage('browserAction.setBadgeText'),
-  // TODO: serialize ImageDataType
-  // https://developer.chrome.com/extensions/browserAction#method-setIcon
-  setIcon: extMessage('browserAction.setIcon', TODO_NOOP),
-  setTitle: extMessage('browserAction.setTitle'),
-  onClicked: new Event('browserAction.onClicked')
+  setBadgeBackgroundColor: extMessage('browserAction.setBadgeBackgroundColor', {
+    includeId: true
+  }),
+  setBadgeText: extMessage('browserAction.setBadgeText', { includeId: true }),
+  setIcon: extMessage('browserAction.setIcon', {
+    includeId: true,
+    serialize: details => {
+      if (details.imageData) {
+        if (details.imageData instanceof ImageData) {
+          details.imageData = imageData2base64(details.imageData)
+        } else {
+          details.imageData = Object.entries(details.imageData).reduce(
+            (obj, pair) => {
+              obj[pair[0]] = imageData2base64(pair[1])
+              return obj
+            },
+            {}
+          )
+        }
+      }
+
+      return [details]
+    }
+  }),
+  setTitle: extMessage('browserAction.setTitle', { includeId: true }),
+  onClicked: new Event('browserAction.onClicked', { includeId: true })
 }
 
+// TODO: only created these in special webui context
+Object.assign(browserAction, {
+  getAll: extMessage('browserAction.getAll', { includeId: true })
+})
+
 const contextMenus = {
-  create: extMessage('contextMenus.create', TODO_NOOP),
-  remove: extMessage('contextMenus.remove', TODO_NOOP),
+  create: extMessage('contextMenus.create', { noop: true }),
+  remove: extMessage('contextMenus.remove', { noop: true }),
   onClicked: new Event('contextMenus.onClicked')
 }
 
@@ -115,7 +160,6 @@ const privacy = {
 }
 
 Object.assign(chrome, {
-  browserAction,
   contextMenus,
   privacy,
   tabs,
@@ -123,3 +167,7 @@ Object.assign(chrome, {
   webRequest,
   windows
 })
+
+if (manifest.browser_action) {
+  chrome.browserAction = browserAction
+}

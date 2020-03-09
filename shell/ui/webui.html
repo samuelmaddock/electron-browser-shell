@@ -185,6 +185,23 @@
         padding: 0;
         line-height: 0;
       }
+
+      .toolbar .actions {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .toolbar .action {
+        width: 24px;
+        height: 24px;
+        background-size: contain;
+      }
+
+      .toolbar .action .badge {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+      }
     </style>
   </head>
   <body>
@@ -217,7 +234,13 @@
         <div class="address-bar">
           <input id="addressurl" spellcheck="false" />
         </div>
-        <div class="badges"></div>
+        <ul id="actions">
+          <template id="actiontemplate">
+            <li class="action">
+              <div class="badge"></div>
+            </li>
+          </template>
+        </ul>
       </div>
     </div>
   </div>

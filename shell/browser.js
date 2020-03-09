@@ -11,6 +11,7 @@ const {
 const { Tabs } = require('./tabs')
 const {
   extensions,
+  createPopup,
   observeTab,
   observeExtensionHost
 } = require('./extensions.browser.js')
@@ -101,6 +102,7 @@ class TabbedBrowserWindow {
 
 class Browser {
   windows = []
+  popupView = null
 
   constructor() {
     app.whenReady().then(this.init.bind(this))
@@ -195,6 +197,14 @@ class Browser {
       })
     })
 
+    extensions.browserAction.on('clicked', extensionId => {
+      if (this.popupView) this.popupView.destroy()
+      
+      // TODO: create in other windows
+      const win = this.windows[0].window
+      this.popupView = createPopup(win, { id: extensionId })
+    })
+
     this.createWindow({ initialUrl: newTabUrl })
   }
 
@@ -210,6 +220,8 @@ class Browser {
       }
     })
     this.windows.push(win)
+
+    win.webContents.openDevTools({ mode: 'detach' })
   }
 
   async onWebContentsCreated(event, webContents) {

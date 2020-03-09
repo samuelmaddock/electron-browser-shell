@@ -14,6 +14,9 @@ class WebUI {
       reloadButton: $('#reload'),
       addressUrl: $('#addressurl'),
 
+      actions: $('#actions'),
+      actionTemplate: $('#actiontemplate'),
+
       minimizeButton: $('#minimize'),
       maximizeButton: $('#maximize'),
       closeButton: $('#close')
@@ -39,6 +42,11 @@ class WebUI {
 
     this.setupBrowserListeners()
     this.initTabs()
+
+    setInterval(async () => {
+      const actions = await chrome.browserAction.getAll()
+      this.renderActions(actions)
+    }, 2000)
   }
 
   setupBrowserListeners() {
@@ -140,6 +148,35 @@ class WebUI {
 
   renderToolbar(tab) {
     this.$.addressUrl.value = tab.url
+  }
+
+  createActionNode(action) {
+    const actionElem = this.$.actionTemplate.content.cloneNode(true).firstElementChild
+    actionElem.dataset.actionId = action.id
+
+    actionElem.addEventListener('click', () => {
+      ipcRenderer.invoke('click-action', action.id)
+    })
+
+    this.$.actions.appendChild(actionElem)
+    return actionElem
+  }
+
+  renderActions(actions) {
+    actions.forEach(action => {
+      let actionElem = this.$.actions.querySelector(`[data-action-id="${action.id}"]`)
+      if (!actionElem) actionElem = this.createActionNode(action)
+
+      const src = this.activeTabId > -1 && action.tabs[this.activeTabId] || action
+      actionElem.title = src.title
+
+      actionElem.style.backgroundImage = `url(${src.imageData['32']})`
+      
+      const badge = actionElem.querySelector('.badge')
+      badge.style.display = src.text ? 'block' : 'none'
+      badge.textContent = src.text
+      badge.style.backgroundColor = src.color
+    })
   }
 }
 
