@@ -258,7 +258,10 @@ class Browser {
   async onWebContentsCreated(event, webContents) {
     console.log(webContents.getType(), webContents.getURL())
 
-    if (webContents.getType() === 'backgroundPage') {
+    // TODO: Need changes from this PR for properly assigned background page type
+    // https://github.com/electron/electron/pull/22217
+    // if (webContents.getType() === 'backgroundPage') {
+    if (webContents.getType() === 'remote' && webContents.getURL().startsWith('chrome-extension://')) {
       observeExtensionHost(webContents)
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
