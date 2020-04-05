@@ -252,7 +252,9 @@ class Browser {
     })
     this.windows.push(win)
 
-    win.webContents.openDevTools({ mode: 'detach' })
+    if (process.env.DEBUG) {
+      win.webContents.openDevTools({ mode: 'detach' })
+    }
   }
 
   async onWebContentsCreated(event, webContents) {
