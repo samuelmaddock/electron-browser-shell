@@ -14,7 +14,7 @@ const {
   createPopup,
   observeTab,
   observeExtensionHost
-} = require('./extensions.browser.js')
+} = require('./extensions.js')
 
 let webuiExtensionId
 
@@ -146,7 +146,7 @@ class Browser {
 
   async init() {
     session.defaultSession.setPreloads([
-      path.join(__dirname, 'extensions.renderer.js')
+      path.join(__dirname, '../renderer/extensions.js')
     ])
     const webuiExtension = await session.defaultSession.loadExtension(
       path.join(__dirname, 'ui')
@@ -159,7 +159,7 @@ class Browser {
       'new-tab.html'
     )
 
-    const installedExtensions = await loadExtensions(path.join(__dirname, '..', 'extensions'))
+    const installedExtensions = await loadExtensions(path.join(__dirname, '../../extensions'))
     extensions.browserAction.processExtensions(session.defaultSession, installedExtensions)
 
     ipcMain.handle('minimize-window', event =>
