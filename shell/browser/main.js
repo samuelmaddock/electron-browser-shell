@@ -201,6 +201,7 @@ class Browser {
     })
 
     extensions.tabs.on('create-tab-info', (tabInfo, webContents) => {
+      const win = this.getWindowFromWebContents(webContents)
       const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
       Object.assign(tabInfo, {
         active: tabInfo.id === selectedId,
