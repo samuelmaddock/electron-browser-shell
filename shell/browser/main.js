@@ -13,7 +13,8 @@ const {
   extensions,
   createPopup,
   observeTab,
-  observeExtensionHost
+  observeExtensionHost,
+  getParentWindowOfTab
 } = require('./extensions.js')
 
 let webuiExtensionId
@@ -123,20 +124,7 @@ class Browser {
   }
 
   getWindowFromWebContents(webContents) {
-    let window
-    switch (webContents.getType()) {
-      case 'window':
-        window = BrowserWindow.fromWebContents(webContents)
-        break
-      case 'browserView': {
-        const browserView = BrowserView.fromWebContents(webContents)
-        window = BrowserWindow.getAllWindows().find(win =>
-          win.getBrowserViews().includes(browserView)
-        )
-        break
-      }
-    }
-
+    const window = getParentWindowOfTab(webContents);
     return window ? this.windows.find(win => win.id === window.id) : null
   }
 
@@ -213,11 +201,9 @@ class Browser {
     })
 
     extensions.tabs.on('create-tab-info', (tabInfo, webContents) => {
-      const win = this.getWindowFromWebContents(webContents)
       const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
       Object.assign(tabInfo, {
         active: tabInfo.id === selectedId,
-        windowId: win.id,
         windowType: 'normal' // TODO
       })
     })
