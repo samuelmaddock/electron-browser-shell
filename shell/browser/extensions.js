@@ -301,7 +301,11 @@ class TabsAPI extends EventEmitter {
     // TODO: validate URL, prevent 'javascript:'
     if (props.url) await tab.loadURL(props.url)
 
-    if (props.muted) tab.setAudioMuted(props.muted)
+    if (typeof props.muted === 'boolean') tab.setAudioMuted(props.muted)
+
+    if (props.active) this.onActivated(tabId)
+
+    this.onUpdated(tabId);
 
     return this.createTabDetails(tab)
   }
@@ -373,10 +377,15 @@ class TabsAPI extends EventEmitter {
     if (!tab) return
     const win = getParentWindowOfTab(tab)
 
+    let activeChanged = true
+
     // invalidate cache since 'active' has changed
     this.detailsCache.forEach((tabInfo, cacheTab) => {
+      if (cacheTab.id === tabId) activeChanged = !tabInfo.active
       tabInfo.active = tabId === cacheTab.id
     })
+
+    if (!activeChanged) return
 
     sendToHosts('tabs.onActivated', {
       tabId,
