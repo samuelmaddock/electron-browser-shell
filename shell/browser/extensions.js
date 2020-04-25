@@ -21,14 +21,13 @@ const getParentWindowOfTab = tab => {
   switch (tab.getType()) {
     case 'window':
       return BrowserWindow.fromWebContents(tab)
-    case 'browserView': {
-      const browserView = BrowserView.fromWebContents(tab)
-      return BrowserWindow.getAllWindows().find(win =>
-        win.getBrowserViews().includes(browserView)
-      )
-    }
+    case 'browserView':
+    case 'webview':
+      return tab.getOwnerBrowserWindow()
   }
 }
+
+exports.getParentWindowOfTab = getParentWindowOfTab;
 
 const sendToHosts = (eventName, ...args) => {
   extensionHosts.forEach(host => {
@@ -166,7 +165,7 @@ class TabsAPI extends EventEmitter {
   }
 
   createTabDetails(tab) {
-    const win = BrowserWindow.fromWebContents(tab)
+    const win = getParentWindowOfTab(tab)
     const isMainFrame = win ? win.webContents === tab : false
     const [width = 0, height = 0] = win ? win.getSize() : []
 
