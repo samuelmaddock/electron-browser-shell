@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Shell Browser</title>
+    <style>
+      :root {
+        /* https://colorhunt.co/palette/161920 */
+        --bg-color: #39375b;
+        --text-color: #ececec;
+        --tab-color: #745c97;
+        --toolbar-control-color: #d597ce;
+      }
+      
+      *, *:before, *:after {
+        box-sizing: border-box;
+        user-select: none;
+      }
+
+      html {
+        background: #ececec;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        padding: 0;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
+        font-size: 16px;
+        color: var(--text-color);
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .topbar {
+        background: var(--bg-color);
+        height: 2rem;
+      }
+
+      /*----- TABS -----*/
+
+      #tabstrip {
+        width: 100%;
+        height: 2rem;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .tab-list {
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+      }
+
+      #createtab {
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-weight: bold;
+        font-family: 'Courier New', Courier, monospace;
+      }
+
+      #createtab:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      .tab {
+        padding: 0.2rem 0.4rem;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        width: 12rem;
+        box-shadow: inset -1px 0 0 0 rgba(0,0,0,0.33);
+      }
+
+      .tab[data-active] {
+        background: var(--tab-color);
+      }
+
+      .tab .favicon[src] {
+        width: 16px;
+        height: 16px;
+        margin-right: 0.2rem;
+      }
+      
+      .tab .title {
+        white-space: nowrap;
+        flex: 1 1 auto;
+        min-width: 0;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        font-size: 0.725rem;
+        user-select: none;
+      }
+
+      .tab .controls {
+        flex: 0 0 auto;
+        font-size: 0;
+      }
+
+      .tab .controls .control {
+        background: rgba(0,0,0,0.2);
+        border: none;
+        border-radius: 50%;
+        padding: 0;
+        margin-left: 0.2rem;
+        width: 1rem;
+        height: 1rem;
+        color: #aaa;
+        font-size: 0.7rem;
+        vertical-align: middle;
+        line-height: 0;
+      }
+
+      .tab .controls .control:disabled {
+        display: none;
+      }
+
+      .app-drag {
+        flex: 1 1 auto;
+        -webkit-app-region: drag;
+        height: calc(100% - 5px);
+        align-self: flex-end;
+      }
+      
+      .window-controls {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .window-controls .control {
+        width: 2.5rem;
+        background: none;
+        border: none;
+        color: #fff;
+      }
+
+      .window-controls .control:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /*----- TOOLBAR -----*/
+
+      .toolbar {
+        height: 1.875rem;
+        background-color: var(--tab-color);
+        display: flex;
+        align-items: center;
+        padding: 0.2rem 0.5rem;
+      }
+
+      .toolbar .page-controls {
+        margin-right: 0.5rem;
+      }
+      
+      .address-bar {
+        flex: 1 0 auto;
+        line-height: 0;
+        height: 100%;
+      }
+
+      .address-bar input {
+        width: 100%;
+        height: 100%;
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 2rem;
+        padding: 0 0.5rem;
+        outline: none;
+      }
+
+      .toolbar .control {
+        background: none;
+        border: none;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0;
+        line-height: 0;
+      }
+
+      .toolbar #actions {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .toolbar .action {
+        width: 24px;
+        height: 24px;
+        background-size: contain;
+      }
+
+      .toolbar .action .badge {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div id="tabstrip">
+        <ul class="tab-list">
+          <template id="tabtemplate">
+            <li class="tab">
+              <img class="favicon" />
+              <span class="title"></span>
+              <div class="controls">
+                <button class="control audio" disabled>🔊</button>
+                <button class="control close">🗙</button>
+              </div>
+            </li>
+          </template>
+        </ul>
+        <button id="createtab">+</button>
+        <div class="app-drag"></div>
+        <div class="window-controls">
+          <button id="minimize" class="control">🗕</button>
+          <button id="maximize" class="control">🗖</button>
+          <button id="close" class="control">🗙</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="page-controls">
+          <button id="reload" class="control">🔄</button>
+        </div>
+        <div class="address-bar">
+          <input id="addressurl" spellcheck="false" />
+        </div>
+        <ul id="actions">
+          <template id="actiontemplate">
+            <li class="action">
+              <div class="badge"></div>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script src="./webui.js"></script>
+  </body>
+</html>
