@@ -1,6 +1,6 @@
-import { session, ipcMain, nativeImage } from 'electron'
+import { session, ipcMain } from 'electron'
 import { EventEmitter } from 'events'
-import * as path from 'path'
+import { getIconImage } from './common'
 
 interface ExtensionAction {
   backgroundColor?: string
@@ -71,22 +71,6 @@ export class BrowserActionAPI extends EventEmitter {
     return action
   }
 
-  private processIcon(extension: Electron.Extension) {
-    const { browser_action } = extension.manifest
-    const { default_icon } = browser_action
-
-    if (typeof default_icon === 'string') {
-      const iconPath = path.join(extension.path, default_icon)
-      const image = nativeImage.createFromPath(iconPath)
-      return image.toDataURL()
-    } else if (typeof default_icon === 'object') {
-      const key = Object.keys(default_icon).pop() as any
-      const iconPath = path.join(extension.path, default_icon[key])
-      const image = nativeImage.createFromPath(iconPath)
-      return image.toDataURL()
-    }
-  }
-
   getPopupPath(session: Electron.Session, extensionId: string, tabId: string) {
     const action = this.getAction(session, extensionId)
     return action.tabs[tabId]?.popup?.path
@@ -101,8 +85,8 @@ export class BrowserActionAPI extends EventEmitter {
 
         action.title = browser_action.default_title || manifest.name
 
-        const icon = this.processIcon(extension)
-        if (icon) action.icon = icon
+        const iconImage = getIconImage(extension)
+        if (iconImage) action.icon = iconImage.toDataURL()
       }
     }
 

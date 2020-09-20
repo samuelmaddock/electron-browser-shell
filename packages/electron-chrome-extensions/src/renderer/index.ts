@@ -174,9 +174,11 @@ export const injectExtensionAPIs = () => {
     })
 
     let menuCounter = 0
+    const menuCallbacks: { [key: string]: chrome.contextMenus.CreateProperties['onclick'] } = {}
     const menuCreate = invokeExtension('contextMenus.create', { extensionId })
 
     const contextMenus: Partial<typeof chrome.contextMenus> = {
+      ...chrome.contextMenus,
       create: function (
         createProperties: chrome.contextMenus.CreateProperties,
         callback?: Function
@@ -184,14 +186,24 @@ export const injectExtensionAPIs = () => {
         if (typeof createProperties.id === 'undefined') {
           createProperties.id = `${++menuCounter}`
         }
+        if (createProperties.onclick) {
+          menuCallbacks[createProperties.id] = createProperties.onclick
+          delete createProperties.onclick
+        }
         menuCreate(createProperties, callback)
         return createProperties.id
       },
       update: invokeExtension('contextMenus.update', { noop: true }),
-      remove: invokeExtension('contextMenus.remove', { noop: true }),
-      removeAll: invokeExtension('contextMenus.removeAll', { noop: true }),
+      remove: invokeExtension('contextMenus.remove', { extensionId }),
+      removeAll: invokeExtension('contextMenus.removeAll', { extensionId }),
       onClicked: new ExtensionEvent('contextMenus.onClicked'),
     }
+
+    contextMenus.onClicked?.addListener((info, tab) => {
+      // TODO: test this
+      const callback = menuCallbacks[info.menuItemId]
+      if (callback && tab) callback(info, tab)
+    })
 
     const tabs: Partial<typeof chrome.tabs> = {
       ...chrome.tabs,

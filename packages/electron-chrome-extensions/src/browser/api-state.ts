@@ -12,6 +12,6 @@ export class ExtensionAPIState {
   }
 
   getTabById(tabId: number) {
-    return Array.from(this.tabs).find((tab) => tab.id === tabId)
+    return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
 }

@@ -14,16 +14,19 @@ class Tab {
 
   destroy() {
     this.hide()
-    this.window.removeBrowserView(this.view)
-    this.webContents = undefined
-    this.window = undefined
 
-    if (this.view.webContents.isDevToolsOpened()) {
-      this.view.webContents.closeDevTools()
+    this.window.removeBrowserView(this.view)
+    this.window = undefined
+    
+    if (this.webContents.isDevToolsOpened()) {
+      this.webContents.closeDevTools()
     }
 
     // TODO: why is this no longer called?
-    this.view.webContents.emit('destroyed')
+    this.webContents.emit('destroyed')
+    
+    this.webContents.destroy()
+    this.webContents = undefined
 
     this.view = undefined
   }
@@ -75,7 +78,6 @@ class Tabs extends EventEmitter {
   create() {
     const tab = new Tab(this.window)
     this.tabList.push(tab)
-    tab.loadURL('about:blank')
     if (!this.selected) this.selected = tab
     tab.show() // must be attached to window
     this.emit('tab-created', tab)

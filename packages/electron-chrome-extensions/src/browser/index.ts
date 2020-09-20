@@ -13,7 +13,7 @@ export class Extensions {
   state: ExtensionAPIState
 
   browserAction = new BrowserActionAPI()
-  contextMenus = new ContextMenusAPI()
+  contextMenus: ContextMenusAPI
   tabs: TabsAPI
   webNavigation: WebNavigationAPI
   windows: WindowsAPI
@@ -21,6 +21,7 @@ export class Extensions {
   constructor(session: Electron.Session) {
     this.state = new ExtensionAPIState(session)
 
+    this.contextMenus = new ContextMenusAPI(this.state)
     this.tabs = new TabsAPI(this.state)
     this.webNavigation = new WebNavigationAPI(this.state)
     this.windows = new WindowsAPI(this.state)

@@ -1,6 +1,6 @@
 const path = require('path')
 const { promises: fs } = require('fs')
-const { app, session, ipcMain, BrowserWindow, BrowserView } = require('electron')
+const { app, session, BrowserWindow, Menu, MenuItem, clipboard } = require('electron')
 
 const { Tabs } = require('./tabs')
 const { Extensions } = require('electron-chrome-extensions')
@@ -255,6 +255,65 @@ class Browser {
     return win
   }
 
+  createContextMenu(webContents, params) {
+    const menu = new Menu()
+
+    const win = this.getFocusedWindow()
+
+    if (params.linkURL) {
+      menu.append(new MenuItem({
+        label: 'Open link in new tab',
+        click: () => {
+          const tab = win.tabs.create()
+          tab.loadURL(params.linkURL)
+        }
+      }))
+      menu.append(new MenuItem({
+        label: 'Open link in new window',
+        click: () => {
+          this.createWindow({ initialUrl: params.linkURL })
+        }
+      }))
+    } else if (params.selectionText) {
+      menu.append(new MenuItem({
+        label: 'Copy',
+        click: () => {
+          clipboard.writeText(params.selectionText)
+        }
+      }))
+    } else {
+      menu.append(new MenuItem({
+        label: 'Back',
+        enabled: webContents.canGoBack(),
+        click: () => webContents.goBack()
+      }))
+      menu.append(new MenuItem({
+        label: 'Forward',
+        enabled: webContents.canGoForward(),
+        click: () => webContents.goForward()
+      }))
+      menu.append(new MenuItem({
+        label: 'Reload',
+        click: () => webContents.reload()
+      }))
+    }
+
+    menu.append(new MenuItem({ type: 'separator' }))
+
+    const items = this.extensions.contextMenus.buildMenuItems(params)
+    items.forEach((item) => menu.append(item))
+    if (items.length > 0) menu.append(new MenuItem({ type: 'separator' }))
+
+    menu.append(new MenuItem({
+      label: 'Inspect',
+      click: () => {
+        webContents.openDevTools()
+      }
+    }))
+    
+    menu.popup()
+  }
+
   async onWebContentsCreated(event, webContents) {
     const type = webContents.getType()
     const url = webContents.getURL()
@@ -282,6 +341,10 @@ class Browser {
           tab.loadURL(url)
           break
       }
+    })
+
+    webContents.on('context-menu', (event, params) => {
+      this.createContextMenu(webContents, params)
     })
   }
 }
