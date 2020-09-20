@@ -1,9 +1,9 @@
-const path = require('path');
-const webpack = require('webpack');
+const path = require('path')
+const webpack = require('webpack')
 
 const base = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  
+
   module: {
     rules: [
       {
@@ -31,16 +31,16 @@ const base = {
 
     new webpack.NamedModulesPlugin(),
   ],
-};
+}
 
 const main = {
   ...base,
   devtool: 'source-map',
 
   target: 'electron-main',
-  
+
   entry: {
-    index: './src/index.ts'
+    index: './src/index.ts',
   },
 
   output: {
@@ -54,11 +54,11 @@ const preload = {
   ...base,
 
   devtool: 'source-map',
-  
+
   target: 'electron-preload',
-  
+
   entry: {
-    preload: './src/preload.ts'
+    preload: './src/preload.ts',
   },
 
   output: {

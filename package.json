@@ -18,6 +18,7 @@
     "printWidth": 100,
     "singleQuote": true,
     "jsonEnable": false,
-    "semi": false
+    "semi": false,
+    "endOfLine": "lf"
   }
 }
