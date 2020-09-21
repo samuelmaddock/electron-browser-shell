@@ -34,7 +34,15 @@ export const injectExtensionAPIs = () => {
       args.splice(0, 0, options.extensionId)
     }
 
-    const result = await ipcRenderer.invoke(fnName, ...args)
+    let result
+
+    try {
+      result = await ipcRenderer.invoke(fnName, ...args)
+    } catch (e) {
+      // TODO: Set chrome.runtime.lastError?
+      console.error(e)
+      result = null
+    }
 
     if (process.env.NODE_ENV === 'development') {
       console.log(fnName, '(result)', result)
@@ -200,7 +208,6 @@ export const injectExtensionAPIs = () => {
     }
 
     contextMenus.onClicked?.addListener((info, tab) => {
-      // TODO: test this
       const callback = menuCallbacks[info.menuItemId]
       if (callback && tab) callback(info, tab)
     })

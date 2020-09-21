@@ -66,6 +66,10 @@ const getParentWindowOfTab = (tab) => {
     case 'browserView':
     case 'webview':
       return tab.getOwnerBrowserWindow()
+    case 'backgroundPage':
+      return BrowserWindow.getFocusedWindow()
+    default:
+      throw new Error(`Unable to find parent window of '${tab.getType()}'`)
   }
 }
 
@@ -312,7 +316,7 @@ class Browser {
 
     menu.append(new MenuItem({ type: 'separator' }))
 
-    const items = this.extensions.contextMenus.buildMenuItems(params)
+    const items = this.extensions.contextMenus.buildMenuItems(webContents, params)
     items.forEach((item) => menu.append(item))
     if (items.length > 0) menu.append(new MenuItem({ type: 'separator' }))
 

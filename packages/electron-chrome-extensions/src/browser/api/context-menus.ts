@@ -2,7 +2,7 @@ import { app, ipcMain, Menu, MenuItem } from 'electron'
 import { EventEmitter } from 'events'
 import { MenuItemConstructorOptions } from 'electron/main'
 import { ExtensionAPIState } from '../api-state'
-import { getIconPath } from './common'
+import { getIconPath, matchesPattern } from './common'
 
 type ContextItemProps = chrome.contextMenus.CreateProperties
 
@@ -21,6 +21,8 @@ type ContextType =
   | 'page_action'
   | 'action'
 
+const DEFAULT_CONTEXTS = ['page']
+
 const getContextTypesFromParams = (params: Electron.ContextMenuParams): Set<ContextType> => {
   const contexts = new Set<ContextType>(['all'])
 
@@ -38,6 +40,13 @@ const getContextTypesFromParams = (params: Electron.ContextMenuParams): Set<Cont
   if (params.isEditable) contexts.add('editable')
 
   return contexts
+}
+
+const formatTitle = (title: string, params: Electron.ContextMenuParams) => {
+  if (params.selectionText && title.includes('%s')) {
+    title = title.split('%s').join(params.selectionText)
+  }
+  return title
 }
 
 export class ContextMenusAPI extends EventEmitter {
@@ -69,41 +78,57 @@ export class ContextMenusAPI extends EventEmitter {
     contextItems.set(props.id!, props)
   }
 
-  buildMenuItems(params: Electron.ContextMenuParams) {
+  buildMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
     const buildMenuItem = (extension: Electron.Extension, props: ContextItemProps) => {
       const menuItemOptions: MenuItemConstructorOptions = {
         id: props.id,
         type: props.type as any,
-        label: props.title,
+        label: formatTitle(props.title || '', params),
         icon: getIconPath(extension),
         click: () => {
-          // TODO
-          this.onClicked({} as any, {})
+          this.onClicked(extension.id, props.id!, params, webContents)
         },
       }
       const menuItem = new MenuItem(menuItemOptions)
       return menuItem
     }
 
+    const matchesConditions = (props: ContextItemProps) => {
+      if (props.enabled === false) return false
+
+      const contexts = props.contexts || DEFAULT_CONTEXTS
+      const contextTypes = getContextTypesFromParams(params)
+      const inContext = contexts.some((context) => contextTypes.has(context as ContextType))
+      if (!inContext) return false
+
+      const targetUrl = params.srcURL || params.linkURL
+      if (props.targetUrlPatterns && props.targetUrlPatterns.length > 0 && targetUrl) {
+        if (!props.targetUrlPatterns.some((pattern) => matchesPattern(pattern, targetUrl))) {
+          return false
+        }
+      }
+
+      const documentUrl = params.frameURL || params.pageURL
+      if (props.documentUrlPatterns && props.documentUrlPatterns.length > 0) {
+        if (!props.documentUrlPatterns.some((pattern) => matchesPattern(pattern, documentUrl))) {
+          return false
+        }
+      }
+
+      return true
+    }
+
     const menuItems = []
-    const contextTypes = getContextTypesFromParams(params)
 
     for (const [extensionId, propItems] of this.menus) {
       const extension = this.state.session.getExtension(extensionId)
       if (!extension) continue
 
       for (const [, props] of propItems) {
-        if (props.enabled === false) continue
-
-        if (props.contexts) {
-          const inContext = props.contexts.some((context) =>
-            contextTypes.has(context as ContextType)
-          )
-          if (!inContext) continue
+        if (matchesConditions(props)) {
+          const menuItem = buildMenuItem(extension, props)
+          menuItems.push(menuItem)
         }
-
-        const menuItem = buildMenuItem(extension, props)
-        menuItems.push(menuItem)
       }
     }
 
@@ -152,7 +177,34 @@ export class ContextMenusAPI extends EventEmitter {
     this.menus.delete(extensionId)
   }
 
-  private onClicked(info: chrome.contextMenus.OnClickData, tab: any) {
-    this.state.sendToHosts('tabs.onCreated', info, tab)
+  private onClicked(
+    extensionId: string,
+    menuItemId: string,
+    params: Electron.ContextMenuParams,
+    webContents: Electron.WebContents
+  ) {
+    if (webContents.isDestroyed()) return
+
+    const tab = this.state.tabDetailsCache.get(webContents.id)
+    if (!tab) {
+      throw new Error(`[Extensions] Unable to find tab for id=${webContents.id}`)
+    }
+
+    const data: chrome.contextMenus.OnClickData = {
+      selectionText: params.selectionText,
+      checked: false, // TODO
+      menuItemId,
+      frameId: -1, // TODO
+      frameUrl: params.frameURL,
+      editable: params.isEditable,
+      mediaType: params.mediaType,
+      wasChecked: false, // TODO
+      pageUrl: params.pageURL,
+      linkUrl: params.linkURL,
+      parentMenuItemId: -1, // TODO
+      srcUrl: params.srcURL,
+    }
+
+    this.state.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
   }
 }

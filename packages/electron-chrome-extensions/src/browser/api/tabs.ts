@@ -8,7 +8,6 @@ export class TabsAPI extends EventEmitter {
   static TAB_ID_NONE = -1
 
   private activeTabId?: number
-  private detailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
 
   constructor(private state: ExtensionAPIState) {
     super()
@@ -55,13 +54,13 @@ export class TabsAPI extends EventEmitter {
       this.activeTabId = tab.id
     }
 
-    this.detailsCache.set(tab.id, details)
+    this.state.tabDetailsCache.set(tab.id, details)
     return details
   }
 
   private getTabDetails(tab: TabContents) {
-    if (this.detailsCache.has(tab.id)) {
-      return this.detailsCache.get(tab.id)
+    if (this.state.tabDetailsCache.has(tab.id)) {
+      return this.state.tabDetailsCache.get(tab.id)
     }
     const details = this.createTabDetails(tab)
     return details
@@ -206,8 +205,8 @@ export class TabsAPI extends EventEmitter {
     if (!tab) return
 
     let prevDetails
-    if (this.detailsCache.has(tab.id)) {
-      prevDetails = this.detailsCache.get(tab.id)
+    if (this.state.tabDetailsCache.has(tab.id)) {
+      prevDetails = this.state.tabDetailsCache.get(tab.id)
     }
     if (!prevDetails) return
 
@@ -241,8 +240,10 @@ export class TabsAPI extends EventEmitter {
   }
 
   onRemoved(tabId: number) {
-    const details = this.detailsCache.has(tabId) ? this.detailsCache.get(tabId) : null
-    this.detailsCache.delete(tabId)
+    const details = this.state.tabDetailsCache.has(tabId)
+      ? this.state.tabDetailsCache.get(tabId)
+      : null
+    this.state.tabDetailsCache.delete(tabId)
 
     const windowId = details ? details.windowId : WindowsAPI.WINDOW_ID_NONE
     const win =
@@ -264,7 +265,7 @@ export class TabsAPI extends EventEmitter {
     let activeChanged = true
 
     // invalidate cache since 'active' has changed
-    this.detailsCache.forEach((tabInfo, cacheTabId) => {
+    this.state.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
       if (cacheTabId === tabId) activeChanged = !tabInfo.active
       tabInfo.active = tabId === cacheTabId
     })
