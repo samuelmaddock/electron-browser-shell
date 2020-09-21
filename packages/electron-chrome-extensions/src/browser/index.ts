@@ -3,14 +3,14 @@ import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
-import { ExtensionAPIState } from './api-state'
+import { ExtensionStore } from './store'
 import { TabContents } from './api/common'
 import { ContextMenusAPI } from './api/context-menus'
 
 // TODO: support for non-default session
 
 export class Extensions {
-  state: ExtensionAPIState
+  state: ExtensionStore
 
   browserAction = new BrowserActionAPI()
   contextMenus: ContextMenusAPI
@@ -19,7 +19,7 @@ export class Extensions {
   windows: WindowsAPI
 
   constructor(session: Electron.Session) {
-    this.state = new ExtensionAPIState(session)
+    this.state = new ExtensionStore(session)
 
     this.contextMenus = new ContextMenusAPI(this.state)
     this.tabs = new TabsAPI(this.state)

@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { EventEmitter } from 'events'
-import { ExtensionAPIState } from '../api-state'
+import { ExtensionStore } from '../store'
 import { getParentWindowOfTab } from './common'
 
 const getWindowState = (win: BrowserWindow): chrome.windows.Window['state'] => {
@@ -16,7 +16,7 @@ export class WindowsAPI extends EventEmitter {
 
   private detailsCache = new WeakMap<Electron.BrowserWindow, Partial<chrome.windows.Window>>()
 
-  constructor(private state: ExtensionAPIState) {
+  constructor(private store: ExtensionStore) {
     super()
     ipcMain.handle('windows.get', this.get.bind(this))
     ipcMain.handle('windows.create', this.create.bind(this))
@@ -88,7 +88,7 @@ export class WindowsAPI extends EventEmitter {
     updateProperties: chrome.windows.UpdateInfo = {}
   ) {
     const win = this.getWindowFromId(event.sender, windowId)
-    if (!win || win.webContents.session !== this.state.session) return
+    if (!win || win.webContents.session !== this.store.session) return
 
     const props = updateProperties
 

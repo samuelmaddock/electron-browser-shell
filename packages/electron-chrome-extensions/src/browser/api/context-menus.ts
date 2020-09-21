@@ -1,7 +1,7 @@
 import { app, ipcMain, Menu, MenuItem } from 'electron'
 import { EventEmitter } from 'events'
 import { MenuItemConstructorOptions } from 'electron/main'
-import { ExtensionAPIState } from '../api-state'
+import { ExtensionStore } from '../store'
 import { getIconPath, matchesPattern } from './common'
 
 type ContextItemProps = chrome.contextMenus.CreateProperties
@@ -55,14 +55,14 @@ export class ContextMenusAPI extends EventEmitter {
     Map</* menuItemId */ string, ContextItemProps>
   >()
 
-  constructor(private state: ExtensionAPIState) {
+  constructor(private store: ExtensionStore) {
     super()
 
     ipcMain.handle('contextMenus.create', this.create)
     ipcMain.handle('contextMenus.remove', this.remove)
     ipcMain.handle('contextMenus.removeAll', this.removeAll)
 
-    this.state.session.on('extension-unloaded' as any, (event, extensionId) => {
+    this.store.session.on('extension-unloaded' as any, (event, extensionId) => {
       if (this.menus.has(extensionId)) {
         this.menus.delete(extensionId)
       }
@@ -121,7 +121,7 @@ export class ContextMenusAPI extends EventEmitter {
     const menuItems = []
 
     for (const [extensionId, propItems] of this.menus) {
-      const extension = this.state.session.getExtension(extensionId)
+      const extension = this.store.session.getExtension(extensionId)
       if (!extension) continue
 
       for (const [, props] of propItems) {
@@ -185,7 +185,7 @@ export class ContextMenusAPI extends EventEmitter {
   ) {
     if (webContents.isDestroyed()) return
 
-    const tab = this.state.tabDetailsCache.get(webContents.id)
+    const tab = this.store.tabDetailsCache.get(webContents.id)
     if (!tab) {
       throw new Error(`[Extensions] Unable to find tab for id=${webContents.id}`)
     }
@@ -205,6 +205,6 @@ export class ContextMenusAPI extends EventEmitter {
       srcUrl: params.srcURL,
     }
 
-    this.state.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
+    this.store.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
   }
 }

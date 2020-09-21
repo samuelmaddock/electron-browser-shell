@@ -1,4 +1,4 @@
-export class ExtensionAPIState {
+export class ExtensionStore {
   tabs = new Set<Electron.WebContents>()
   extensionHosts = new Set<Electron.WebContents>()
 

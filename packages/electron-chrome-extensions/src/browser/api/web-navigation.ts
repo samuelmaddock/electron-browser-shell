@@ -1,4 +1,4 @@
-import { ExtensionAPIState } from '../api-state'
+import { ExtensionStore } from '../store'
 import { ipcMain } from 'electron'
 
 type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
@@ -6,7 +6,7 @@ type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigation
 }
 
 export class WebNavigationAPI {
-  constructor(private state: ExtensionAPIState) {
+  constructor(private store: ExtensionStore) {
     ipcMain.handle('webNavigation.getFrame', this.getFrame.bind(this))
   }
 
@@ -20,7 +20,7 @@ export class WebNavigationAPI {
     event: Electron.IpcMainInvokeEvent,
     details: chrome.webNavigation.GetFrameDetails
   ): chrome.webNavigation.GetFrameResultDetails | null {
-    const tab = this.state.getTabById(details.tabId)
+    const tab = this.store.getTabById(details.tabId)
     if (!tab) return null
 
     if (typeof details.processId === 'number' && tab.getProcessId() !== details.processId)
@@ -53,7 +53,7 @@ export class WebNavigationAPI {
       tabId: tab.id,
       timeStamp: Date.now(),
     }
-    this.state.sendToHosts('webNavigation.onCreatedNavigationTarget', details)
+    this.store.sendToHosts('webNavigation.onCreatedNavigationTarget', details)
   }
 
   private onCommitted = (
@@ -73,7 +73,7 @@ export class WebNavigationAPI {
       timeStamp: Date.now(),
       url,
     }
-    this.state.sendToHosts('webNavigation.onCommitted', details)
+    this.store.sendToHosts('webNavigation.onCommitted', details)
   }
 
   private onHistoryStateUpdated = (
@@ -94,6 +94,6 @@ export class WebNavigationAPI {
       timeStamp: Date.now(),
       url,
     }
-    this.state.sendToHosts('webNavigation.onHistoryStateUpdated', details)
+    this.store.sendToHosts('webNavigation.onHistoryStateUpdated', details)
   }
 }

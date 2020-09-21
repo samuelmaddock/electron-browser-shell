@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { EventEmitter } from 'events'
-import { ExtensionAPIState } from '../api-state'
+import { ExtensionStore } from '../store'
 import { getParentWindowOfTab, TabContents } from './common'
 import { WindowsAPI } from './windows'
 
@@ -9,7 +9,7 @@ export class TabsAPI extends EventEmitter {
 
   private activeTabId?: number
 
-  constructor(private state: ExtensionAPIState) {
+  constructor(private store: ExtensionStore) {
     super()
 
     ipcMain.handle('tabs.get', this.get.bind(this))
@@ -54,20 +54,20 @@ export class TabsAPI extends EventEmitter {
       this.activeTabId = tab.id
     }
 
-    this.state.tabDetailsCache.set(tab.id, details)
+    this.store.tabDetailsCache.set(tab.id, details)
     return details
   }
 
   private getTabDetails(tab: TabContents) {
-    if (this.state.tabDetailsCache.has(tab.id)) {
-      return this.state.tabDetailsCache.get(tab.id)
+    if (this.store.tabDetailsCache.has(tab.id)) {
+      return this.store.tabDetailsCache.get(tab.id)
     }
     const details = this.createTabDetails(tab)
     return details
   }
 
   private get(event: Electron.IpcMainInvokeEvent, tabId: number) {
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
   }
@@ -75,7 +75,7 @@ export class TabsAPI extends EventEmitter {
   private getAllInWindow(event: Electron.IpcMainInvokeEvent, windowId?: number) {
     const targetWindowId = windowId || getParentWindowOfTab(event.sender)?.id
 
-    const tabsInWindow = Array.from(this.state.tabs)
+    const tabsInWindow = Array.from(this.store.tabs)
       .filter((tab) => {
         const tabWindow = getParentWindowOfTab(tab)
         return tabWindow ? targetWindowId === tabWindow.id : false
@@ -91,7 +91,7 @@ export class TabsAPI extends EventEmitter {
         if (err) {
           reject()
         } else {
-          const tab = this.state.getTabById(tabId)
+          const tab = this.store.getTabById(tabId)
           resolve(tab ? this.getTabDetails(tab) : {})
         }
       })
@@ -103,7 +103,7 @@ export class TabsAPI extends EventEmitter {
     tabId: number,
     details: chrome.tabs.InjectDetails
   ) {
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return
 
     // TODO: move to webFrame in renderer?
@@ -115,7 +115,7 @@ export class TabsAPI extends EventEmitter {
   private query(event: Electron.IpcMainInvokeEvent, info: chrome.tabs.QueryInfo = {}) {
     const isSet = (value: any) => typeof value !== 'undefined'
 
-    const filteredTabs = Array.from(this.state.tabs)
+    const filteredTabs = Array.from(this.store.tabs)
       .map(this.getTabDetails.bind(this))
       .filter((tab) => {
         if (!tab) return false
@@ -151,8 +151,8 @@ export class TabsAPI extends EventEmitter {
     tabId?: number,
     reloadProperties: chrome.tabs.ReloadProperties = {}
   ) {
-    const tab = this.state.getTabById(
-      tabId || this.activeTabId || Array.from(this.state.tabs)[0].id
+    const tab = this.store.getTabById(
+      tabId || this.activeTabId || Array.from(this.store.tabs)[0].id
     )
     if (!tab) return
     if (reloadProperties.bypassCache) {
@@ -167,7 +167,7 @@ export class TabsAPI extends EventEmitter {
     const updateProperties: chrome.tabs.UpdateProperties =
       (typeof arg1 === 'object' ? (arg1 as any) : (arg2 as any)) || {}
 
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return
 
     const props = updateProperties
@@ -194,19 +194,19 @@ export class TabsAPI extends EventEmitter {
   }
 
   onCreated(tabId: number) {
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return
     const tabDetails = this.getTabDetails(tab)
-    this.state.sendToHosts('tabs.onCreated', tabDetails)
+    this.store.sendToHosts('tabs.onCreated', tabDetails)
   }
 
   onUpdated(tabId: number) {
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return
 
     let prevDetails
-    if (this.state.tabDetailsCache.has(tab.id)) {
-      prevDetails = this.state.tabDetailsCache.get(tab.id)
+    if (this.store.tabDetailsCache.has(tab.id)) {
+      prevDetails = this.store.tabDetailsCache.get(tab.id)
     }
     if (!prevDetails) return
 
@@ -236,14 +236,14 @@ export class TabsAPI extends EventEmitter {
 
     if (!didUpdate) return
 
-    this.state.sendToHosts('tabs.onUpdated', tab.id, changeInfo, details)
+    this.store.sendToHosts('tabs.onUpdated', tab.id, changeInfo, details)
   }
 
   onRemoved(tabId: number) {
-    const details = this.state.tabDetailsCache.has(tabId)
-      ? this.state.tabDetailsCache.get(tabId)
+    const details = this.store.tabDetailsCache.has(tabId)
+      ? this.store.tabDetailsCache.get(tabId)
       : null
-    this.state.tabDetailsCache.delete(tabId)
+    this.store.tabDetailsCache.delete(tabId)
 
     const windowId = details ? details.windowId : WindowsAPI.WINDOW_ID_NONE
     const win =
@@ -251,28 +251,28 @@ export class TabsAPI extends EventEmitter {
         ? BrowserWindow.getAllWindows().find((win) => win.id === windowId)
         : null
 
-    this.state.sendToHosts('tabs.onRemoved', tabId, {
+    this.store.sendToHosts('tabs.onRemoved', tabId, {
       windowId,
       isWindowClosing: win ? win.isDestroyed() : false,
     })
   }
 
   onActivated(tabId: number) {
-    const tab = this.state.getTabById(tabId)
+    const tab = this.store.getTabById(tabId)
     if (!tab) return
     const win = getParentWindowOfTab(tab)
 
     let activeChanged = true
 
     // invalidate cache since 'active' has changed
-    this.state.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
+    this.store.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
       if (cacheTabId === tabId) activeChanged = !tabInfo.active
       tabInfo.active = tabId === cacheTabId
     })
 
     if (!activeChanged) return
 
-    this.state.sendToHosts('tabs.onActivated', {
+    this.store.sendToHosts('tabs.onActivated', {
       tabId,
       windowId: win?.id,
     })
