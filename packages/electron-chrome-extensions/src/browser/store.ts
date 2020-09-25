@@ -3,6 +3,7 @@ export class ExtensionStore {
   extensionHosts = new Set<Electron.WebContents>()
 
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
+  windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
 
   constructor(public session: Electron.Session) {}
 

@@ -20,6 +20,8 @@ export class TabsAPI extends EventEmitter {
     ipcMain.handle('tabs.reload', this.reload.bind(this))
     ipcMain.handle('tabs.update', this.update.bind(this))
     ipcMain.handle('tabs.remove', this.remove.bind(this))
+    ipcMain.handle('tabs.goForward', this.goForward.bind(this))
+    ipcMain.handle('tabs.goBack', this.goBack.bind(this))
   }
 
   private createTabDetails(tab: TabContents) {
@@ -27,7 +29,7 @@ export class TabsAPI extends EventEmitter {
     const isMainFrame = win ? win.webContents === tab : false
     const [width = 0, height = 0] = win ? win.getSize() : []
 
-    const details: Partial<chrome.tabs.Tab> = {
+    const details: chrome.tabs.Tab = {
       active: false,
       audible: tab.isCurrentlyAudible(),
       autoDiscardable: true,
@@ -37,7 +39,7 @@ export class TabsAPI extends EventEmitter {
       highlighted: false,
       id: tab.id,
       incognito: false,
-      // index: 0,
+      index: -1, // TODO
       mutedInfo: { muted: tab.audioMuted },
       pinned: false,
       selected: true,
@@ -191,6 +193,20 @@ export class TabsAPI extends EventEmitter {
       this.emit('remove-tab', event, tabId)
       this.onRemoved(tabId)
     })
+  }
+
+  private goForward(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
+    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.activeTabId || -1
+    const tab = this.store.getTabById(tabId)
+    if (!tab) return
+    tab.goForward()
+  }
+
+  private goBack(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
+    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.activeTabId || -1
+    const tab = this.store.getTabById(tabId)
+    if (!tab) return
+    tab.goBack()
   }
 
   onCreated(tabId: number) {

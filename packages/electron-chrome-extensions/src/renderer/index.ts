@@ -222,6 +222,8 @@ export const injectExtensionAPIs = () => {
       reload: invokeExtension('tabs.reload'),
       update: invokeExtension('tabs.update'),
       remove: invokeExtension('tabs.remove'),
+      goBack: invokeExtension('tabs.goBack'),
+      goForward: invokeExtension('tabs.goForward'),
       onCreated: new ExtensionEvent('tabs.onCreated'),
       onRemoved: new ExtensionEvent('tabs.onRemoved'),
       onUpdated: new ExtensionEvent('tabs.onUpdated'),

@@ -56,13 +56,13 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.tabs.captureVisibleTab
 - [x] chrome.tabs.executeScript
 - [x] chrome.tabs.insertCSS
-- [ ] chrome.tabs.setZoom
-- [ ] chrome.tabs.getZoom
-- [ ] chrome.tabs.setZoomSettings
-- [ ] chrome.tabs.getZoomSettings
+- [x] chrome.tabs.setZoom
+- [x] chrome.tabs.getZoom
+- [x] chrome.tabs.setZoomSettings
+- [x] chrome.tabs.getZoomSettings
 - [ ] chrome.tabs.discard
-- [ ] chrome.tabs.goForward
-- [ ] chrome.tabs.goBack
+- [x] chrome.tabs.goForward
+- [x] chrome.tabs.goBack
 - [x] chrome.tabs.onCreated
 - [x] chrome.tabs.onUpdated
 - [ ] chrome.tabs.onMoved

@@ -11,6 +11,8 @@ class WebUI {
       tabList: $('#tabstrip .tab-list'),
       tabTemplate: $('#tabtemplate'),
       createTabButton: $('#createtab'),
+      goBackButton: $('#goback'),
+      goForwardButton: $('#goforward'),
       reloadButton: $('#reload'),
       addressUrl: $('#addressurl'),
 
@@ -22,8 +24,10 @@ class WebUI {
       closeButton: $('#close'),
     }
 
-    this.$.createTabButton.addEventListener('click', this.onCreateTab.bind(this))
-    this.$.reloadButton.addEventListener('click', this.reloadTab.bind(this))
+    this.$.createTabButton.addEventListener('click', () => chrome.tabs.create())
+    this.$.goBackButton.addEventListener('click', () => chrome.tabs.goBack())
+    this.$.goForwardButton.addEventListener('click', () => chrome.tabs.goForward())
+    this.$.reloadButton.addEventListener('click', () => chrome.tabs.reload())
     this.$.addressUrl.addEventListener('keypress', this.onAddressUrlKeyPress.bind(this))
 
     this.$.minimizeButton.addEventListener('click', () =>
@@ -93,14 +97,6 @@ class WebUI {
       this.activeTabId = activeTab.id
       this.renderToolbar(activeTab)
     }
-  }
-
-  onCreateTab() {
-    chrome.tabs.create()
-  }
-
-  reloadTab() {
-    chrome.tabs.reload()
   }
 
   onAddressUrlKeyPress(event) {

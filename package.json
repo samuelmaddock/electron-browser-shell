@@ -8,7 +8,7 @@
     "packages/electron-chrome-extensions"
   ],
   "scripts": {
-    "start": "cd packages/shell && npm start"
+    "start": "cd packages/electron-chrome-extensions && yarn build && cd ../shell && npm start"
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",

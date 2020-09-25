@@ -14,8 +14,6 @@ export class WindowsAPI extends EventEmitter {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
-  private detailsCache = new WeakMap<Electron.BrowserWindow, Partial<chrome.windows.Window>>()
-
   constructor(private store: ExtensionStore) {
     super()
     ipcMain.handle('windows.get', this.get.bind(this))
@@ -31,25 +29,27 @@ export class WindowsAPI extends EventEmitter {
       left: win.getPosition()[0],
       width: win.getSize()[0],
       height: win.getSize()[1],
-      // TODO:
-      // tabs: Array.from(this.state.tabs).filter(tab => {
-      //   const ownerWindow = getParentWindowOfTab(tab)
-      //   return ownerWindow?.id === win.id
-      // }),
+      tabs: Array.from(this.store.tabs)
+        .filter((tab) => {
+          const ownerWindow = getParentWindowOfTab(tab)
+          return ownerWindow?.id === win.id
+        })
+        .map((tab) => this.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
+        .filter(Boolean),
       incognito: !win.webContents.session.isPersistent(),
       type: 'normal', // TODO
       state: getWindowState(win),
       alwaysOnTop: win.isAlwaysOnTop(),
-      sessionId: 'foobar', // TODO
+      sessionId: 'default', // TODO
     }
 
-    this.detailsCache.set(win, details)
+    this.store.windowDetailsCache.set(win.id, details)
     return details
   }
 
   private getWindowDetails(win: BrowserWindow) {
-    if (this.detailsCache.has(win)) {
-      return this.detailsCache.get(win)
+    if (this.store.windowDetailsCache.has(win.id)) {
+      return this.store.windowDetailsCache.get(win.id)
     }
     const details = this.createWindowDetails(win)
     return details

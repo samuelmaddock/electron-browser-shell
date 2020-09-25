@@ -10,7 +10,7 @@
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "private": true,
   "dependencies": {
-    "electron": "^10.1.1",
+    "electron": "^10.1.2",
     "electron-chrome-extensions": "1.0.0"
   }
 }
