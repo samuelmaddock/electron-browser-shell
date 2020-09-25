@@ -6,14 +6,16 @@ import { WindowsAPI } from './windows'
 
 export class TabsAPI extends EventEmitter {
   static TAB_ID_NONE = -1
+  static WINDOW_ID_NONE = -1
+  static WINDOW_ID_CURRENT = -2
 
   private activeTabId?: number
+  private activeWindowId?: number
 
   constructor(private store: ExtensionStore) {
     super()
 
     ipcMain.handle('tabs.get', this.get.bind(this))
-    ipcMain.handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
     ipcMain.handle('tabs.create', this.create.bind(this))
     ipcMain.handle('tabs.insertCSS', this.insertCSS.bind(this))
     ipcMain.handle('tabs.query', this.query.bind(this))
@@ -54,6 +56,7 @@ export class TabsAPI extends EventEmitter {
 
     if (details.active) {
       this.activeTabId = tab.id
+      this.activeWindowId = getParentWindowOfTab(tab)?.id
     }
 
     this.store.tabDetailsCache.set(tab.id, details)
@@ -72,19 +75,6 @@ export class TabsAPI extends EventEmitter {
     const tab = this.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
-  }
-
-  private getAllInWindow(event: Electron.IpcMainInvokeEvent, windowId?: number) {
-    const targetWindowId = windowId || getParentWindowOfTab(event.sender)?.id
-
-    const tabsInWindow = Array.from(this.store.tabs)
-      .filter((tab) => {
-        const tabWindow = getParentWindowOfTab(tab)
-        return tabWindow ? targetWindowId === tabWindow.id : false
-      })
-      .map((tab) => this.getTabDetails(tab))
-
-    return tabsInWindow
   }
 
   private create(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties = {}) {
@@ -134,7 +124,13 @@ export class TabsAPI extends EventEmitter {
         if (isSet(info.status) && info.status !== tab.status) return false
         if (isSet(info.title) && info.title !== tab.title) return false // TODO: pattern match
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
-        if (isSet(info.windowId) && info.windowId !== tab.windowId) return false
+        if (isSet(info.windowId)) {
+          if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
+            if (this.activeWindowId !== tab.windowId) return false
+          } else if (info.windowId !== tab.windowId) {
+            return false
+          }
+        }
         // if (isSet(info.windowType) && info.windowType !== tab.windowType) return false
         // if (isSet(info.index) && info.index !== tab.index) return false
         return true

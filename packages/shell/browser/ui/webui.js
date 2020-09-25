@@ -1,6 +1,7 @@
 const { ipcRenderer } = chrome
 
 class WebUI {
+  windowId = -1
   activeTabId = -1
   tabList = []
 
@@ -57,11 +58,14 @@ class WebUI {
     }
 
     chrome.tabs.onCreated.addListener((tab) => {
+      if (tab.windowId !== this.windowId) return
       this.tabList.push(tab)
       this.renderTabs()
     })
 
     chrome.tabs.onActivated.addListener((activeInfo) => {
+      if (activeInfo.windowId !== this.windowId) return
+
       this.activeTabId = activeInfo.tabId
 
       const tab = this.tabList.find((tab) => tab.id === this.activeTabId)
@@ -88,13 +92,14 @@ class WebUI {
   }
 
   async initTabs() {
-    const tabs = await new Promise((resolve) => chrome.tabs.getAllInWindow(resolve))
+    const tabs = await new Promise((resolve) => chrome.tabs.query({ windowId: -2 }, resolve))
     this.tabList = [...tabs]
     this.renderTabs()
 
     const activeTab = this.tabList.find((tab) => tab.active)
     if (activeTab) {
       this.activeTabId = activeTab.id
+      this.windowId = activeTab.windowId
       this.renderToolbar(activeTab)
     }
   }
