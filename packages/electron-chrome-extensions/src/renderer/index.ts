@@ -216,6 +216,7 @@ export const injectExtensionAPIs = () => {
       ...chrome.tabs,
       create: invokeExtension('tabs.create'),
       get: invokeExtension('tabs.get'),
+      getCurrent: invokeExtension('tabs.getCurrent'),
       getAllInWindow: invokeExtension('tabs.getAllInWindow'),
       insertCSS: invokeExtension('tabs.insertCSS'),
       query: invokeExtension('tabs.query'),

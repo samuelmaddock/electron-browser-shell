@@ -16,6 +16,7 @@ export class TabsAPI extends EventEmitter {
     super()
 
     ipcMain.handle('tabs.get', this.get.bind(this))
+    ipcMain.handle('tabs.getCurrent', this.getCurrent.bind(this))
     ipcMain.handle('tabs.create', this.create.bind(this))
     ipcMain.handle('tabs.insertCSS', this.insertCSS.bind(this))
     ipcMain.handle('tabs.query', this.query.bind(this))
@@ -75,6 +76,11 @@ export class TabsAPI extends EventEmitter {
     const tab = this.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
+  }
+
+  private getCurrent(event: Electron.IpcMainInvokeEvent) {
+    const tab = typeof this.activeTabId === 'number' && this.store.getTabById(this.activeTabId)
+    return tab ? this.getTabDetails(tab) : undefined
   }
 
   private create(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties = {}) {
