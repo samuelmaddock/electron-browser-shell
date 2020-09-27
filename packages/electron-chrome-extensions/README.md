@@ -93,7 +93,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.windows.getAll
 - [x] chrome.windows.create
 - [x] chrome.windows.update
-- [ ] chrome.windows.remove
+- [x] chrome.windows.remove
 - [ ] chrome.windows.onCreated
 - [ ] chrome.windows.onRemoved
 - [ ] chrome.windows.onFocusChanged

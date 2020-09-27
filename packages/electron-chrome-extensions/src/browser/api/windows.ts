@@ -19,6 +19,7 @@ export class WindowsAPI extends EventEmitter {
     ipcMain.handle('windows.get', this.get.bind(this))
     ipcMain.handle('windows.create', this.create.bind(this))
     ipcMain.handle('windows.update', this.update.bind(this))
+    ipcMain.handle('windows.remove', this.remove.bind(this))
   }
 
   private createWindowDetails(win: BrowserWindow) {
@@ -110,6 +111,15 @@ export class WindowsAPI extends EventEmitter {
     }
 
     return this.createWindowDetails(win)
+  }
+
+  private remove(
+    event: Electron.IpcMainInvokeEvent,
+    windowId: number = WindowsAPI.WINDOW_ID_CURRENT
+  ) {
+    const win = this.getWindowFromId(event.sender, windowId)
+    if (!win || win.webContents.session !== this.store.session) return
+    win.close()
   }
 
   // onRemoved(win) {

@@ -242,6 +242,7 @@ export const injectExtensionAPIs = () => {
       get: invokeExtension('windows.get'),
       create: invokeExtension('windows.create'),
       update: invokeExtension('windows.update'),
+      remove: invokeExtension('windows.remove'),
       onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
     }
 
