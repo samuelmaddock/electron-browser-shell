@@ -1,17 +1,43 @@
 import { ExtensionStore } from '../store'
 import { ipcMain } from 'electron'
+import * as electron from 'electron'
 
 type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
   parentFrameId: number
 }
 
+// https://github.com/electron/electron/pull/25464
+const getFrame = (frameProcessId: number, frameRoutingId: number) => {
+  return (
+    ('webFrameMain' in electron &&
+      (electron as any).webFrameMain.fromId(frameProcessId, frameRoutingId)) ||
+    null
+  )
+}
+
+const getParentFrameId = (frame: any) => {
+  if (frame && frame.parent) {
+    return frame.parent === frame.top ? 0 : frame.parent.frameTreeNodeId
+  }
+  return -1
+}
+
+const getFrameDetails = (frame: any) => ({
+  errorOccurred: false, // TODO
+  processId: frame.processId,
+  frameId: frame.frameTreeNodeId,
+  parentFrameId: getParentFrameId(frame),
+  url: frame.url,
+})
+
 export class WebNavigationAPI {
   constructor(private store: ExtensionStore) {
     ipcMain.handle('webNavigation.getFrame', this.getFrame.bind(this))
+    ipcMain.handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
   }
 
   addTab(tab: Electron.WebContents) {
-    tab.on('did-start-navigation', this.onCommitted as any)
+    tab.on('did-frame-navigate', this.onCommitted as any)
     tab.on('did-navigate-in-page', this.onHistoryStateUpdated as any)
     tab.once('will-navigate', this.onCreatedNavigationTarget as any)
   }
@@ -23,17 +49,28 @@ export class WebNavigationAPI {
     const tab = this.store.getTabById(details.tabId)
     if (!tab) return null
 
-    if (typeof details.processId === 'number' && tab.getProcessId() !== details.processId)
-      return null
+    let targetFrame: any
 
-    // TODO: electron doesn't have a way to get the frame ID yet
-    // if (typeof details.frameId === 'number' && tab.frameId !== details.frameId) return null
-
-    return {
-      url: tab.getURL(),
-      parentFrameId: tab.hostWebContents ? tab.hostWebContents.id : -1, // TODO
-      errorOccurred: false, // TODO
+    if (typeof details.frameId === 'number') {
+      // https://github.com/electron/electron/pull/25464
+      if ('webFrame' in tab) {
+        const mainFrame = (tab as any).webFrame
+        targetFrame = mainFrame.framesInSubtree.find(
+          (frame: any) => frame.frameTreeNodeId === details.frameId
+        )
+      }
     }
+
+    return targetFrame ? getFrameDetails(targetFrame) : null
+  }
+
+  private getAllFrames(
+    event: Electron.IpcMainInvokeEvent,
+    details: chrome.webNavigation.GetFrameDetails
+  ): chrome.webNavigation.GetAllFrameResultDetails[] | null {
+    const tab = this.store.getTabById(details.tabId)
+    if (!tab || !('webFrame' in tab)) return []
+    return (tab as any).webFrame.framesInSubtree.map(getFrameDetails)
   }
 
   private onCreatedNavigationTarget = (
@@ -44,11 +81,12 @@ export class WebNavigationAPI {
     frameProcessId: number,
     frameRoutingId: number
   ) => {
+    const frame = getFrame(frameProcessId, frameRoutingId)
     const tab = event.sender
     const details: chrome.webNavigation.WebNavigationSourceCallbackDetails = {
       sourceTabId: tab.id,
       sourceProcessId: frameProcessId,
-      sourceFrameId: isMainFrame ? frameRoutingId : 0, // TODO: need to use frameTreeNodeId, not routingId
+      sourceFrameId: frame ? frame.frameTreeNodeId : -1,
       url,
       tabId: tab.id,
       timeStamp: Date.now(),
@@ -59,15 +97,17 @@ export class WebNavigationAPI {
   private onCommitted = (
     event: Electron.IpcMainEvent,
     url: string,
-    isInPlace: boolean,
+    httpResponseCode: number,
+    httpStatusText: string,
     isMainFrame: boolean,
     frameProcessId: number,
     frameRoutingId: number
   ) => {
+    const frame = getFrame(frameProcessId, frameRoutingId)
     const tab = event.sender
     const details: Partial<WebNavigationTransitionCallbackDetails> = {
-      frameId: isMainFrame ? frameRoutingId : 0, // TODO: need to use frameTreeNodeId, not routingId
-      parentFrameId: tab.hostWebContents ? tab.hostWebContents.id : -1,
+      frameId: frame ? frame.frameTreeNodeId : -1,
+      parentFrameId: getParentFrameId(frame),
       processId: frameProcessId,
       tabId: tab.id,
       timeStamp: Date.now(),
@@ -83,12 +123,13 @@ export class WebNavigationAPI {
     frameProcessId: number,
     frameRoutingId: number
   ) => {
+    const frame = getFrame(frameProcessId, frameRoutingId)
     const tab = event.sender
     const details: Partial<WebNavigationTransitionCallbackDetails> = {
       // transitionType: '',
       // transitionQualifiers: [],
-      frameId: isMainFrame ? frameRoutingId : 0, // TODO: need to use frameTreeNodeId, not routingId
-      parentFrameId: -1,
+      frameId: frame ? frame.frameTreeNodeId : -1,
+      parentFrameId: getParentFrameId(frame),
       processId: frameProcessId,
       tabId: tab.id,
       timeStamp: Date.now(),
