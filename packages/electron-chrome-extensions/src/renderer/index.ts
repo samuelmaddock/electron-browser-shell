@@ -212,6 +212,11 @@ export const injectExtensionAPIs = () => {
       if (callback && tab) callback(info, tab)
     })
 
+    const runtime: Partial<typeof chrome.runtime> = {
+      ...chrome.runtime,
+      openOptionsPage: invokeExtension('runtime.openOptionsPage'),
+    }
+
     const tabs: Partial<typeof chrome.tabs> = {
       ...chrome.tabs,
       create: invokeExtension('tabs.create'),
@@ -267,6 +272,7 @@ export const injectExtensionAPIs = () => {
     Object.assign(chrome, {
       contextMenus,
       privacy,
+      runtime,
       tabs,
       webNavigation,
       webRequest,
