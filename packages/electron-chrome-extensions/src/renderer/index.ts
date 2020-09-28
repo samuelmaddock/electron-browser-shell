@@ -282,6 +282,21 @@ export const injectExtensionAPIs = () => {
 
     // Remove access to internals
     delete (window as any).electron
+
+    // Prevent APIs from being overwritten. I'm not sure why this happens yet,
+    // but using a Proxy seems to fix it.
+    window.chrome = new Proxy(window.chrome, {
+      get(target: any, prop: any) {
+        // console.trace(`chrome get ${prop}`)
+        return target[prop]
+      },
+      set(target: any, prop: any, value: any) {
+        // console.log(`chrome set ${prop}`)
+        return (target[prop] = value)
+      },
+    })
+
+    void 0 // no return
   }
 
   try {
@@ -291,6 +306,8 @@ export const injectExtensionAPIs = () => {
     // Mutate global 'chrome' object with additional APIs in the main world
     webFrame.executeJavaScript(`(${mainWorldScript}());`)
   } catch {
+    // contextBridge threw an error which means we're in the main world so we
+    // can just execute our function.
     mainWorldScript()
   }
 }
