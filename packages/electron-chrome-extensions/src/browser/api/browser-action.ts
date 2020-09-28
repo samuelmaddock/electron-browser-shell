@@ -73,7 +73,7 @@ export class BrowserActionAPI extends EventEmitter {
 
   getPopupPath(session: Electron.Session, extensionId: string, tabId: string) {
     const action = this.getAction(session, extensionId)
-    return action.tabs[tabId]?.popup?.path
+    return action.tabs[tabId] ? action.tabs[tabId].popup?.path : action.popup?.path
   }
 
   processExtensions(session: Electron.Session, extensions: Electron.Extension[]) {
@@ -87,6 +87,10 @@ export class BrowserActionAPI extends EventEmitter {
 
         const iconImage = getIconImage(extension)
         if (iconImage) action.icon = iconImage.toDataURL()
+
+        if (browser_action.default_popup) {
+          action.popup = { path: browser_action.default_popup }
+        }
       }
     }
 
