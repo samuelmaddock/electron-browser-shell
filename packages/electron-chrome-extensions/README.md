@@ -35,10 +35,27 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [x] chrome.contextMenus.removeAll
 - [x] chrome.contextMenus.onClicked
 
-### [`chrome.tabs`](https://developer.chrome.com/extensions/contextMenus)
+### [`chrome.runtime`](https://developer.chrome.com/extensions/runtime)
+
+- [x] chrome.runtime.connect
+- [x] chrome.runtime.getBackgroundPage
+- [x] chrome.runtime.getManifest
+- [x] chrome.runtime.getURL
+- [x] chrome.runtime.id
+- [x] chrome.runtime.lastError
+- [x] chrome.runtime.onConnect
+- [x] chrome.runtime.onInstalled
+- [x] chrome.runtime.onMessage
+- [x] chrome.runtime.onStartup
+- [x] chrome.runtime.onSuspend
+- [x] chrome.runtime.onSuspendCanceled
+- [x] chrome.runtime.openOptionsPage
+- [x] chrome.runtime.sendMessage
+
+### [`chrome.tabs`](https://developer.chrome.com/extensions/tabs)
 
 - [x] chrome.tabs.get
-- [ ] chrome.tabs.getCurrent
+- [x] chrome.tabs.getCurrent
 - [x] chrome.tabs.connect
 - [x] chrome.tabs.sendMessage
 - [x] chrome.tabs.create
@@ -69,7 +86,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.tabs.onAttached
 - [x] chrome.tabs.onRemoved
 - [ ] chrome.tabs.onReplaced
-- [ ] chrome.tabs.onZoomChange
+- [x] chrome.tabs.onZoomChange
 
 ### [`chrome.webNavigation`](https://developer.chrome.com/extensions/webNavigation)
 

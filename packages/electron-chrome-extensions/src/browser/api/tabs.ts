@@ -8,9 +8,6 @@ export class TabsAPI {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
-  private activeTabId?: number
-  private activeWindowId?: number
-
   constructor(private store: ExtensionStore) {
     ipcMain.handle('tabs.get', this.get.bind(this))
     ipcMain.handle('tabs.getCurrent', this.getCurrent.bind(this))
@@ -53,8 +50,8 @@ export class TabsAPI {
     this.store.emit('create-tab-info', details, tab)
 
     if (details.active) {
-      this.activeTabId = tab.id
-      this.activeWindowId = getParentWindowOfTab(tab)?.id
+      this.store.activeTabId = tab.id
+      this.store.activeWindowId = getParentWindowOfTab(tab)?.id
     }
 
     this.store.tabDetailsCache.set(tab.id, details)
@@ -76,21 +73,16 @@ export class TabsAPI {
   }
 
   private getCurrent(event: Electron.IpcMainInvokeEvent) {
-    const tab = typeof this.activeTabId === 'number' && this.store.getTabById(this.activeTabId)
+    const tab = this.store.activeTab
     return tab ? this.getTabDetails(tab) : undefined
   }
 
-  private create(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties = {}) {
-    return new Promise<chrome.tabs.CreateProperties>((resolve, reject) => {
-      this.store.emit('create-tab', event, details, (err: boolean | undefined, tabId: number) => {
-        if (err) {
-          reject()
-        } else {
-          const tab = this.store.getTabById(tabId)
-          resolve(tab ? this.getTabDetails(tab) : {})
-        }
-      })
-    })
+  private async create(
+    event: Electron.IpcMainInvokeEvent,
+    details: chrome.tabs.CreateProperties = {}
+  ) {
+    const tab = await this.store.createTab(event, details)
+    return this.getTabDetails(tab)
   }
 
   private insertCSS(
@@ -129,7 +121,7 @@ export class TabsAPI {
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
         if (isSet(info.windowId)) {
           if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
-            if (this.activeWindowId !== tab.windowId) return false
+            if (this.store.activeTabId !== tab.windowId) return false
           } else if (info.windowId !== tab.windowId) {
             return false
           }
@@ -153,7 +145,7 @@ export class TabsAPI {
     reloadProperties: chrome.tabs.ReloadProperties = {}
   ) {
     const tab = this.store.getTabById(
-      tabId || this.activeTabId || Array.from(this.store.tabs)[0].id
+      tabId || this.store.activeTabId || Array.from(this.store.tabs)[0].id
     )
     if (!tab) return
     if (reloadProperties.bypassCache) {
@@ -164,7 +156,7 @@ export class TabsAPI {
   }
 
   private async update(event: Electron.IpcMainInvokeEvent, arg1?: unknown, arg2?: unknown) {
-    const tabId = typeof arg1 === 'object' ? this.activeTabId || -1 : (arg1 as number)
+    const tabId = typeof arg1 === 'object' ? this.store.activeTabId || -1 : (arg1 as number)
     const updateProperties: chrome.tabs.UpdateProperties =
       (typeof arg1 === 'object' ? (arg1 as any) : (arg2 as any)) || {}
 
@@ -195,14 +187,14 @@ export class TabsAPI {
   }
 
   private goForward(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
-    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.activeTabId || -1
+    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.store.activeTabId || -1
     const tab = this.store.getTabById(tabId)
     if (!tab) return
     tab.goForward()
   }
 
   private goBack(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
-    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.activeTabId || -1
+    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.store.activeTabId || -1
     const tab = this.store.getTabById(tabId)
     if (!tab) return
     tab.goBack()

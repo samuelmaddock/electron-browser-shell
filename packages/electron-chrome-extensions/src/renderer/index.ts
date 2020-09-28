@@ -214,7 +214,7 @@ export const injectExtensionAPIs = () => {
 
     const runtime: Partial<typeof chrome.runtime> = {
       ...chrome.runtime,
-      openOptionsPage: invokeExtension('runtime.openOptionsPage'),
+      openOptionsPage: invokeExtension('runtime.openOptionsPage', { extensionId }),
     }
 
     const tabs: Partial<typeof chrome.tabs> = {
