@@ -1,5 +1,6 @@
 import { session, ipcMain } from 'electron'
 import { EventEmitter } from 'events'
+import { ExtensionStore } from '../store'
 import { getIconImage } from './common'
 
 interface ExtensionAction {
@@ -20,12 +21,10 @@ interface ExtensionActionStore extends Partial<ExtensionAction> {
   tabs: { [key: string]: ExtensionAction }
 }
 
-export class BrowserActionAPI extends EventEmitter {
+export class BrowserActionAPI {
   sessionActionMap = new Map<Electron.Session, Map<string, ExtensionActionStore>>()
 
-  constructor() {
-    super()
-
+  constructor(private store: ExtensionStore) {
     const setter = (propName: string) => (
       event: Electron.IpcMainInvokeEvent,
       extensionId: string,
@@ -106,6 +105,6 @@ export class BrowserActionAPI extends EventEmitter {
   }
 
   private onClicked(event: Electron.IpcMainInvokeEvent, extensionId: string) {
-    this.emit('clicked', event, extensionId)
+    this.store.emit('action-clicked', event, extensionId)
   }
 }

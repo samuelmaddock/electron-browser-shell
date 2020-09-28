@@ -1,4 +1,5 @@
 import { BrowserView } from 'electron'
+import { EventEmitter } from 'events'
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
@@ -6,22 +7,28 @@ import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
 import { TabContents } from './api/common'
 import { ContextMenusAPI } from './api/context-menus'
+import { RuntimeAPI } from './api/runtime'
 
 // TODO: support for non-default session
 
-export class Extensions {
+export class Extensions extends EventEmitter {
   state: ExtensionStore
 
-  browserAction = new BrowserActionAPI()
+  browserAction: BrowserActionAPI
   contextMenus: ContextMenusAPI
+  runtime: RuntimeAPI
   tabs: TabsAPI
   webNavigation: WebNavigationAPI
   windows: WindowsAPI
 
   constructor(session: Electron.Session) {
-    this.state = new ExtensionStore(session)
+    super()
 
+    this.state = new ExtensionStore(this, session)
+
+    this.browserAction = new BrowserActionAPI(this.state)
     this.contextMenus = new ContextMenusAPI(this.state)
+    this.runtime = new RuntimeAPI(this.state)
     this.tabs = new TabsAPI(this.state)
     this.webNavigation = new WebNavigationAPI(this.state)
     this.windows = new WindowsAPI(this.state)

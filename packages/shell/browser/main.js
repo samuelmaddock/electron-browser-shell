@@ -171,7 +171,7 @@ class Browser {
     const installedExtensions = await loadExtensions(path.join(__dirname, '../../../extensions'))
     this.extensions.browserAction.processExtensions(session.defaultSession, installedExtensions)
 
-    this.extensions.tabs.on('create-tab', (event, details, callback) => {
+    this.extensions.on('create-tab', (event, details, callback) => {
       const win =
         typeof details.windowId === 'number'
           ? this.windows.find((w) => w.id === details.windowId)
@@ -185,17 +185,17 @@ class Browser {
       callback(null, tab.id)
     })
 
-    this.extensions.tabs.on('select-tab', (event, tabId) => {
+    this.extensions.on('select-tab', (event, tabId) => {
       const win = this.getIpcWindow(event)
       win.tabs.select(tabId)
     })
 
-    this.extensions.tabs.on('remove-tab', (event, tabId) => {
+    this.extensions.on('remove-tab', (event, tabId) => {
       const win = this.getIpcWindow(event)
       win.tabs.remove(tabId)
     })
 
-    this.extensions.windows.on('create-window', (details, callback) => {
+    this.extensions.on('create-window', (details, callback) => {
       const win = this.createWindow({
         initialUrl: details.url || newTabUrl,
       })
@@ -203,7 +203,7 @@ class Browser {
       callback(null, win.id) // TODO: return tab or window id?
     })
 
-    this.extensions.tabs.on('create-tab-info', (tabInfo, webContents) => {
+    this.extensions.on('create-tab-info', (tabInfo, webContents) => {
       const win = this.getWindowFromWebContents(webContents)
       if (!win) {
         console.error(`Couldn't find tab for info`, tabInfo)
@@ -216,7 +216,7 @@ class Browser {
       })
     })
 
-    this.extensions.browserAction.on('clicked', (event, extensionId) => {
+    this.extensions.on('action-clicked', (event, extensionId) => {
       const win = this.getWindowFromWebContents(event.sender)
       const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
 

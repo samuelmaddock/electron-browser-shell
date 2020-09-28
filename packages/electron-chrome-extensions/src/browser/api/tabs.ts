@@ -1,10 +1,9 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { EventEmitter } from 'events'
 import { ExtensionStore } from '../store'
 import { getParentWindowOfTab, TabContents } from './common'
 import { WindowsAPI } from './windows'
 
-export class TabsAPI extends EventEmitter {
+export class TabsAPI {
   static TAB_ID_NONE = -1
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
@@ -13,8 +12,6 @@ export class TabsAPI extends EventEmitter {
   private activeWindowId?: number
 
   constructor(private store: ExtensionStore) {
-    super()
-
     ipcMain.handle('tabs.get', this.get.bind(this))
     ipcMain.handle('tabs.getCurrent', this.getCurrent.bind(this))
     ipcMain.handle('tabs.create', this.create.bind(this))
@@ -53,7 +50,7 @@ export class TabsAPI extends EventEmitter {
       windowId: win ? win.id : -1,
     }
 
-    this.emit('create-tab-info', details, tab)
+    this.store.emit('create-tab-info', details, tab)
 
     if (details.active) {
       this.activeTabId = tab.id
@@ -85,7 +82,7 @@ export class TabsAPI extends EventEmitter {
 
   private create(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties = {}) {
     return new Promise<chrome.tabs.CreateProperties>((resolve, reject) => {
-      this.emit('create-tab', event, details, (err: boolean | undefined, tabId: number) => {
+      this.store.emit('create-tab', event, details, (err: boolean | undefined, tabId: number) => {
         if (err) {
           reject()
         } else {
@@ -181,7 +178,7 @@ export class TabsAPI extends EventEmitter {
 
     if (typeof props.muted === 'boolean') tab.setAudioMuted(props.muted)
 
-    if (props.active) this.emit('select-tab', event, tabId)
+    if (props.active) this.store.emit('select-tab', event, tabId)
 
     this.onUpdated(tabId)
 
@@ -192,7 +189,7 @@ export class TabsAPI extends EventEmitter {
     const ids = Array.isArray(id) ? id : [id]
 
     ids.forEach((tabId) => {
-      this.emit('remove-tab', event, tabId)
+      this.store.emit('remove-tab', event, tabId)
       this.onRemoved(tabId)
     })
   }

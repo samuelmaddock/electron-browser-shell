@@ -1,5 +1,4 @@
 import { app, ipcMain, Menu, MenuItem } from 'electron'
-import { EventEmitter } from 'events'
 import { MenuItemConstructorOptions } from 'electron/main'
 import { ExtensionStore } from '../store'
 import { getIconPath, matchesPattern } from './common'
@@ -49,15 +48,13 @@ const formatTitle = (title: string, params: Electron.ContextMenuParams) => {
   return title
 }
 
-export class ContextMenusAPI extends EventEmitter {
+export class ContextMenusAPI {
   private menus = new Map<
     /* extensionId */ string,
     Map</* menuItemId */ string, ContextItemProps>
   >()
 
   constructor(private store: ExtensionStore) {
-    super()
-
     ipcMain.handle('contextMenus.create', this.create)
     ipcMain.handle('contextMenus.remove', this.remove)
     ipcMain.handle('contextMenus.removeAll', this.removeAll)

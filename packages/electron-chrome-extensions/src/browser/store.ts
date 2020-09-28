@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events'
+
 export class ExtensionStore {
   tabs = new Set<Electron.WebContents>()
   extensionHosts = new Set<Electron.WebContents>()
@@ -5,7 +7,11 @@ export class ExtensionStore {
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
 
-  constructor(public session: Electron.Session) {}
+  constructor(private emitter: EventEmitter, public session: Electron.Session) {}
+
+  emit(eventName: string, ...args: any[]) {
+    this.emitter.emit(eventName, ...args)
+  }
 
   sendToHosts(eventName: string, ...args: any[]) {
     this.extensionHosts.forEach((host) => {

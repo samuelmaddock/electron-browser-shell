@@ -1,5 +1,4 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { EventEmitter } from 'events'
 import { ExtensionStore } from '../store'
 import { getParentWindowOfTab } from './common'
 
@@ -10,12 +9,11 @@ const getWindowState = (win: BrowserWindow): chrome.windows.Window['state'] => {
   return 'normal'
 }
 
-export class WindowsAPI extends EventEmitter {
+export class WindowsAPI {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
   constructor(private store: ExtensionStore) {
-    super()
     ipcMain.handle('windows.get', this.get.bind(this))
     ipcMain.handle('windows.create', this.create.bind(this))
     ipcMain.handle('windows.update', this.update.bind(this))
@@ -72,7 +70,7 @@ export class WindowsAPI extends EventEmitter {
 
   private create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
     return new Promise((resolve, reject) => {
-      this.emit('create-window', details, (err: boolean, windowId: number) => {
+      this.store.emit('create-window', details, (err: boolean, windowId: number) => {
         if (err) {
           reject()
         } else {
