@@ -41,7 +41,7 @@ class WebUI {
         chrome.windows.update(win.id, { state: win.state === 'maximized' ? 'normal' : 'maximized' })
       })
     )
-    this.$.closeButton.addEventListener('click', () => chrome.windows.remove(this.windowId))
+    this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
     this.setupBrowserListeners()
     this.initTabs()

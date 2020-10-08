@@ -96,15 +96,10 @@ class TabbedBrowserWindow {
     this.tabs.on('tab-created', function onTabCreated(tab) {
       extensions.addTab(tab.webContents)
       if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
-      extensions.tabs.onCreated(tab.id)
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
-      extensions.tabs.onActivated(tab.id)
-    })
-
-    this.tabs.on('tab-destroyed', function onTabDestroyed(tab) {
-      extensions.tabs.onRemoved(tab.id)
+      extensions.selectTab(tab.webContents)
     })
 
     setImmediate(() => {
@@ -154,7 +149,39 @@ class Browser {
   async init() {
     setupMenu(this)
 
-    this.extensions = new Extensions(session.defaultSession)
+    this.extensions = new Extensions({
+      session: session.defaultSession,
+
+      createTab: (event, details) => {
+        const win =
+          typeof details.windowId === 'number'
+            ? this.windows.find((w) => w.id === details.windowId)
+            : this.getIpcWindow(event)
+
+        const tab = win.tabs.create()
+
+        if (details.url) tab.loadURL(details.url || newTabUrl)
+        if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
+
+        return tab
+      },
+      selectTab: (event, tab) => {
+        const win = this.getIpcWindow(event)
+        win.tabs.select(tab.id)
+      },
+      removeTab: (event, tab) => {
+        const win = this.getIpcWindow(event)
+        win.tabs.remove(tab.id)
+      },
+
+      createWindow: (event, details) => {
+        const win = this.createWindow({
+          initialUrl: details.url || newTabUrl,
+        })
+        // if (details.active) tabs.select(tab.id)
+        return win
+      }
+    })
 
     const extensionPreload = path.join(
       __dirname,
@@ -171,49 +198,9 @@ class Browser {
     const installedExtensions = await loadExtensions(path.join(__dirname, '../../../extensions'))
     this.extensions.browserAction.processExtensions(session.defaultSession, installedExtensions)
 
-    this.extensions.on('create-tab', (event, details, callback) => {
-      const win =
-        typeof details.windowId === 'number'
-          ? this.windows.find((w) => w.id === details.windowId)
-          : this.getIpcWindow(event)
-
-      const tab = win.tabs.create()
-
-      if (details.url) tab.loadURL(details.url || newTabUrl)
-      if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
-
-      callback(null, tab.id)
-    })
-
-    this.extensions.on('select-tab', (event, tabId) => {
-      const win = this.getIpcWindow(event)
-      win.tabs.select(tabId)
-    })
-
-    this.extensions.on('remove-tab', (event, tabId) => {
-      const win = this.getIpcWindow(event)
-      win.tabs.remove(tabId)
-    })
-
-    this.extensions.on('create-window', (details, callback) => {
-      const win = this.createWindow({
-        initialUrl: details.url || newTabUrl,
-      })
-      // if (details.active) tabs.select(tab.id)
-      callback(null, win.id) // TODO: return tab or window id?
-    })
-
-    this.extensions.on('create-tab-info', (tabInfo, webContents) => {
-      const win = this.getWindowFromWebContents(webContents)
-      if (!win) {
-        console.error(`Couldn't find tab for info`, tabInfo)
-        return
-      }
-      const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
-      Object.assign(tabInfo, {
-        active: tabInfo.id === selectedId,
-        windowType: 'normal', // TODO
-      })
+    this.extensions.on('active-tab-changed', (tab) => {
+      const win = this.getWindowFromWebContents(tab)
+      win.tabs.select(tab.id)
     })
 
     this.extensions.on('action-clicked', (event, extensionId) => {

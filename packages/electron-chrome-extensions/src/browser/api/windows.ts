@@ -68,17 +68,15 @@ export class WindowsAPI {
     return this.getWindowDetails(win)
   }
 
-  private create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
-    return new Promise((resolve, reject) => {
-      this.store.emit('create-window', details, (err: boolean, windowId: number) => {
-        if (err) {
-          reject()
-        } else {
-          const win = BrowserWindow.fromId(windowId)
-          resolve(win ? this.getWindowDetails(win) : {})
-        }
-      })
-    })
+  private async create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
+    if (typeof this.store.impl.createWindow !== 'function') {
+      return {}
+    }
+
+    const win = await this.store.impl.createWindow(event, details)
+    const winDetails = this.getWindowDetails(win)
+
+    return winDetails
   }
 
   private async update(

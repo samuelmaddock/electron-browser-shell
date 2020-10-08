@@ -1,15 +1,28 @@
 import { BrowserWindow } from 'electron'
 import { EventEmitter } from 'events'
+import { ChromeExtensionImpl } from './impl'
 
 export class ExtensionStore {
   tabs = new Set<Electron.WebContents>()
   extensionHosts = new Set<Electron.WebContents>()
 
   activeTabId?: number
-  activeWindowId?: number
 
-  get activeTab() {
+  get activeWindowId() {
+    // TODO: better implementation
+    const activeWindow = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
+    return activeWindow.id
+  }
+
+  get activeTab(): Electron.WebContents | undefined {
     return this.activeTabId ? this.getTabById(this.activeTabId) : undefined
+  }
+  set activeTab(tab: Electron.WebContents | undefined) {
+    const tabId = tab?.id
+    if (this.activeTabId !== tabId) {
+      this.activeTabId = tab?.id
+      this.emit('active-tab-changed', tab)
+    }
   }
   get activeWindow() {
     return this.activeWindowId ? BrowserWindow.fromId(this.activeWindowId) : undefined
@@ -18,7 +31,11 @@ export class ExtensionStore {
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
 
-  constructor(private emitter: EventEmitter, public session: Electron.Session) {}
+  constructor(
+    private emitter: EventEmitter,
+    public session: Electron.Session,
+    public impl: ChromeExtensionImpl
+  ) {}
 
   emit(eventName: string, ...args: any[]) {
     this.emitter.emit(eventName, ...args)
@@ -50,14 +67,12 @@ export class ExtensionStore {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
 
-  createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {
-    return new Promise<Electron.WebContents>((resolve, reject) => {
-      this.emit('create-tab', event, details, (err: boolean | undefined, tabId: number) => {
-        if (err) reject(err)
-        const tab = this.getTabById(tabId)
-        if (!tab) reject()
-        resolve(tab)
-      })
-    })
+  async createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {
+    if (typeof this.impl.createTab !== 'function') {
+      throw new Error('createTab not implemented')
+    }
+
+    const tab = await this.impl.createTab(event, details)
+    return tab
   }
 }

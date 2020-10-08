@@ -22,19 +22,19 @@ export class TabsAPI {
   }
 
   private createTabDetails(tab: TabContents) {
+    const tabId = tab.id
     const win = getParentWindowOfTab(tab)
-    const isMainFrame = win ? win.webContents === tab : false
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details: chrome.tabs.Tab = {
-      active: false,
+      active: this.store.activeTabId === tabId,
       audible: tab.isCurrentlyAudible(),
       autoDiscardable: true,
       discarded: false,
       favIconUrl: tab.favicon || undefined,
       height,
       highlighted: false,
-      id: tab.id,
+      id: tabId,
       incognito: false,
       index: -1, // TODO
       mutedInfo: { muted: tab.audioMuted },
@@ -47,11 +47,8 @@ export class TabsAPI {
       windowId: win ? win.id : -1,
     }
 
-    this.store.emit('create-tab-info', details, tab)
-
-    if (details.active) {
-      this.store.activeTabId = tab.id
-      this.store.activeWindowId = getParentWindowOfTab(tab)?.id
+    if (typeof this.store.impl.assignTabDetails === 'function') {
+      this.store.impl.assignTabDetails(details, tab)
     }
 
     this.store.tabDetailsCache.set(tab.id, details)
@@ -82,7 +79,11 @@ export class TabsAPI {
     details: chrome.tabs.CreateProperties = {}
   ) {
     const tab = await this.store.createTab(event, details)
-    return this.getTabDetails(tab)
+    const tabDetails = this.getTabDetails(tab)
+    if (details.active) {
+      queueMicrotask(() => this.onActivated(tab.id))
+    }
+    return tabDetails
   }
 
   private insertCSS(
@@ -121,7 +122,7 @@ export class TabsAPI {
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
         if (isSet(info.windowId)) {
           if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
-            if (this.store.activeTabId !== tab.windowId) return false
+            if (this.store.activeWindowId !== tab.windowId) return false
           } else if (info.windowId !== tab.windowId) {
             return false
           }
@@ -170,7 +171,7 @@ export class TabsAPI {
 
     if (typeof props.muted === 'boolean') tab.setAudioMuted(props.muted)
 
-    if (props.active) this.store.emit('select-tab', event, tabId)
+    if (props.active) this.onActivated(tabId)
 
     this.onUpdated(tabId)
 
@@ -179,9 +180,13 @@ export class TabsAPI {
 
   private remove(event: Electron.IpcMainInvokeEvent, id: number | number[]) {
     const ids = Array.isArray(id) ? id : [id]
+    const hasRemoveTab = typeof this.store.impl.removeTab === 'function'
 
     ids.forEach((tabId) => {
-      this.store.emit('remove-tab', event, tabId)
+      if (hasRemoveTab) {
+        const tab = this.store.getTabById(tabId)
+        if (tab) this.store.impl.removeTab!(event, tab)
+      }
       this.onRemoved(tabId)
     })
   }
@@ -265,19 +270,19 @@ export class TabsAPI {
   }
 
   onActivated(tabId: number) {
+    const activeChanged = this.store.activeTabId !== tabId
+    if (!activeChanged) return
+
     const tab = this.store.getTabById(tabId)
     if (!tab) return
     const win = getParentWindowOfTab(tab)
 
-    let activeChanged = true
+    this.store.activeTab = tab
 
     // invalidate cache since 'active' has changed
     this.store.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
-      if (cacheTabId === tabId) activeChanged = !tabInfo.active
       tabInfo.active = tabId === cacheTabId
     })
-
-    if (!activeChanged) return
 
     this.store.sendToHosts('tabs.onActivated', {
       tabId,
