@@ -1,7 +1,7 @@
 import { app, ipcMain, Menu, MenuItem } from 'electron'
 import { MenuItemConstructorOptions } from 'electron/main'
 import { ExtensionStore } from '../store'
-import { getIconPath, matchesPattern } from './common'
+import { getIconImage, matchesPattern } from './common'
 
 type ContextItemProps = chrome.contextMenus.CreateProperties
 
@@ -77,11 +77,17 @@ export class ContextMenusAPI {
 
   buildMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
     const buildMenuItem = (extension: Electron.Extension, props: ContextItemProps) => {
+      // TODO: try to get the appropriately sized image before resizing
+      let icon = getIconImage(extension)
+      if (icon) {
+        icon = icon.resize({ width: 16, height: 16 })
+      }
+
       const menuItemOptions: MenuItemConstructorOptions = {
         id: props.id,
         type: props.type as any,
         label: formatTitle(props.title || '', params),
-        icon: getIconPath(extension),
+        icon,
         click: () => {
           this.onClicked(extension.id, props.id!, params, webContents)
         },

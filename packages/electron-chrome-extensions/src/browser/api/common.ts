@@ -32,7 +32,7 @@ export const getIconPath = (extension: Electron.Extension) => {
 
 export const getIconImage = (extension: Electron.Extension) => {
   const iconPath = getIconPath(extension)
-  return iconPath && nativeImage.createFromPath(iconPath)
+  return iconPath ? nativeImage.createFromPath(iconPath) : undefined
 }
 
 const escapePattern = (pattern: string) => pattern.replace(/[\\^$+?.()|[\]{}]/g, '\\$&')
