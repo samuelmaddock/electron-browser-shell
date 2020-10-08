@@ -179,7 +179,7 @@ class Browser {
           initialUrl: details.url || newTabUrl,
         })
         // if (details.active) tabs.select(tab.id)
-        return win
+        return win.window
       }
     })
 
@@ -208,7 +208,7 @@ class Browser {
       const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
 
       if (this.popupView) {
-        win.removeBrowserView(this.popupView)
+        win.window.removeBrowserView(this.popupView)
         if (this.popupView.webContents.isDevToolsOpened()) {
           this.popupView.webContents.closeDevTools()
         }
