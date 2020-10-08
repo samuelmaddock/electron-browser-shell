@@ -34,7 +34,10 @@ export class Extensions extends EventEmitter {
     this.windows = new WindowsAPI(this.state)
   }
 
-  observeTab(tab: Electron.WebContents) {
+  /**
+   * Add webContents to be tracked as a tab.
+   */
+  addTab(tab: Electron.WebContents) {
     const tabId = tab.id
     this.state.tabs.add(tab)
     this.webNavigation.addTab(tab)
@@ -78,7 +81,14 @@ export class Extensions extends EventEmitter {
     console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
-  observeExtensionHost(host: Electron.WebContents) {
+  /**
+   * Add webContents to be tracked as an extension host which will receive
+   * extension events when a chrome-extension:// resource is loaded.
+   *
+   * This is usually reserved for extension background pages and popups, but
+   * can also be used in other special cases.
+   */
+  addExtensionHost(host: Electron.WebContents) {
     this.state.extensionHosts.add(host)
 
     host.once('destroyed', () => {

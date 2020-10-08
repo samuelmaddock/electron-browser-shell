@@ -86,7 +86,7 @@ class TabbedBrowserWindow {
     this.id = this.window.id
     this.webContents = this.window.webContents
 
-    this.extensions.observeExtensionHost(this.webContents)
+    this.extensions.addExtensionHost(this.webContents)
 
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
@@ -94,7 +94,7 @@ class TabbedBrowserWindow {
     this.tabs = new Tabs(this.window)
 
     this.tabs.on('tab-created', function onTabCreated(tab) {
-      extensions.observeTab(tab.webContents)
+      extensions.addTab(tab.webContents)
       if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
       extensions.tabs.onCreated(tab.id)
     })
@@ -271,7 +271,7 @@ class Browser {
       // https://github.com/electron/electron/pull/22217
       (webContents.getType() === 'remote' && webContents.getURL().startsWith('chrome-extension://'))
     ) {
-      this.extensions.observeExtensionHost(webContents)
+      this.extensions.addExtensionHost(webContents)
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
