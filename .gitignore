@@ -1,3 +1,5 @@
 extensions/*
 !extensions/.gitkeep
 !extensions/README.md
+
+disabled/

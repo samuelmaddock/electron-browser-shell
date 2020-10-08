@@ -6,6 +6,44 @@
 
 This project is still early in development, and as such, there's no npm module available yet.
 
+## Usage
+
+```js
+const { app, session, BrowserWindow } = require('electron')
+const { Extensions } = require('electron-chrome-extensions')
+const path = require('path')
+
+(async function main() {
+  await app.whenReady()
+
+  const browserSession = session.defaultSession
+  const extensions = new Extensions(browserSession)
+
+  // Inject Chrome APIs into webpages of the session
+  browserSession.setPreloads([
+    path.join(__dirname, 'node_modules/electron-chrome-extensions/dist/preload.js'),
+    ...browserSession.getPreloads()
+  ])
+
+  const win = new BrowserWindow({
+    webPreferences: {
+      // Same session given to Extensions class
+      session: browserSession,
+      // Recommended options for loading remote content
+      sandbox: true,
+      contextIsolation: true
+    }
+  })
+
+  win.loadURL('https://samuelmaddock.com')
+  win.show()
+}())
+```
+
+## API
+
+> TODO
+
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)

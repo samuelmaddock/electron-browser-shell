@@ -1,10 +1,15 @@
 # electron-browser-shell
 
-A bare-bones, tabbed web browser with support for Chrome extensions—built on Electron.
-
-This is a WIP testbed for development of Chrome extension support in Electron. Minimal dependencies are used as a means to allow developers to take what they need for their own projects.
+A minimal, tabbed web browser with support for Chrome extensions—built on Electron.
 
 ![browser preview image showing 3 tabs and a youtube video](./screenshot.png)
+
+## Packages
+
+| Name | Description |
+| --- | --- |
+| [shell](./packages/shell) | A minimal, tabbed web browser used as a testbed for development of Chrome extension support. |
+| [electron-chrome-extensions](./packages/electron-chrome-extensions) | Adds additional API support for Chrome extensions to Electron. |
 
 ## Usage
 
