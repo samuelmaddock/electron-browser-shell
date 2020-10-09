@@ -19,7 +19,7 @@ const manifestExists = async (dirPath) => {
   }
 }
 
-async function loadExtensions(extensionsPath) {
+async function loadExtensions(session, extensionsPath) {
   const subDirectories = await fs.readdir(extensionsPath, {
     withFileTypes: true,
   })
@@ -53,7 +53,7 @@ async function loadExtensions(extensionsPath) {
 
   for (const extPath of extensionDirectories.filter(Boolean)) {
     console.log(`Loading extension from ${extPath}`)
-    const extensionInfo = await session.defaultSession.loadExtension(extPath)
+    const extensionInfo = await session.loadExtension(extPath)
     results.push(extensionInfo)
   }
 
@@ -147,10 +147,11 @@ class Browser {
   }
 
   async init() {
+    this.initSession()
     setupMenu(this)
 
     this.extensions = new Extensions({
-      session: session.defaultSession,
+      session: this.session,
 
       createTab: (event, details) => {
         const win =
@@ -180,23 +181,23 @@ class Browser {
         })
         // if (details.active) tabs.select(tab.id)
         return win.window
-      }
+      },
     })
 
     const extensionPreload = path.join(
       __dirname,
       '../../electron-chrome-extensions/dist/preload.js'
     )
-    const preloads = session.defaultSession.getPreloads()
-    session.defaultSession.setPreloads([extensionPreload, ...preloads])
+    const preloads = this.session.getPreloads()
+    this.session.setPreloads([extensionPreload, ...preloads])
 
-    const webuiExtension = await session.defaultSession.loadExtension(path.join(__dirname, 'ui'))
+    const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
     webuiExtensionId = webuiExtension.id
 
     const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
 
-    const installedExtensions = await loadExtensions(path.join(__dirname, '../../../extensions'))
-    this.extensions.browserAction.processExtensions(session.defaultSession, installedExtensions)
+    const installedExtensions = await loadExtensions(this.session, path.join(__dirname, '../../../extensions'))
+    this.extensions.browserAction.processExtensions(this.session, installedExtensions)
 
     this.extensions.on('active-tab-changed', (tab) => {
       const win = this.getWindowFromWebContents(tab)
@@ -219,6 +220,17 @@ class Browser {
     })
 
     this.createWindow({ initialUrl: newTabUrl })
+  }
+
+  initSession() {
+    this.session = session.defaultSession
+
+    // Remove Electron and App details to closer emulate Chrome's UA
+    const userAgent = this.session
+      .getUserAgent()
+      .replace(/\sElectron\/\S+/, '')
+      .replace(new RegExp(`\\s${app.getName()}/\\S+`), '')
+    this.session.setUserAgent(userAgent)
   }
 
   createWindow(options) {
