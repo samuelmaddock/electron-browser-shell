@@ -115,7 +115,6 @@ class TabbedBrowserWindow {
 
 class Browser {
   windows = []
-  popupView = null
 
   constructor() {
     app.whenReady().then(this.init.bind(this))
@@ -202,21 +201,6 @@ class Browser {
     this.extensions.on('active-tab-changed', (tab) => {
       const win = this.getWindowFromWebContents(tab)
       win.tabs.select(tab.id)
-    })
-
-    this.extensions.on('action-clicked', (event, extensionId) => {
-      const win = this.getWindowFromWebContents(event.sender)
-      const selectedId = win.tabs.selected ? win.tabs.selected.id : -1
-
-      if (this.popupView) {
-        win.window.removeBrowserView(this.popupView)
-        if (this.popupView.webContents.isDevToolsOpened()) {
-          this.popupView.webContents.closeDevTools()
-        }
-        this.popupView = undefined
-      } else {
-        this.popupView = this.extensions.createPopup(win.window, selectedId, extensionId)
-      }
     })
 
     this.createWindow({ initialUrl: newTabUrl })

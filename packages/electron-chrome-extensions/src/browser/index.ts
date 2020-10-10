@@ -120,19 +120,4 @@ export class Extensions extends EventEmitter {
       this.tabs.onActivated(tab.id)
     }
   }
-
-  createPopup(win: Electron.BrowserWindow, tabId: string, extensionId: string) {
-    const popupPath =
-      this.browserAction.getPopupPath(win.webContents.session, extensionId, tabId) || `popup.html`
-    const popupUrl = `chrome-extension://${extensionId}/${popupPath}`
-    const popup = new BrowserView()
-    popup.setBounds({ x: win.getSize()[0] - 256, y: 62, width: 256, height: 400 })
-    // popup.webContents.loadURL(`chrome-extension://${extension.id}/popup.html?tabId=${win.webContents.id}`)
-    console.log(`POPUP URL: ${popupUrl}`)
-    popup.webContents.loadURL(popupUrl)
-    popup.webContents.openDevTools({ mode: 'detach', activate: true })
-    popup.setBackgroundColor('#ff0000')
-    win.addBrowserView(popup)
-    return popup
-  }
 }

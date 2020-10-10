@@ -15,7 +15,8 @@ export class ExtensionStore {
   }
 
   get activeTab(): Electron.WebContents | undefined {
-    return this.activeTabId ? this.getTabById(this.activeTabId) : undefined
+    const tab = this.activeTabId ? this.getTabById(this.activeTabId) : undefined
+    return tab && !tab.isDestroyed() ? tab : undefined
   }
   set activeTab(tab: Electron.WebContents | undefined) {
     const tabId = tab?.id

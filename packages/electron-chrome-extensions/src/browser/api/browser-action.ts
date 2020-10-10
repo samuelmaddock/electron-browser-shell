@@ -1,5 +1,6 @@
-import { session, ipcMain } from 'electron'
+import { session, ipcMain, BrowserWindow } from 'electron'
 import { EventEmitter } from 'events'
+import { PopupView } from '../popup'
 import { ExtensionStore } from '../store'
 import { getIconImage } from './common'
 
@@ -22,7 +23,8 @@ interface ExtensionActionStore extends Partial<ExtensionAction> {
 }
 
 export class BrowserActionAPI {
-  sessionActionMap = new Map<Electron.Session, Map<string, ExtensionActionStore>>()
+  private sessionActionMap = new Map<Electron.Session, Map<string, ExtensionActionStore>>()
+  private popup?: PopupView
 
   constructor(private store: ExtensionStore) {
     const setter = (propName: string) => (
@@ -70,9 +72,11 @@ export class BrowserActionAPI {
     return action
   }
 
-  getPopupPath(session: Electron.Session, extensionId: string, tabId: string) {
+  private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
     const action = this.getAction(session, extensionId)
-    return action.tabs[tabId] ? action.tabs[tabId].popup?.path : action.popup?.path
+    const popupPath =
+      (action.tabs[tabId] && action.tabs[tabId].popup?.path) || action.popup?.path || undefined
+    return popupPath && `chrome-extension://${extensionId}/${popupPath}`
   }
 
   processExtensions(session: Electron.Session, extensions: Electron.Extension[]) {
@@ -105,6 +109,24 @@ export class BrowserActionAPI {
   }
 
   private onClicked(event: Electron.IpcMainInvokeEvent, extensionId: string) {
-    this.store.emit('action-clicked', event, extensionId)
+    if (this.popup) {
+      const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
+      this.popup.destroy()
+      this.popup = undefined
+      if (toggleExtension) return
+    }
+
+    // TODO: activeTab needs to be refactored to support one active tab per window
+    const { activeTab } = this.store
+    if (!activeTab) return
+
+    const popupUrl = this.getPopupUrl(activeTab.session, extensionId, activeTab.id)
+
+    if (popupUrl) {
+      const win = BrowserWindow.fromWebContents(activeTab)
+      if (win) this.popup = new PopupView(extensionId, win, popupUrl)
+    } else {
+      // TODO: dispatch click action
+    }
   }
 }
