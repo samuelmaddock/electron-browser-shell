@@ -1,4 +1,4 @@
-import { BrowserView } from 'electron'
+import { session as electronSession } from 'electron'
 import { EventEmitter } from 'events'
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -27,10 +27,10 @@ export class Extensions extends EventEmitter {
   webNavigation: WebNavigationAPI
   windows: WindowsAPI
 
-  constructor(opts: ChromeExtensionOptions) {
+  constructor(opts?: ChromeExtensionOptions) {
     super()
 
-    const { session, ...impl } = opts
+    const { session = electronSession.defaultSession, ...impl } = opts || {}
 
     this.store = new ExtensionStore(this, session, impl)
 

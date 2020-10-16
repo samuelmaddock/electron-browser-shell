@@ -17,7 +17,22 @@ const path = require('path')
   await app.whenReady()
 
   const browserSession = session.defaultSession
-  const extensions = new Extensions(browserSession)
+
+  const extensions = new Extensions({
+    session: browserSession,
+    createTab(event, details) {
+      // Optionally implemented for chrome.tabs.create support
+    },
+    selectTab(event, tab) {
+      // Optionally implemented for chrome.tabs.update support
+    },
+    removeTab(event, tab) {
+      // Optionally implemented for chrome.tabs.remove support
+    },
+    createWindow(event, details) {
+      // Optionally implemented for chrome.windows.create support
+    }
+  })
 
   // Inject Chrome APIs into webpages of the session
   browserSession.setPreloads([
@@ -42,13 +57,69 @@ const path = require('path')
 
 ## API
 
-> TODO
+### Class: Extensions
+
+> Create browser APIs for handling Chrome extension requests.
+
+#### `new Extensions([options])`
+
+* `options` Object (optional)
+  * `session` Electron.Session (optional) - Session which should support
+    Chrome extension APIs. `session.defaultSession` is used by default.
+  * `createTab(event, details) => Promise<Electron.WebContents>` (optional) -
+    Called when `chrome.tabs.create` is invoked by an extension. Allows the
+    application to handle how tabs are created.
+  * `selectTab(event, webContents)` (optional) - Called when
+    `chrome.tabs.update` is invoked by an extension with the option to set the
+    active tab.
+  * `removeTab(event, webContents)` (optional) - Called when
+    `chrome.tabs.remove` is invoked by an extension.
+  * `createWindow(event, details) => Promise<Electron.BrowserWindow>`
+    (optional) - Called when `chrome.windows.create` is invoked by an extension.
+
+```ts
+new Extensions({
+  createTab(event, details) {
+    const tab = myTabApi.createTab()
+    if (details.url) {
+      tab.loadURL(details.url)
+    }
+    return tab
+  },
+  createWindow(event, details) {
+    const window = new BrowserWindow()
+    return window
+  }
+})
+```
+
+For a complete usage example, see the browser implementation in the
+[`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/shell/browser/main.js)
+project.
+
+#### Instance Methods
+
+##### `extensions.addTab(tab)`
+
+- `tab` Electron.WebContents - A tab that the extension system should keep
+  track of.
+
+Makes the tab accessible from the `chrome.tabs` API.
+
+##### `extensions.selectTab(tab)`
+
+- `tab` Electron.WebContents
+
+Notify the extension system that a tab has been selected as the active tab.
 
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)
 
 Although certain APIs may not be implemented, some methods and properties are still defined as noops.
+
+<details>
+<summary>Click to reveal supported APIs</summary>
 
 ### [`chrome.browserAction`](https://developer.chrome.com/extensions/browserAction)
 
@@ -153,3 +224,16 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.windows.onRemoved
 - [ ] chrome.windows.onFocusChanged
 - [ ] chrome.windows.onBoundsChanged
+</details>
+
+## Limitations
+
+- Only one session can be supported currently.
+- Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
+- Chrome's Manifest V3 extensions are not yet supported.
+
+## License
+
+GPL-3
+
+For proprietary use, please [contact me](mailto:sam@samuelmaddock.com?subject=electron-chrome-extensions%20license).

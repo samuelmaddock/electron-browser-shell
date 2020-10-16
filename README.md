@@ -37,7 +37,13 @@ Load unpacked extensions into `./extensions` then launch the browser.
 - [ ] Robust extension popup support
 - [ ] Chrome webstore extension installer?
 
-## Contributor license agreement
+## License
+
+GPL-3
+
+For proprietary use, please [contact me](mailto:sam@samuelmaddock.com?subject=electron-browser-shell%20license).
+
+### Contributor license agreement
 
 By sending a pull request, you hereby grant to owners and users of the
 electron-browser-shell project a perpetual, worldwide, non-exclusive,
