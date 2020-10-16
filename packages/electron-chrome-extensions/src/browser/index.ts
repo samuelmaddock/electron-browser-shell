@@ -1,5 +1,7 @@
 import { app, session as electronSession } from 'electron'
 import { EventEmitter } from 'events'
+import path from 'path'
+
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
@@ -10,8 +12,10 @@ import { ContextMenusAPI } from './api/context-menus'
 import { RuntimeAPI } from './api/runtime'
 import { ChromeExtensionImpl } from './impl'
 
+const DEFAULT_PRELOAD_PATH = path.join(__dirname, 'preload.js')
+
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
-  session: Electron.Session
+  session?: Electron.Session
 }
 
 /**
@@ -42,6 +46,22 @@ export class Extensions extends EventEmitter {
     this.windows = new WindowsAPI(this.store)
 
     app.on('web-contents-created', this.onWebContentsCreated)
+
+    this.prependPreload()
+  }
+
+  private prependPreload() {
+    const { session } = this.store
+    const preloads = session.getPreloads()
+
+    const preloadPath = DEFAULT_PRELOAD_PATH
+
+    const preloadIndex = preloads.indexOf(preloadPath)
+    if (preloadIndex > -1) {
+      preloads.splice(preloadIndex, 1)
+    }
+
+    session.setPreloads(preloads)
   }
 
   private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
