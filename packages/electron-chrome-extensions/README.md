@@ -112,6 +112,23 @@ Makes the tab accessible from the `chrome.tabs` API.
 
 Notify the extension system that a tab has been selected as the active tab.
 
+##### `extensions.getContextMenuItems(tab, params)`
+
+- `tab` Electron.WebContents - The tab from which the context-menu event originated.
+- `params` Electron.ContextMenuParams - Parameters from the [`context-menu` event](https://www.electronjs.org/docs/api/web-contents#event-context-menu).
+
+Returns [`Electron.MenuItem[]`](https://www.electronjs.org/docs/api/menu-item#class-menuitem) -
+An array of all extension context menu items given the context.
+
+##### `extensions.addExtension(extension)`
+
+- `extension` Electron.Extension
+
+Adds an extension to be tracked by the `chrome.browserAction` API. This allows
+the extension to appear as a button in the browser top bar.
+
+This method will soon go away and no longer be necessary.
+
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)
