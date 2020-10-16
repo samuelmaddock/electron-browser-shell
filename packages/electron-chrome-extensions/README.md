@@ -36,7 +36,7 @@ const { Extensions } = require('electron-chrome-extensions')
 
 Intended for multi-tab browsers with full support for Chrome extension APIs.
 
-> For a complete example, see the [`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/shell/browser/main.js) project.
+> For a complete example, see the [`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell) project.
 
 ```js
 const { app, session, BrowserWindow } = require('electron')
