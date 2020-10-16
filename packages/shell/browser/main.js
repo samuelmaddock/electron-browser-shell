@@ -248,13 +248,7 @@ class Browser {
     const url = webContents.getURL()
     console.log(`webContents type=${type}, url=${url}`)
 
-    if (
-      webContents.getType() === 'backgroundPage' ||
-      // TODO: Need changes from this PR for properly assigned background page type
-      // https://github.com/electron/electron/pull/22217
-      (webContents.getType() === 'remote' && webContents.getURL().startsWith('chrome-extension://'))
-    ) {
-      this.extensions.addExtensionHost(webContents)
+    if (webContents.getType() === 'backgroundPage') {
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 

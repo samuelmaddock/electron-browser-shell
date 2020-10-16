@@ -1,4 +1,4 @@
-import { session as electronSession } from 'electron'
+import { app, session as electronSession, webContents } from 'electron'
 import { EventEmitter } from 'events'
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -40,6 +40,16 @@ export class Extensions extends EventEmitter {
     this.tabs = new TabsAPI(this.store)
     this.webNavigation = new WebNavigationAPI(this.store)
     this.windows = new WindowsAPI(this.store)
+
+    app.on('web-contents-created', this.onWebContentsCreated)
+  }
+
+  private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
+    if (webContents.session !== this.store.session) return
+
+    if (webContents.getType() === 'backgroundPage') {
+      this.addExtensionHost(webContents)
+    }
   }
 
   /**
@@ -96,6 +106,12 @@ export class Extensions extends EventEmitter {
     console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
+  selectTab(tab: Electron.WebContents) {
+    if (this.store.tabs.has(tab)) {
+      this.tabs.onActivated(tab.id)
+    }
+  }
+
   /**
    * Add webContents to be tracked as an extension host which will receive
    * extension events when a chrome-extension:// resource is loaded.
@@ -113,11 +129,5 @@ export class Extensions extends EventEmitter {
     })
 
     console.log(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
-  }
-
-  selectTab(tab: Electron.WebContents) {
-    if (this.store.tabs.has(tab)) {
-      this.tabs.onActivated(tab.id)
-    }
   }
 }
