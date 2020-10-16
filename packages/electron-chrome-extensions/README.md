@@ -15,9 +15,8 @@ npm install electron-chrome-extensions
 Simple browser using Electron's [default session](https://www.electronjs.org/docs/api/session#sessiondefaultsession) and one tab.
 
 ```js
-const { app, session, BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron')
 const { Extensions } = require('electron-chrome-extensions')
-const path = require('path')
 
 (async function main() {
   await app.whenReady()
@@ -42,7 +41,6 @@ Intended for multi-tab browsers with full support for Chrome extension APIs.
 ```js
 const { app, session, BrowserWindow } = require('electron')
 const { Extensions } = require('electron-chrome-extensions')
-const path = require('path')
 
 (async function main() {
   await app.whenReady()
