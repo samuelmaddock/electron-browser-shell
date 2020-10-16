@@ -137,7 +137,7 @@ const setupContextMenu = (browser, webContents, params) => {
     menu.append(new MenuItem({ type: 'separator' }))
   }
 
-  const items = browser.extensions.contextMenus.buildMenuItems(webContents, params)
+  const items = browser.extensions.getContextMenuItems(webContents, params)
   items.forEach((item) => menu.append(item))
   if (items.length > 0) menu.append(new MenuItem({ type: 'separator' }))
 

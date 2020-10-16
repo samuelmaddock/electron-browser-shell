@@ -1,4 +1,4 @@
-import { app, session as electronSession, webContents } from 'electron'
+import { app, session as electronSession } from 'electron'
 import { EventEmitter } from 'events'
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -20,12 +20,12 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
 export class Extensions extends EventEmitter {
   private store: ExtensionStore
 
-  browserAction: BrowserActionAPI
-  contextMenus: ContextMenusAPI
-  runtime: RuntimeAPI
-  tabs: TabsAPI
-  webNavigation: WebNavigationAPI
-  windows: WindowsAPI
+  private browserAction: BrowserActionAPI
+  private contextMenus: ContextMenusAPI
+  private runtime: RuntimeAPI
+  private tabs: TabsAPI
+  private webNavigation: WebNavigationAPI
+  private windows: WindowsAPI
 
   constructor(opts?: ChromeExtensionOptions) {
     super()
@@ -52,9 +52,7 @@ export class Extensions extends EventEmitter {
     }
   }
 
-  /**
-   * Add webContents to be tracked as a tab.
-   */
+  /** Add webContents to be tracked as a tab. */
   addTab(tab: Electron.WebContents) {
     if (this.store.tabs.has(tab)) return
 
@@ -106,6 +104,7 @@ export class Extensions extends EventEmitter {
     console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
+  /** Notify extension system that the active tab has changed. */
   selectTab(tab: Electron.WebContents) {
     if (this.store.tabs.has(tab)) {
       this.tabs.onActivated(tab.id)
@@ -129,5 +128,23 @@ export class Extensions extends EventEmitter {
     })
 
     console.log(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
+  }
+
+  /**
+   * Get collection of menu items managed by the `chrome.contextMenus` API.
+   * @see https://developer.chrome.com/extensions/contextMenus
+   */
+  getContextMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
+    return this.contextMenus.buildMenuItems(webContents, params)
+  }
+
+  /**
+   * Add extensions to be visible as an extension action button.
+   *
+   * This is a temporary API which will go away soon after extension registry
+   * events have been backported from Electron v12.
+   */
+  addExtension(extension: Electron.Extension) {
+    this.browserAction.processExtension(this.store.session, extension)
   }
 }

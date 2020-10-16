@@ -196,7 +196,9 @@ class Browser {
     const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
 
     const installedExtensions = await loadExtensions(this.session, path.join(__dirname, '../../../extensions'))
-    this.extensions.browserAction.processExtensions(this.session, installedExtensions)
+    installedExtensions.forEach(extension => {
+      this.extensions.addExtension(extension)
+    })
 
     this.extensions.on('active-tab-changed', (tab) => {
       const win = this.getWindowFromWebContents(tab)

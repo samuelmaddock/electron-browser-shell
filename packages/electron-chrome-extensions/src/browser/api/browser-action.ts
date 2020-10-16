@@ -54,14 +54,34 @@ export class BrowserActionAPI {
     ipcMain.handle('browserAction.getAll', this.getAll.bind(this))
 
     ipcMain.handle('click-action', this.onClicked.bind(this))
+
+    this.setupSession(this.store.session)
   }
 
-  private getAction(session: Electron.Session, extensionId: string) {
+  private setupSession(session: Electron.Session) {
+    // TODO: Extension events need to be backported from Electron v12
+    const _session = session as any
+
+    _session.on('extension-loaded', (event: Electron.Event, extension: Electron.Extension) => {
+      this.processExtension(session, extension)
+    })
+
+    _session.on('extension-unloaded', (event: Electron.Event, extension: Electron.Extension) => {
+      this.removeActions(this.store.session, extension.id)
+    })
+  }
+
+  private getSessionActions(session: Electron.Session) {
     let sessionActions = this.sessionActionMap.get(session)
     if (!sessionActions) {
       sessionActions = new Map()
       this.sessionActionMap.set(session, sessionActions)
     }
+    return sessionActions
+  }
+
+  private getAction(session: Electron.Session, extensionId: string) {
+    const sessionActions = this.getSessionActions(session)
 
     let action = sessionActions.get(extensionId)
     if (!action) {
@@ -72,6 +92,18 @@ export class BrowserActionAPI {
     return action
   }
 
+  private removeActions(session: Electron.Session, extensionId: string) {
+    const sessionActions = this.getSessionActions(session)
+
+    if (sessionActions.has(extensionId)) {
+      sessionActions.delete(extensionId)
+    }
+
+    if (sessionActions.size === 0) {
+      this.sessionActionMap.delete(session)
+    }
+  }
+
   private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
     const action = this.getAction(session, extensionId)
     const popupPath =
@@ -79,25 +111,22 @@ export class BrowserActionAPI {
     return popupPath && `chrome-extension://${extensionId}/${popupPath}`
   }
 
-  processExtensions(session: Electron.Session, extensions: Electron.Extension[]) {
-    const populate = (extension: Electron.Extension) => {
-      const manifest = extension.manifest as chrome.runtime.Manifest
-      const { browser_action } = manifest
-      if (browser_action) {
-        const action = this.getAction(session, extension.id)
+  // TODO: Make private after backporting extension registry events
+  processExtension(session: Electron.session, extension: Electron.Extension) {
+    const manifest = extension.manifest as chrome.runtime.Manifest
+    const { browser_action } = manifest
+    if (browser_action) {
+      const action = this.getAction(session, extension.id)
 
-        action.title = browser_action.default_title || manifest.name
+      action.title = browser_action.default_title || manifest.name
 
-        const iconImage = getIconImage(extension)
-        if (iconImage) action.icon = iconImage.toDataURL()
+      const iconImage = getIconImage(extension)
+      if (iconImage) action.icon = iconImage.toDataURL()
 
-        if (browser_action.default_popup) {
-          action.popup = { path: browser_action.default_popup }
-        }
+      if (browser_action.default_popup) {
+        action.popup = { path: browser_action.default_popup }
       }
     }
-
-    extensions.forEach(populate)
   }
 
   private getAll(event: Electron.IpcMainInvokeEvent) {
