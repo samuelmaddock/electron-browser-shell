@@ -50,6 +50,9 @@ const path = require('path')
     }
   })
 
+  // Adds the active tab of the browser
+  extensions.addTab(win.webContents)
+
   win.loadURL('https://samuelmaddock.com')
   win.show()
 }())
