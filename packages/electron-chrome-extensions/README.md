@@ -10,6 +10,10 @@ npm install electron-chrome-extensions
 
 ## Usage
 
+### Basic
+
+Simple browser using Electron's [default session](https://www.electronjs.org/docs/api/session#sessiondefaultsession) and one tab.
+
 ```js
 const { app, session, BrowserWindow } = require('electron')
 const { Extensions } = require('electron-chrome-extensions')
@@ -18,7 +22,32 @@ const path = require('path')
 (async function main() {
   await app.whenReady()
 
-  const browserSession = session.defaultSession
+  const extensions = new Extensions()
+  const win = new BrowserWindow()
+
+  // Adds the active tab of the browser
+  extensions.addTab(win.webContents)
+
+  win.loadURL('https://samuelmaddock.com')
+  win.show()
+}())
+```
+
+### Advanced
+
+Intended for multi-tab browsers with full support for Chrome extension APIs.
+
+> For a complete example, see the [`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell/blob/master/packages/shell/browser/main.js) project.
+
+```js
+const { app, session, BrowserWindow } = require('electron')
+const { Extensions } = require('electron-chrome-extensions')
+const path = require('path')
+
+(async function main() {
+  await app.whenReady()
+
+  const browserSession = session.fromPartition('persist:custom')
 
   const extensions = new Extensions({
     session: browserSession,
@@ -35,12 +64,6 @@ const path = require('path')
       // Optionally implemented for chrome.windows.create support
     }
   })
-
-  // Inject Chrome APIs into webpages of the session
-  browserSession.setPreloads([
-    path.join(__dirname, 'node_modules/electron-chrome-extensions/dist/preload.js'),
-    ...browserSession.getPreloads()
-  ])
 
   const win = new BrowserWindow({
     webPreferences: {
