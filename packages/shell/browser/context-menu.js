@@ -59,7 +59,7 @@ const setupContextMenu = (browser, webContents, params) => {
       new MenuItem({
         label: 'Undo',
         enabled: params.editFlags.canUndo,
-        click: () => console.error('Not yet implemented'),
+        click: () => webContents.undo(),
       })
     )
     menu.append(new MenuItem({ type: 'separator' }))
@@ -67,30 +67,28 @@ const setupContextMenu = (browser, webContents, params) => {
       new MenuItem({
         label: 'Cut',
         enabled: params.editFlags.canCut,
-        click: () => console.error('Not yet implemented'),
+        click: () => webContents.cut(),
       })
     )
     menu.append(
       new MenuItem({
         label: 'Copy',
         enabled: params.editFlags.canCopy,
-        click: () => {
-          clipboard.writeText(params.selectionText)
-        },
+        click: () => webContents.copy(),
       })
     )
     menu.append(
       new MenuItem({
         label: 'Paste',
         enabled: params.editFlags.canPaste,
-        click: () => console.error('Not yet implemented'),
+        click: () => webContents.paste(),
       })
     )
     menu.append(
       new MenuItem({
         label: 'Delete',
         enabled: params.editFlags.canDelete,
-        click: () => console.error('Not yet implemented'),
+        click: () => webContents.delete(),
       })
     )
     menu.append(new MenuItem({ type: 'separator' }))
@@ -98,7 +96,7 @@ const setupContextMenu = (browser, webContents, params) => {
       menu.append(
         new MenuItem({
           label: 'Select All',
-          click: () => console.error('Not yet implemented'),
+          click: () => webContents.selectAll(),
         })
       )
       menu.append(new MenuItem({ type: 'separator' }))
@@ -146,9 +144,7 @@ const setupContextMenu = (browser, webContents, params) => {
   menu.append(
     new MenuItem({
       label: 'Inspect',
-      click: () => {
-        webContents.openDevTools()
-      },
+      click: () => webContents.openDevTools(),
     })
   )
 
