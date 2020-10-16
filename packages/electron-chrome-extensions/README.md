@@ -228,6 +228,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 
 ## Limitations
 
+- Currently targeting Electron v11. For minimum support, Electron v9 is required.
 - Only one session can be supported currently.
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
 - Chrome's Manifest V3 extensions are not yet supported.
