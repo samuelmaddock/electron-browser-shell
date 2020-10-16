@@ -4,7 +4,9 @@
 
 ## Install
 
-This project is still early in development, and as such, there's no npm module available yet.
+```
+npm install electron-chrome-extensions
+```
 
 ## Usage
 

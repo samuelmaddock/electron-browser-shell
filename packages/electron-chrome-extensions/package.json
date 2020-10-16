@@ -1,11 +1,16 @@
 {
   "name": "electron-chrome-extensions",
   "version": "1.0.0",
-  "description": "Chrome extension support for Electron—built with tabbed browsers in mind.",
+  "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
-    "build": "webpack"
+    "build": "tsc && webpack"
   },
+  "keywords": [
+    "electron",
+    "chrome",
+    "extensions"
+  ],
   "repository": "https://github.com/samuelmaddock/electron-browser-shell",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "license": "GPL-3.0",
