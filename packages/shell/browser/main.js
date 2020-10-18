@@ -234,7 +234,7 @@ class Browser {
     })
     this.windows.push(win)
 
-    if (process.env.DEBUG) {
+    if (process.env.SHELL_DEBUG) {
       win.webContents.openDevTools({ mode: 'detach' })
     }
 
@@ -246,7 +246,7 @@ class Browser {
     const url = webContents.getURL()
     console.log(`webContents type=${type}, url=${url}`)
 
-    if (webContents.getType() === 'backgroundPage') {
+    if (process.env.SHELL_DEBUG && webContents.getType() === 'backgroundPage') {
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
