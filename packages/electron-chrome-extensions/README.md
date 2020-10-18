@@ -34,7 +34,7 @@ const { Extensions } = require('electron-chrome-extensions')
 
 ### Advanced
 
-Intended for multi-tab browsers with full support for Chrome extension APIs.
+Multi-tab browser with full support for Chrome extension APIs.
 
 > For a complete example, see the [`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell) project.
 
@@ -155,6 +155,36 @@ the extension to appear as a button in the browser top bar.
 
 This method will soon go away and no longer be necessary.
 
+### Element: `<browser-action-list>`
+
+The `<browser-action-list>` element provides a row of [browser actions](https://developer.chrome.com/extensions/browserAction) which may be pressed to activate the `chrome.browserAction.onClicked` event or display the extension popup.
+
+To enable the element on a webpage, you must define a preload script which injects the API on specific pages.
+
+#### Attributes
+
+- `tab` string - The tab's `Electron.WebContents` ID to use for displaying
+  the relevant browser action state.
+
+#### Browser action example
+
+##### Preload
+```js
+import { injectBrowserAction } from 'electron-chrome-extensions/dist/browser-action'
+
+// Inject <browser-action-list> element into our browser
+if (location.href === 'webui://browser-chrome.html') {
+  injectBrowserAction()
+}
+```
+
+> The use of `import` implies that your preload script must be compiled using a JavaScript bundler like Webpack.
+
+##### Webpage
+```html
+<browser-action-list tab="1"></browser-action-list>
+```
+
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)
@@ -271,10 +301,13 @@ Although certain APIs may not be implemented, some methods and properties are st
 
 ## Limitations
 
-- Currently targeting Electron v11. For minimum support, Electron v9 is required.
-- Only one session can be supported currently.
-- Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
+### electron-chrome-extensions
+- Uses features which will land in Electron v11 stable. Minimum support requires Electron v9.
+- Currently only one session can be supported.
 - Chrome's Manifest V3 extensions are not yet supported.
+
+### electron
+- Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
 
 ## License
 

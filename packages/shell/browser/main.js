@@ -149,6 +149,9 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
+    const browserPreload = path.join(__dirname, '../preload.js')
+    this.session.setPreloads([browserPreload])
+
     this.extensions = new Extensions({
       session: this.session,
 
@@ -182,13 +185,6 @@ class Browser {
         return win.window
       },
     })
-
-    const extensionPreload = path.join(
-      __dirname,
-      '../../electron-chrome-extensions/dist/preload.js'
-    )
-    const preloads = this.session.getPreloads()
-    this.session.setPreloads([extensionPreload, ...preloads])
 
     const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
     webuiExtensionId = webuiExtension.id

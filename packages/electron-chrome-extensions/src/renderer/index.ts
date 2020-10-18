@@ -59,7 +59,6 @@ export const injectExtensionAPIs = () => {
     invokeExtension,
     addExtensionListener,
     removeExtensionListener,
-    ipcRenderer,
   }
 
   // Function body to run in the main world.
@@ -176,11 +175,6 @@ export const injectExtensionAPIs = () => {
       onClicked: new ExtensionEvent('browserAction.onClicked'),
     }
 
-    // TODO: only created these in special webui context
-    Object.assign(browserAction, {
-      getAll: invokeExtension('browserAction.getAll', { extensionId }),
-    })
-
     let menuCounter = 0
     const menuCallbacks: { [key: string]: chrome.contextMenus.CreateProperties['onclick'] } = {}
     const menuCreate = invokeExtension('contextMenus.create', { extensionId })
@@ -282,9 +276,6 @@ export const injectExtensionAPIs = () => {
     if (manifest.browser_action) {
       Object.assign(chrome, { browserAction })
     }
-
-    // TODO: need to only optionally include this
-    ;(chrome as any).ipcRenderer = electron.ipcRenderer
 
     // Remove access to internals
     delete (window as any).electron

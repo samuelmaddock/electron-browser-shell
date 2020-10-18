@@ -1,1 +1,3 @@
 dist
+*.js
+*.map

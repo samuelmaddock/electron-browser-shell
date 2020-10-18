@@ -1,5 +1,3 @@
-const { ipcRenderer } = chrome
-
 class WebUI {
   windowId = -1
   activeTabId = -1
@@ -17,8 +15,7 @@ class WebUI {
       reloadButton: $('#reload'),
       addressUrl: $('#addressurl'),
 
-      actions: $('#actions'),
-      actionTemplate: $('#actiontemplate'),
+      browserActions: $('#actions'),
 
       minimizeButton: $('#minimize'),
       maximizeButton: $('#maximize'),
@@ -45,11 +42,6 @@ class WebUI {
 
     this.setupBrowserListeners()
     this.initTabs()
-
-    setInterval(async () => {
-      const actions = await chrome.browserAction.getAll()
-      this.renderActions(actions)
-    }, 2000)
   }
 
   setupBrowserListeners() {
@@ -66,10 +58,7 @@ class WebUI {
     chrome.tabs.onActivated.addListener((activeInfo) => {
       if (activeInfo.windowId !== this.windowId) return
 
-      this.activeTabId = activeInfo.tabId
-
-      const tab = this.tabList.find((tab) => tab.id === this.activeTabId)
-      if (tab) this.renderToolbar(tab)
+      this.setActiveTab(activeInfo)
 
       this.initTabs() // get updated info on all tabs
     })
@@ -98,10 +87,16 @@ class WebUI {
 
     const activeTab = this.tabList.find((tab) => tab.active)
     if (activeTab) {
-      this.activeTabId = activeTab.id
-      this.windowId = activeTab.windowId
-      this.renderToolbar(activeTab)
+      this.setActiveTab(activeTab)
     }
+  }
+
+  setActiveTab(activeTab) {
+    this.activeTabId = activeTab.id || activeTab.tabId
+    this.windowId = activeTab.windowId
+
+    const tab = this.tabList.find((tab) => tab.id === this.activeTabId)
+    if (tab) this.renderToolbar(tab)
   }
 
   onAddressUrlKeyPress(event) {
@@ -151,39 +146,7 @@ class WebUI {
 
   renderToolbar(tab) {
     this.$.addressUrl.value = tab.url
-  }
-
-  createActionNode(action) {
-    const actionElem = this.$.actionTemplate.content.cloneNode(true).firstElementChild
-    actionElem.dataset.actionId = action.id
-
-    actionElem.addEventListener('click', () => {
-      ipcRenderer.invoke('click-action', action.id)
-    })
-
-    this.$.actions.appendChild(actionElem)
-    return actionElem
-  }
-
-  renderActions(actions) {
-    actions.forEach((action) => {
-      let actionElem = this.$.actions.querySelector(`[data-action-id="${action.id}"]`)
-      if (!actionElem) actionElem = this.createActionNode(action)
-
-      const src = (this.activeTabId > -1 && action.tabs[this.activeTabId]) || action
-      actionElem.title = src.title
-
-      if (src.imageData) {
-        actionElem.style.backgroundImage = src.imageData ? `url(${src.imageData['32']})` : null
-      } else if (src.icon) {
-        actionElem.style.backgroundImage = `url(${src.icon})`
-      }
-
-      const badge = actionElem.querySelector('.badge')
-      badge.style.display = src.text ? 'block' : 'none'
-      badge.textContent = src.text
-      badge.style.backgroundColor = src.color
-    })
+    this.$.browserActions.tab = tab.id
   }
 }
 

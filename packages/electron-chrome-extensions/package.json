@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-extensions",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
@@ -40,7 +40,7 @@
       "@babel/preset-typescript"
     ],
     "plugins": [
-      "@babel/plugin-proposal-class-properties",
+      ["@babel/plugin-proposal-class-properties", { "loose": true }],
       "@babel/plugin-proposal-optional-chaining"
     ]
   }

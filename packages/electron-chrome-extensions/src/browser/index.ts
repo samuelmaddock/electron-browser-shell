@@ -52,7 +52,7 @@ export class Extensions extends EventEmitter {
 
   private prependPreload() {
     const { session } = this.store
-    const preloads = session.getPreloads()
+    let preloads = session.getPreloads()
 
     const preloadPath = DEFAULT_PRELOAD_PATH
 
@@ -61,6 +61,7 @@ export class Extensions extends EventEmitter {
       preloads.splice(preloadIndex, 1)
     }
 
+    preloads = [preloadPath, ...preloads]
     session.setPreloads(preloads)
   }
 

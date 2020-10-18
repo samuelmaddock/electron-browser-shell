@@ -1,46 +1,17 @@
 const path = require('path')
-const webpack = require('webpack')
-
-const base = {
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            cacheDirectory: true,
-          },
-        },
-      },
-    ],
-  },
-
-  resolve: {
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    modules: ['node_modules'],
-  },
-
-  plugins: [
-    // new webpack.EnvironmentPlugin({
-    //   NODE_ENV: 'production',
-    // }),
-
-    new webpack.NamedModulesPlugin(),
-  ],
-}
+const webpackBase = require('../../build/webpack/webpack.config.base')
 
 const main = {
-  ...base,
-  devtool: 'source-map',
+  ...webpackBase,
 
   target: 'electron-main',
 
   entry: {
     index: './src/index.ts',
+  },
+
+  node: {
+    __dirname: false
   },
 
   output: {
@@ -51,14 +22,12 @@ const main = {
 }
 
 const preload = {
-  ...base,
-
-  devtool: 'source-map',
+  ...webpackBase,
 
   target: 'electron-preload',
 
   entry: {
-    preload: './src/preload.ts',
+    preload: './src/preload.ts'
   },
 
   output: {
@@ -66,4 +35,19 @@ const preload = {
   },
 }
 
-module.exports = [main, preload]
+const libs = {
+  ...webpackBase,
+
+  target: 'electron-preload',
+
+  entry: {
+    'browser-action': './src/browser-action.ts',
+  },
+
+  output: {
+    path: path.join(__dirname, 'dist'),
+    libraryTarget: 'commonjs2',
+  },
+}
+
+module.exports = [main, preload, libs]

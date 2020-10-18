@@ -4,13 +4,14 @@
   "description": "Minimum Viable Browser shell built on Electron.",
   "main": "index.js",
   "scripts": {
+    "build": "webpack",
     "start": "electron ."
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "private": true,
   "dependencies": {
-    "electron": "^10.1.3",
-    "electron-chrome-extensions": "1.0.0"
+    "electron": "11.0.0-beta.13",
+    "electron-chrome-extensions": "1.1.0"
   }
 }

@@ -26,6 +26,9 @@ export class BrowserActionAPI {
   private sessionActionMap = new Map<Electron.Session, Map<string, ExtensionActionStore>>()
   private popup?: PopupView
 
+  private observers: Set<Electron.WebContents> = new Set()
+  private queuedUpdate: boolean = false
+
   constructor(private store: ExtensionStore) {
     const setter = (propName: string) => (
       event: Electron.IpcMainInvokeEvent,
@@ -40,8 +43,12 @@ export class BrowserActionAPI {
         const tabAction = action.tabs[details.tabId] || (action.tabs[details.tabId] = {})
         Object.assign(tabAction, rest)
       } else {
+        // TODO: need to handle case where prop is set to undefined and
+        // revert the value to its default
         Object.assign(action, rest)
       }
+
+      this.onUpdate()
     }
 
     ipcMain.handle('browserAction.setBadgeBackgroundColor', setter('backgroundColor'))
@@ -50,10 +57,16 @@ export class BrowserActionAPI {
     ipcMain.handle('browserAction.setIcon', setter('icon'))
     ipcMain.handle('browserAction.setPopup', setter('popup'))
 
-    // extended methods for webui
+    // browserAction preload API
     ipcMain.handle('browserAction.getAll', this.getAll.bind(this))
-
-    ipcMain.handle('click-action', this.onClicked.bind(this))
+    ipcMain.handle('browserAction.activate', this.onClicked.bind(this))
+    ipcMain.handle('browserAction.addObserver', (event) => {
+      const { sender: webContents } = event
+      this.observers.add(webContents)
+      webContents.once('destroyed', () => {
+        this.observers.delete(webContents)
+      })
+    })
 
     this.setupSession(this.store.session)
   }
@@ -76,6 +89,7 @@ export class BrowserActionAPI {
     if (!sessionActions) {
       sessionActions = new Map()
       this.sessionActionMap.set(session, sessionActions)
+      this.onUpdate()
     }
     return sessionActions
   }
@@ -87,6 +101,7 @@ export class BrowserActionAPI {
     if (!action) {
       action = { tabs: {} }
       sessionActions.set(extensionId, action)
+      this.onUpdate()
     }
 
     return action
@@ -102,6 +117,8 @@ export class BrowserActionAPI {
     if (sessionActions.size === 0) {
       this.sessionActionMap.delete(session)
     }
+
+    this.onUpdate()
   }
 
   private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
@@ -115,7 +132,7 @@ export class BrowserActionAPI {
   processExtension(session: Electron.session, extension: Electron.Extension) {
     const manifest = extension.manifest as chrome.runtime.Manifest
     const { browser_action } = manifest
-    if (browser_action) {
+    if (typeof browser_action === 'object') {
       const action = this.getAction(session, extension.id)
 
       action.title = browser_action.default_title || manifest.name
@@ -129,12 +146,12 @@ export class BrowserActionAPI {
     }
   }
 
-  private getAll(event: Electron.IpcMainInvokeEvent) {
-    const senderSession = event.sender.session || session.defaultSession
-    let sessionActions = this.sessionActionMap.get(senderSession)
-    if (!sessionActions) return []
-
-    return Array.from(sessionActions.entries()).map((val: any) => ({ id: val[0], ...val[1] }))
+  private getAll(event: Electron.IpcMainInvokeEvent, partition?: string) {
+    const ses = partition ? session.fromPartition(partition) : event.sender.session
+    const sessionActions = this.sessionActionMap.get(ses)
+    return sessionActions
+      ? Array.from(sessionActions.entries()).map((val: any) => ({ id: val[0], ...val[1] }))
+      : []
   }
 
   private onClicked(event: Electron.IpcMainInvokeEvent, extensionId: string) {
@@ -157,5 +174,16 @@ export class BrowserActionAPI {
     } else {
       // TODO: dispatch click action
     }
+  }
+
+  private onUpdate() {
+    if (this.queuedUpdate) return
+    this.queuedUpdate = true
+    queueMicrotask(() => {
+      this.queuedUpdate = false
+      Array.from(this.observers).forEach((observer) => {
+        observer.send('browserAction.update')
+      })
+    })
   }
 }
