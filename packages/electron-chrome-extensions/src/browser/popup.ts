@@ -10,10 +10,12 @@ enum PopupGeometry {
 }
 
 export class PopupView {
-  private view?: BrowserView
+  browserView?: BrowserView
 
-  constructor(public extensionId: string, private window: BrowserWindow, url: string) {
-    this.view = new BrowserView({
+  private destroyed: boolean = false
+
+  constructor(public extensionId: string, public browserWindow: BrowserWindow, url: string) {
+    this.browserView = new BrowserView({
       webPreferences: {
         contextIsolation: true,
         preferredSizeMode: true,
@@ -21,41 +23,50 @@ export class PopupView {
     })
 
     // Set default size where preferredSizeMode isn't supported
-    this.view.setBounds({ x: this.window.getSize()[0] - 256, y: 62, width: 256, height: 400 })
+    this.browserView.setBounds({
+      x: this.browserWindow.getSize()[0] - 256,
+      y: 62,
+      width: 256,
+      height: 400,
+    })
 
-    const untypedWebContents = this.view.webContents as any
+    const untypedWebContents = this.browserView.webContents as any
     untypedWebContents.on('preferred-size-changed', this.updatePreferredSize)
 
-    this.view.setBackgroundColor('#ff0000')
-    this.view.webContents.loadURL(url)
+    this.browserView.setBackgroundColor('#ff0000')
+    this.browserView.webContents.loadURL(url)
 
     // this.view.webContents.openDevTools({ mode: 'detach', activate: true })
 
-    this.window.addBrowserView(this.view)
-    this.view.webContents.focus()
+    this.browserWindow.addBrowserView(this.browserView)
+    this.browserView.webContents.focus()
 
     // TODO:
-    this.view.webContents.once('blur' as any, this.destroy)
+    this.browserView.webContents.once('blur' as any, this.destroy)
   }
 
   destroy = () => {
-    if (!this.view) return
+    if (this.destroyed) return
 
-    this.window.removeBrowserView(this.view)
-    if (this.view.webContents.isDevToolsOpened()) {
-      this.view.webContents.closeDevTools()
+    if (this.browserView) {
+      this.browserWindow.removeBrowserView(this.browserView)
+      if (this.browserView.webContents.isDevToolsOpened()) {
+        this.browserView.webContents.closeDevTools()
+      }
+
+      this.browserView = undefined
     }
 
-    this.view = undefined
+    this.destroyed = true
   }
 
   isDestroyed() {
-    return !this.view
+    return this.destroyed
   }
 
   private updatePreferredSize = (event: Electron.Event, size: Electron.Size) => {
-    const windowWidth = this.window.getSize()[0]
-    this.view?.setBounds({
+    const windowWidth = this.browserWindow.getSize()[0]
+    this.browserView?.setBounds({
       x: windowWidth - size.width,
       y: PopupGeometry.OffsetY,
       width: Math.min(PopupGeometry.MaxWidth, Math.max(size.width, PopupGeometry.MinWidth)),

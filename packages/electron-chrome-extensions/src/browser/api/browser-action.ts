@@ -170,7 +170,10 @@ export class BrowserActionAPI {
 
     if (popupUrl) {
       const win = BrowserWindow.fromWebContents(activeTab)
-      if (win) this.popup = new PopupView(extensionId, win, popupUrl)
+      if (win) {
+        this.popup = new PopupView(extensionId, win, popupUrl)
+        this.store.emit('browser-action-popup-created', this.popup)
+      }
     } else {
       // TODO: dispatch click action
     }

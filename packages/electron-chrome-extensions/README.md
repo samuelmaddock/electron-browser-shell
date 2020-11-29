@@ -155,6 +155,16 @@ the extension to appear as a button in the browser top bar.
 
 This method will soon go away and no longer be necessary.
 
+#### Instance Events
+
+##### Event: 'browser-action-popup-created'
+
+Returns:
+
+* `popup` PopupView - An instance of the popup.
+
+Emitted when a popup is created by the `chrome.browserAction` API.
+
 ### Element: `<browser-action-list>`
 
 The `<browser-action-list>` element provides a row of [browser actions](https://developer.chrome.com/extensions/browserAction) which may be pressed to activate the `chrome.browserAction.onClicked` event or display the extension popup.
