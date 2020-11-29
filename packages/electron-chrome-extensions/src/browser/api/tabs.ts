@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron'
 import { ExtensionStore } from '../store'
 import { getParentWindowOfTab, TabContents } from './common'
 import { WindowsAPI } from './windows'
@@ -9,16 +9,16 @@ export class TabsAPI {
   static WINDOW_ID_CURRENT = -2
 
   constructor(private store: ExtensionStore) {
-    ipcMain.handle('tabs.get', this.get.bind(this))
-    ipcMain.handle('tabs.getCurrent', this.getCurrent.bind(this))
-    ipcMain.handle('tabs.create', this.create.bind(this))
-    ipcMain.handle('tabs.insertCSS', this.insertCSS.bind(this))
-    ipcMain.handle('tabs.query', this.query.bind(this))
-    ipcMain.handle('tabs.reload', this.reload.bind(this))
-    ipcMain.handle('tabs.update', this.update.bind(this))
-    ipcMain.handle('tabs.remove', this.remove.bind(this))
-    ipcMain.handle('tabs.goForward', this.goForward.bind(this))
-    ipcMain.handle('tabs.goBack', this.goBack.bind(this))
+    store.handle('tabs.get', this.get.bind(this))
+    store.handle('tabs.getCurrent', this.getCurrent.bind(this))
+    store.handle('tabs.create', this.create.bind(this))
+    store.handle('tabs.insertCSS', this.insertCSS.bind(this))
+    store.handle('tabs.query', this.query.bind(this))
+    store.handle('tabs.reload', this.reload.bind(this))
+    store.handle('tabs.update', this.update.bind(this))
+    store.handle('tabs.remove', this.remove.bind(this))
+    store.handle('tabs.goForward', this.goForward.bind(this))
+    store.handle('tabs.goBack', this.goBack.bind(this))
   }
 
   private createTabDetails(tab: TabContents) {

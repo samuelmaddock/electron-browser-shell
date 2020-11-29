@@ -37,7 +37,7 @@ export const injectExtensionAPIs = () => {
     let result
 
     try {
-      result = await ipcRenderer.invoke(fnName, ...args)
+      result = await ipcRenderer.invoke('CHROME_EXT', fnName, ...args)
     } catch (e) {
       // TODO: Set chrome.runtime.lastError?
       console.error(e)

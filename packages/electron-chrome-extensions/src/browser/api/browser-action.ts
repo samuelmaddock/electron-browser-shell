@@ -51,16 +51,16 @@ export class BrowserActionAPI {
       this.onUpdate()
     }
 
-    ipcMain.handle('browserAction.setBadgeBackgroundColor', setter('backgroundColor'))
-    ipcMain.handle('browserAction.setBadgeText', setter('text'))
-    ipcMain.handle('browserAction.setTitle', setter('title'))
-    ipcMain.handle('browserAction.setIcon', setter('icon'))
-    ipcMain.handle('browserAction.setPopup', setter('popup'))
+    store.handle('browserAction.setBadgeBackgroundColor', setter('backgroundColor'))
+    store.handle('browserAction.setBadgeText', setter('text'))
+    store.handle('browserAction.setTitle', setter('title'))
+    store.handle('browserAction.setIcon', setter('icon'))
+    store.handle('browserAction.setPopup', setter('popup'))
 
     // browserAction preload API
-    ipcMain.handle('browserAction.getAll', this.getAll.bind(this))
-    ipcMain.handle('browserAction.activate', this.onClicked.bind(this))
-    ipcMain.handle('browserAction.addObserver', (event) => {
+    store.handle('browserAction.getAll', this.getAll.bind(this))
+    store.handle('browserAction.activate', this.onClicked.bind(this))
+    store.handle('browserAction.addObserver', (event) => {
       const { sender: webContents } = event
       this.observers.add(webContents)
       webContents.once('destroyed', () => {

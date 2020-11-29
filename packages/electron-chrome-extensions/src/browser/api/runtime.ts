@@ -5,7 +5,7 @@ import { ExtensionStore } from '../store'
 export class RuntimeAPI extends EventEmitter {
   constructor(private store: ExtensionStore) {
     super()
-    ipcMain.handle('runtime.openOptionsPage', this.openOptionsPage)
+    store.handle('runtime.openOptionsPage', this.openOptionsPage)
   }
 
   private openOptionsPage = async (event: Electron.IpcMainInvokeEvent, extensionId: string) => {

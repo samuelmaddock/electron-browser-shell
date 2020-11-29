@@ -32,8 +32,8 @@ const getFrameDetails = (frame: any) => ({
 
 export class WebNavigationAPI {
   constructor(private store: ExtensionStore) {
-    ipcMain.handle('webNavigation.getFrame', this.getFrame.bind(this))
-    ipcMain.handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
+    store.handle('webNavigation.getFrame', this.getFrame.bind(this))
+    store.handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
   }
 
   addTab(tab: Electron.WebContents) {

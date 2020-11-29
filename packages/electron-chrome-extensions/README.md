@@ -302,8 +302,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 ## Limitations
 
 ### electron-chrome-extensions
-- Uses features which will land in Electron v11 stable. Minimum support requires Electron v9.
-- Currently only one session can be supported.
+- Electron v11 is recommended. Minimum support requires Electron v9.
 - Chrome's Manifest V3 extensions are not yet supported.
 
 ### electron

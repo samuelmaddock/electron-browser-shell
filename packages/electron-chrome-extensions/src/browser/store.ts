@@ -1,8 +1,11 @@
 import { BrowserWindow } from 'electron'
 import { EventEmitter } from 'events'
 import { ChromeExtensionImpl } from './impl'
+import { ExtensionRouter, Handler } from './router'
 
 export class ExtensionStore {
+  private router = ExtensionRouter.get()
+
   tabs = new Set<Electron.WebContents>()
   extensionHosts = new Set<Electron.WebContents>()
 
@@ -62,6 +65,10 @@ export class ExtensionStore {
         `[Extensions] Unable to send '${eventName}' to extension host for ${extensionId}`
       )
     }
+  }
+
+  handle(name: string, callback: Handler) {
+    this.router.handle(this.session, name, callback)
   }
 
   getTabById(tabId: number) {

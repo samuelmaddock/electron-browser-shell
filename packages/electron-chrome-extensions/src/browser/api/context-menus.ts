@@ -55,9 +55,9 @@ export class ContextMenusAPI {
   >()
 
   constructor(private store: ExtensionStore) {
-    ipcMain.handle('contextMenus.create', this.create)
-    ipcMain.handle('contextMenus.remove', this.remove)
-    ipcMain.handle('contextMenus.removeAll', this.removeAll)
+    store.handle('contextMenus.create', this.create)
+    store.handle('contextMenus.remove', this.remove)
+    store.handle('contextMenus.removeAll', this.removeAll)
 
     this.store.session.on('extension-unloaded' as any, (event, extensionId) => {
       if (this.menus.has(extensionId)) {

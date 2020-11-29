@@ -14,10 +14,10 @@ export class WindowsAPI {
   static WINDOW_ID_CURRENT = -2
 
   constructor(private store: ExtensionStore) {
-    ipcMain.handle('windows.get', this.get.bind(this))
-    ipcMain.handle('windows.create', this.create.bind(this))
-    ipcMain.handle('windows.update', this.update.bind(this))
-    ipcMain.handle('windows.remove', this.remove.bind(this))
+    store.handle('windows.get', this.get.bind(this))
+    store.handle('windows.create', this.create.bind(this))
+    store.handle('windows.update', this.update.bind(this))
+    store.handle('windows.remove', this.remove.bind(this))
   }
 
   private createWindowDetails(win: BrowserWindow) {
