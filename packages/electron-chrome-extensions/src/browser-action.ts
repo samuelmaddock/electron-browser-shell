@@ -5,6 +5,10 @@ export const injectBrowserAction = () => {
   const actionMap = new Map<string, any>()
   const internalEmitter = new EventEmitter()
 
+  const invoke = <T>(name: string, ...args: any[]): Promise<T> => {
+    return ipcRenderer.invoke('CHROME_EXT', name, ...args)
+  }
+
   const browserActionImpl = {
     addEventListener(name: string, listener: (...args: any[]) => void) {
       internalEmitter.addListener(name, listener)
@@ -17,7 +21,7 @@ export const injectBrowserAction = () => {
       return actionMap.get(extensionId)
     },
     async getAll(): Promise<any> {
-      const actions = await ipcRenderer.invoke('browserAction.getAll')
+      const actions = await invoke<any[]>('browserAction.getAll')
       for (const action of actions) {
         actionMap.set(action.id, action)
       }
@@ -26,11 +30,11 @@ export const injectBrowserAction = () => {
     },
 
     activate: (extensionId: string) => {
-      ipcRenderer.invoke('browserAction.activate', extensionId)
+      invoke('browserAction.activate', extensionId)
     },
   }
 
-  ipcRenderer.invoke('browserAction.addObserver')
+  invoke('browserAction.addObserver')
 
   ipcRenderer.on('browserAction.update', () => {
     browserActionImpl.getAll()
