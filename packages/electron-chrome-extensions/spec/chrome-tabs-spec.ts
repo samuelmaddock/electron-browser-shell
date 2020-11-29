@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { ipcMain, session, BrowserWindow } from 'electron'
+import { ipcMain, session, BrowserWindow, app } from 'electron'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import * as path from 'path'
@@ -12,6 +12,17 @@ const fixtures = path.join(__dirname, 'fixtures')
 
 describe('chrome.tabs', () => {
   const emptyPage = '<script>console.log("loaded")</script>'
+
+  const DEBUG = false
+  if (DEBUG) {
+    app.on('web-contents-created', (event, wc) => {
+      if (wc.getType() === 'backgroundPage') {
+        wc.on('console-message', (ev, ...args) => {
+          console.log('***bg msg', args)
+        })
+      }
+    })
+  }
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server
@@ -45,15 +56,14 @@ describe('chrome.tabs', () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
     await customSession.loadExtension(path.join(fixtures, 'chrome-tabs'))
 
-    // TODO: allow multiple sessions
-    // extensions = new Extensions({ session: customSession })
+    extensions = new Extensions({ session: customSession })
 
     w = new BrowserWindow({
       show: false,
       webPreferences: { session: customSession, nodeIntegration: true },
     })
 
-    // extensions.addTab(w.webContents, w)
+    extensions.addTab(w.webContents)
 
     await w.loadURL(url)
   })
@@ -72,12 +82,12 @@ describe('chrome.tabs', () => {
     expect(result.id).to.equal(tabId)
   })
 
-  it.skip('update', async () => {
+  it('update', async () => {
     const tabId = w.webContents.id
     const updateUrl = `${url}/foo`
-    const result = await exec('update', tabId, { url: updateUrl })
-    expect(result).to.be.an('object')
-    expect(result.id).to.equal(tabId)
-    expect(result.url).to.equal(updateUrl)
+    const navigatePromise = emittedOnce(w.webContents, 'did-navigate')
+    exec('update', tabId, { url: updateUrl })
+    await navigatePromise
+    expect(w.webContents.getURL()).to.equal(updateUrl)
   })
 })
