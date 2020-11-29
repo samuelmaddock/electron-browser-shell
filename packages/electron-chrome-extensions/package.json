@@ -4,7 +4,8 @@
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && webpack"
+    "build": "tsc && webpack",
+    "test": "node ./script/spec-runner.js"
   },
   "keywords": [
     "electron",
@@ -20,10 +21,19 @@
     "@babel/plugin-proposal-optional-chaining": "^7.11.0",
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-typescript": "^7.10.4",
+    "@types/chai": "^4.2.14",
     "@types/chrome": "^0.0.122",
+    "@types/mocha": "^8.0.4",
     "babel-loader": "^8.1.0",
-    "electron": "11.0.0-beta.20",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "colors": "^1.4.0",
+    "electron": "^11.0.3",
+    "mocha": "^8.2.1",
+    "ts-node": "^9.0.0",
     "typescript": "^4.0.2",
+    "uuid": "^8.3.1",
+    "walkdir": "^0.4.1",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
   },
@@ -48,5 +58,8 @@
       ],
       "@babel/plugin-proposal-optional-chaining"
     ]
+  },
+  "dependencies": {
+    "@types/chai-as-promised": "^7.1.3"
   }
 }
