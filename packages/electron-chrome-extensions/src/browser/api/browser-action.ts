@@ -164,16 +164,20 @@ export class BrowserActionAPI {
 
     // TODO: activeTab needs to be refactored to support one active tab per window
     const { activeTab } = this.store
-    if (!activeTab) return
+    if (!activeTab) {
+      throw new Error(`Unable to get active tab`)
+    }
 
     const popupUrl = this.getPopupUrl(activeTab.session, extensionId, activeTab.id)
 
     if (popupUrl) {
       const win = BrowserWindow.fromWebContents(activeTab)
-      if (win) {
-        this.popup = new PopupView(extensionId, win, popupUrl)
-        this.store.emit('browser-action-popup-created', this.popup)
+      if (!win) {
+        throw new Error('Unable to get BrowserWindow from active tab')
       }
+
+      this.popup = new PopupView(extensionId, win, popupUrl)
+      this.store.emit('browser-action-popup-created', this.popup)
     } else {
       // TODO: dispatch click action
     }
