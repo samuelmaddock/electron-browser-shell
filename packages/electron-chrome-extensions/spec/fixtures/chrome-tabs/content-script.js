@@ -11,7 +11,6 @@ async function exec(action) {
     chrome.runtime.sendMessage(action, resolve)
   })
 
-  console.log('***test1', result)
   const funcStr = `() => { require('electron').ipcRenderer.send('success', ${JSON.stringify(result)}) }`
   evalInMainWorld(funcStr)
 }
