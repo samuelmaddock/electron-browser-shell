@@ -3,13 +3,8 @@
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const { method, args } = message
 
-  switch (method) {
-    case 'get':
-      chrome.tabs.get(...args, reply)
-      break;
-    case 'update':
-      chrome.tabs.update(...args, reply)
-      break;
+  if (typeof chrome.tabs[method] === 'function') {
+    chrome.tabs[method](...args, reply)
   }
 
   // Respond asynchronously

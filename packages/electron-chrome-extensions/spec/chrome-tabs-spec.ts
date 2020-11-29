@@ -51,9 +51,10 @@ describe('chrome.tabs', () => {
 
   let w: Electron.BrowserWindow
   let extensions: Extensions
+  let customSession: Electron.Session
 
   beforeEach(async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
     await customSession.loadExtension(path.join(fixtures, 'chrome-tabs'))
 
     extensions = new Extensions({ session: customSession })
@@ -75,19 +76,53 @@ describe('chrome.tabs', () => {
     return result
   }
 
-  it('get', async () => {
-    const tabId = w.webContents.id
-    const result = await exec('get', tabId)
-    expect(result).to.be.an('object')
-    expect(result.id).to.equal(tabId)
+  describe('get()', () => {
+    it('returns tab details', async () => {
+      const tabId = w.webContents.id
+      const result = await exec('get', tabId)
+      expect(result).to.be.an('object')
+      expect(result.id).to.equal(tabId)
+      expect(result.windowId).to.equal(w.id)
+    })
   })
 
-  it('update', async () => {
-    const tabId = w.webContents.id
-    const updateUrl = `${url}/foo`
-    const navigatePromise = emittedOnce(w.webContents, 'did-navigate')
-    exec('update', tabId, { url: updateUrl })
-    await navigatePromise
-    expect(w.webContents.getURL()).to.equal(updateUrl)
+  describe('update()', () => {
+    it('navigates the tab', async () => {
+      const tabId = w.webContents.id
+      const updateUrl = `${url}/foo`
+      const navigatePromise = emittedOnce(w.webContents, 'did-navigate')
+      exec('update', tabId, { url: updateUrl })
+      await navigatePromise
+      expect(w.webContents.getURL()).to.equal(updateUrl)
+    })
+  })
+
+  describe('getCurrent()', () => {
+    it('gets the active tab', async () => {
+      const tabId = w.webContents.id
+      const result = await exec('getCurrent')
+      expect(result).to.be.an('object')
+      expect(result.id).to.equal(tabId)
+      expect(result.windowId).to.equal(w.id)
+    })
+  })
+
+  describe('query()', () => {
+    // TODO: active tab in multiple windows is not yet supported
+    it.skip('gets the active tab of multiple windows', async () => {
+      const secondWindow = new BrowserWindow({
+        show: false,
+        webPreferences: { session: customSession, nodeIntegration: true },
+      })
+
+      extensions.addTab(secondWindow.webContents)
+
+      const result = await exec('query', { active: true })
+
+      expect(result).to.be.an('array')
+      expect(result).to.be.length(2)
+      expect(result[0].windowId).to.be.equal(w.id)
+      expect(result[1].windowId).to.be.equal(secondWindow.id)
+    })
   })
 })
