@@ -31,6 +31,8 @@ jobs:
         yarn build
 
     - name: Run tests
-      working-directory: ./packages/electron-chrome-extensions
-      run: |
-        yarn test
+      uses: GabrielBB/xvfb-action@v1
+      with:
+        working-directory: ./packages/electron-chrome-extensions
+        run: |
+          yarn test
