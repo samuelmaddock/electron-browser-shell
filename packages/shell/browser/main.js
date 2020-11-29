@@ -94,17 +94,19 @@ class TabbedBrowserWindow {
     this.tabs = new Tabs(this.window)
 
     this.tabs.on('tab-created', function onTabCreated(tab) {
-      extensions.addTab(tab.webContents)
       if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
+
+      // Track tab that may have been created outside of the extensions API.
+      extensions.addTab(tab.webContents)
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
       extensions.selectTab(tab.webContents)
     })
 
-    setImmediate(() => {
-      const initialTab = this.tabs.create()
-      initialTab.loadURL(options.initialUrl || 'about:blank')
+    queueMicrotask(() => {
+      // Create initial tab
+      this.tabs.create()
     })
   }
 
@@ -166,7 +168,7 @@ class Browser {
         if (details.url) tab.loadURL(details.url || newTabUrl)
         if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
 
-        return tab
+        return tab.webContents
       },
       selectTab: (event, tab) => {
         const win = this.getIpcWindow(event)

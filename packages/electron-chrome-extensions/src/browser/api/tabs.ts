@@ -19,6 +19,52 @@ export class TabsAPI {
     store.handle('tabs.remove', this.remove.bind(this))
     store.handle('tabs.goForward', this.goForward.bind(this))
     store.handle('tabs.goBack', this.goBack.bind(this))
+
+    store.on('tab-added', this.observeTab.bind(this))
+  }
+
+  private observeTab(tab: TabContents) {
+    const tabId = tab.id
+
+    const updateEvents = [
+      'page-title-updated', // title
+      'did-start-loading', // status
+      'did-stop-loading', // status
+      'media-started-playing', // audible
+      'media-paused', // audible
+      'did-start-navigation', // url
+      'did-redirect-navigation', // url
+      'did-navigate-in-page', // url
+    ]
+
+    const updateHandler = () => {
+      this.onUpdated(tabId)
+    }
+
+    updateEvents.forEach((eventName) => {
+      tab.on(eventName as any, updateHandler)
+    })
+
+    const faviconHandler = (event: Electron.Event, favicons: string[]) => {
+      ;(tab as TabContents).favicon = favicons[0]
+      this.onUpdated(tabId)
+    }
+    tab.on('page-favicon-updated', faviconHandler)
+
+    tab.once('destroyed', () => {
+      updateEvents.forEach((eventName) => {
+        tab.off(eventName as any, updateHandler)
+      })
+      tab.off('page-favicon-updated', faviconHandler)
+
+      this.store.tabs.delete(tab)
+      this.onRemoved(tabId)
+    })
+
+    this.onCreated(tabId)
+    this.onActivated(tabId)
+
+    console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
   private createTabDetails(tab: TabContents) {

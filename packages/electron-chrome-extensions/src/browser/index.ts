@@ -75,54 +75,7 @@ export class Extensions extends EventEmitter {
 
   /** Add webContents to be tracked as a tab. */
   addTab(tab: Electron.WebContents) {
-    if (this.store.tabs.has(tab)) return
-
-    const tabId = tab.id
-    this.store.tabs.add(tab)
-    this.webNavigation.addTab(tab)
-
-    if (typeof this.store.activeTabId === 'undefined') {
-      this.store.activeTab = tab
-    }
-
-    const updateEvents = [
-      'page-title-updated', // title
-      'did-start-loading', // status
-      'did-stop-loading', // status
-      'media-started-playing', // audible
-      'media-paused', // audible
-      'did-start-navigation', // url
-      'did-redirect-navigation', // url
-      'did-navigate-in-page', // url
-    ]
-
-    const updateHandler = () => {
-      this.tabs.onUpdated(tabId)
-    }
-
-    updateEvents.forEach((eventName) => {
-      tab.on(eventName as any, updateHandler)
-    })
-
-    const faviconHandler = (event: Electron.Event, favicons: string[]) => {
-      ;(tab as TabContents).favicon = favicons[0]
-      this.tabs.onUpdated(tabId)
-    }
-    tab.on('page-favicon-updated', faviconHandler)
-
-    tab.once('destroyed', () => {
-      updateEvents.forEach((eventName) => {
-        tab.off(eventName as any, updateHandler)
-      })
-      tab.off('page-favicon-updated', faviconHandler)
-
-      this.store.tabs.delete(tab)
-      this.tabs.onRemoved(tabId)
-    })
-
-    this.tabs.onCreated(tabId)
-    this.tabs.onActivated(tabId)
-    console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
+    this.store.addTab(tab)
   }
 
   /** Notify extension system that the active tab has changed. */

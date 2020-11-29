@@ -34,9 +34,11 @@ export class WebNavigationAPI {
   constructor(private store: ExtensionStore) {
     store.handle('webNavigation.getFrame', this.getFrame.bind(this))
     store.handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
+
+    store.on('tab-added', this.observeTab.bind(this))
   }
 
-  addTab(tab: Electron.WebContents) {
+  private observeTab(tab: Electron.WebContents) {
     tab.on('did-frame-navigate', this.onCommitted as any)
     tab.on('did-navigate-in-page', this.onHistoryStateUpdated as any)
     tab.once('will-navigate', this.onCreatedNavigationTarget as any)

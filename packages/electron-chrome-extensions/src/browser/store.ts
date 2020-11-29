@@ -1,9 +1,9 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionRouter, Handler } from './router'
 
-export class ExtensionStore {
+export class ExtensionStore extends EventEmitter {
   private router = ExtensionRouter.get()
 
   tabs = new Set<Electron.WebContents>()
@@ -25,7 +25,7 @@ export class ExtensionStore {
     const tabId = tab?.id
     if (this.activeTabId !== tabId) {
       this.activeTabId = tab?.id
-      this.emit('active-tab-changed', tab)
+      this.emitPublic('active-tab-changed', tab)
     }
   }
   get activeWindow() {
@@ -39,9 +39,12 @@ export class ExtensionStore {
     private emitter: EventEmitter,
     public session: Electron.Session,
     public impl: ChromeExtensionImpl
-  ) {}
+  ) {
+    super()
+  }
 
-  emit(eventName: string, ...args: any[]) {
+  /** Emit an event to the public API. */
+  emitPublic(eventName: string, ...args: any[]) {
     this.emitter.emit(eventName, ...args)
   }
 
@@ -75,12 +78,33 @@ export class ExtensionStore {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
 
+  addTab(tab: Electron.WebContents) {
+    if (this.tabs.has(tab)) {
+      return
+    }
+
+    this.tabs.add(tab)
+
+    if (typeof this.activeTabId === 'undefined') {
+      this.activeTab = tab
+    }
+
+    this.emit('tab-added', tab)
+  }
+
   async createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {
     if (typeof this.impl.createTab !== 'function') {
       throw new Error('createTab not implemented')
     }
 
     const tab = await this.impl.createTab(event, details)
+
+    if (typeof tab !== 'object' || !webContents.fromId(tab.id)) {
+      throw new Error('createTab must return a WebContents')
+    }
+
+    this.addTab(tab)
+
     return tab
   }
 }
