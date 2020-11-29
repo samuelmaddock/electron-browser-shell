@@ -1,0 +1,36 @@
+name: Test electron-chrome-extensions
+
+on:
+  push:
+    paths:
+    - 'packages/electron-chrome-extensions/**'
+  pull_request:
+    paths:
+    - 'packages/electron-chrome-extensions/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Setup Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+
+    - name: Install dependencies
+      run: |
+        yarn install
+
+    - name: Build
+      working-directory: ./packages/electron-chrome-extensions
+      run: |
+        yarn build
+
+    - name: Run tests
+      working-directory: ./packages/electron-chrome-extensions
+      run: |
+        yarn test
