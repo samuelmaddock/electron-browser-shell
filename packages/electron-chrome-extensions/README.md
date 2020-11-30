@@ -22,13 +22,13 @@ const { Extensions } = require('electron-chrome-extensions')
   await app.whenReady()
 
   const extensions = new Extensions()
-  const win = new BrowserWindow()
+  const browserWindow = new BrowserWindow()
 
   // Adds the active tab of the browser
-  extensions.addTab(win.webContents)
+  extensions.addTab(browserWindow.webContents, browserWindow)
 
-  win.loadURL('https://samuelmaddock.com')
-  win.show()
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
 }())
 ```
 
@@ -63,7 +63,7 @@ const { Extensions } = require('electron-chrome-extensions')
     }
   })
 
-  const win = new BrowserWindow({
+  const browserWindow = new BrowserWindow({
     webPreferences: {
       // Same session given to Extensions class
       session: browserSession,
@@ -74,10 +74,10 @@ const { Extensions } = require('electron-chrome-extensions')
   })
 
   // Adds the active tab of the browser
-  extensions.addTab(win.webContents)
+  extensions.addTab(browserWindow.webContents, browserWindow)
 
-  win.loadURL('https://samuelmaddock.com')
-  win.show()
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
 }())
 ```
 
