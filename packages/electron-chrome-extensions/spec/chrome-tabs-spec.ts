@@ -98,18 +98,22 @@ describe('chrome.tabs', () => {
   })
 
   describe('getCurrent()', () => {
-    it('gets the active tab', async () => {
-      const tabId = w.webContents.id
+    it('fails to get the active tab from a non-tab context', async () => {
       const result = await exec('getCurrent')
-      expect(result).to.be.an('object')
-      expect(result.id).to.equal(tabId)
-      expect(result.windowId).to.equal(w.id)
+      expect(result).to.not.be.an('object')
     })
   })
 
   describe('query()', () => {
-    // TODO: active tab in multiple windows is not yet supported
-    it.skip('gets the active tab of multiple windows', async () => {
+    it('gets the active tab', async () => {
+      const result = await exec('query', { active: true })
+      expect(result).to.be.an('array')
+      expect(result).to.be.length(1)
+      expect(result[0].id).to.be.equal(w.webContents.id)
+      expect(result[0].windowId).to.be.equal(w.id)
+    })
+
+    it('gets the active tab of multiple windows', async () => {
       const secondWindow = new BrowserWindow({
         show: false,
         webPreferences: { session: customSession, nodeIntegration: true },
@@ -118,7 +122,6 @@ describe('chrome.tabs', () => {
       extensions.addTab(secondWindow.webContents, secondWindow)
 
       const result = await exec('query', { active: true })
-
       expect(result).to.be.an('array')
       expect(result).to.be.length(2)
       expect(result[0].windowId).to.be.equal(w.id)

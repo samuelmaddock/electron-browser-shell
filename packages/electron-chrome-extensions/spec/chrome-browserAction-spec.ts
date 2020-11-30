@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { ipcMain, session, BrowserWindow, app } from 'electron'
+import { ipcMain, session, BrowserWindow, app, BrowserView } from 'electron'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 import * as path from 'path'
@@ -66,6 +66,22 @@ describe('chrome.browserAction', () => {
 
   describe('popup', () => {
     it('opens when the browser action is clicked', async () => {
+      const popupPromise = emittedOnce(extensions, 'browser-action-popup-created')
+      // TODO: use preload script with `injectBrowserAction()`
+      await w.webContents.executeJavaScript(
+        `require('electron').ipcRenderer.invoke('CHROME_EXT', 'browserAction.activate', '${browserActionExt.id}')`
+      )
+      const [popup] = await popupPromise
+      expect(popup.extensionId).to.equal(browserActionExt.id)
+    })
+
+    it('opens when BrowserView is the active tab', async () => {
+      const view = new BrowserView({ webPreferences: { session: customSession } })
+      await view.webContents.loadURL(url)
+      w.addBrowserView(view)
+      extensions.addTab(view.webContents, w)
+      extensions.selectTab(view.webContents)
+
       const popupPromise = emittedOnce(extensions, 'browser-action-popup-created')
       // TODO: use preload script with `injectBrowserAction()`
       await w.webContents.executeJavaScript(

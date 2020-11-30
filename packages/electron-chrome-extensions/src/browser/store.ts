@@ -21,7 +21,8 @@ export class ExtensionStore extends EventEmitter {
 
   extensionHosts = new Set<Electron.WebContents>()
 
-  activeTabId?: number
+  /** Map of windows to their active tab. */
+  private windowToActiveTab = new WeakMap<Electron.BrowserWindow, Electron.WebContents>()
 
   get activeWindowId() {
     // TODO: better implementation
@@ -29,17 +30,6 @@ export class ExtensionStore extends EventEmitter {
     return activeWindow.id
   }
 
-  get activeTab(): Electron.WebContents | undefined {
-    const tab = this.activeTabId ? this.getTabById(this.activeTabId) : undefined
-    return tab && !tab.isDestroyed() ? tab : undefined
-  }
-  set activeTab(tab: Electron.WebContents | undefined) {
-    const tabId = tab?.id
-    if (this.activeTabId !== tabId) {
-      this.activeTabId = tab?.id
-      this.emitPublic('active-tab-changed', tab)
-    }
-  }
   get activeWindow() {
     return this.activeWindowId ? BrowserWindow.fromId(this.activeWindowId) : undefined
   }
@@ -98,11 +88,18 @@ export class ExtensionStore extends EventEmitter {
     this.tabs.add(tab)
     this.tabToWindow.set(tab, window)
 
-    if (typeof this.activeTabId === 'undefined') {
-      this.activeTab = tab
+    const activeTab = this.getActiveTabFromWebContents(tab)
+    if (!activeTab) {
+      this.setActiveTab(tab)
     }
 
     this.emit('tab-added', tab)
+  }
+
+  removeTab(tab: Electron.WebContents) {
+    this.tabs.delete(tab)
+    this.tabToWindow.delete(tab)
+    // TODO: clear active tab
   }
 
   async createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {
@@ -139,5 +136,26 @@ export class ExtensionStore extends EventEmitter {
     })
 
     debug(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
+  }
+
+  getActiveTabFromWebContents(wc: Electron.WebContents): Electron.WebContents | undefined {
+    const win = this.tabToWindow.get(wc) || BrowserWindow.fromWebContents(wc)
+    const activeTab = win && !win.isDestroyed() && this.windowToActiveTab.get(win)
+    return (activeTab && !activeTab.isDestroyed() && activeTab) || undefined
+  }
+
+  setActiveTab(tab: Electron.WebContents) {
+    const win = this.tabToWindow.get(tab)
+    if (!win) {
+      throw new Error('Active tab has no parent window')
+    }
+
+    const prevActiveTab = this.getActiveTabFromWebContents(tab)
+
+    this.windowToActiveTab.set(win, tab)
+
+    if (tab.id !== prevActiveTab?.id) {
+      this.emitPublic('active-tab-changed', tab)
+    }
   }
 }

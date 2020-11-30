@@ -59,7 +59,7 @@ export class TabsAPI {
       })
       tab.off('page-favicon-updated', faviconHandler)
 
-      this.store.tabs.delete(tab)
+      this.store.removeTab(tab)
       this.onRemoved(tabId)
     })
 
@@ -71,11 +71,12 @@ export class TabsAPI {
 
   private createTabDetails(tab: TabContents) {
     const tabId = tab.id
+    const activeTab = this.store.getActiveTabFromWebContents(tab)
     const win = this.store.tabToWindow.get(tab)
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details: chrome.tabs.Tab = {
-      active: this.store.activeTabId === tabId,
+      active: activeTab?.id === tabId,
       audible: tab.isCurrentlyAudible(),
       autoDiscardable: true,
       discarded: false,
@@ -118,7 +119,7 @@ export class TabsAPI {
   }
 
   private getCurrent(event: Electron.IpcMainInvokeEvent) {
-    const tab = this.store.activeTab
+    const tab = this.store.getActiveTabFromWebContents(event.sender)
     return tab ? this.getTabDetails(tab) : undefined
   }
 
@@ -188,16 +189,18 @@ export class TabsAPI {
     return filteredTabs
   }
 
-  private reload(
-    event: Electron.IpcMainInvokeEvent,
-    tabId?: number,
-    reloadProperties: chrome.tabs.ReloadProperties = {}
-  ) {
-    const tab = this.store.getTabById(
-      tabId || this.store.activeTabId || Array.from(this.store.tabs)[0].id
-    )
+  private reload(event: Electron.IpcMainInvokeEvent, arg1?: unknown, arg2?: unknown) {
+    const tabId: number | undefined = typeof arg1 === 'number' ? arg1 : undefined
+    const reloadProperties: chrome.tabs.ReloadProperties | null =
+      typeof arg1 === 'object' ? arg1 : typeof arg2 === 'object' ? arg2 : {}
+
+    const tab = tabId
+      ? this.store.getTabById(tabId)
+      : this.store.getActiveTabFromWebContents(event.sender)
+
     if (!tab) return
-    if (reloadProperties.bypassCache) {
+
+    if (reloadProperties?.bypassCache) {
       tab.reloadIgnoringCache()
     } else {
       tab.reload()
@@ -205,12 +208,16 @@ export class TabsAPI {
   }
 
   private async update(event: Electron.IpcMainInvokeEvent, arg1?: unknown, arg2?: unknown) {
-    const tabId = typeof arg1 === 'object' ? this.store.activeTabId || -1 : (arg1 as number)
+    let tabId = typeof arg1 === 'number' ? arg1 : undefined
     const updateProperties: chrome.tabs.UpdateProperties =
       (typeof arg1 === 'object' ? (arg1 as any) : (arg2 as any)) || {}
 
-    const tab = this.store.getTabById(tabId)
+    const tab = tabId
+      ? this.store.getTabById(tabId)
+      : this.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
+
+    tabId = tab.id
 
     const props = updateProperties
 
@@ -240,15 +247,19 @@ export class TabsAPI {
   }
 
   private goForward(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
-    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.store.activeTabId || -1
-    const tab = this.store.getTabById(tabId)
+    const tabId = typeof arg1 === 'number' ? arg1 : undefined
+    const tab = tabId
+      ? this.store.getTabById(tabId)
+      : this.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goForward()
   }
 
   private goBack(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
-    const tabId = typeof arg1 === 'number' ? (arg1 as number) : this.store.activeTabId || -1
-    const tab = this.store.getTabById(tabId)
+    const tabId = typeof arg1 === 'number' ? arg1 : undefined
+    const tab = tabId
+      ? this.store.getTabById(tabId)
+      : this.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goBack()
   }
@@ -318,14 +329,16 @@ export class TabsAPI {
   }
 
   onActivated(tabId: number) {
-    const activeChanged = this.store.activeTabId !== tabId
-    if (!activeChanged) return
-
     const tab = this.store.getTabById(tabId)
     if (!tab) return
+
+    const activeTab = this.store.getActiveTabFromWebContents(tab)
+    const activeChanged = activeTab?.id !== tabId
+    if (!activeChanged) return
+
     const win = this.store.tabToWindow.get(tab)
 
-    this.store.activeTab = tab
+    this.store.setActiveTab(tab)
 
     // invalidate cache since 'active' has changed
     this.store.tabDetailsCache.forEach((tabInfo, cacheTabId) => {

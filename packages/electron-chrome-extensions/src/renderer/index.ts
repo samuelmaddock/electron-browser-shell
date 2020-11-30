@@ -41,7 +41,7 @@ export const injectExtensionAPIs = () => {
     } catch (e) {
       // TODO: Set chrome.runtime.lastError?
       console.error(e)
-      result = null
+      result = undefined
     }
 
     if (process.env.NODE_ENV === 'development') {

@@ -1,8 +1,9 @@
-import { session, ipcMain, BrowserWindow } from 'electron'
-import { EventEmitter } from 'events'
+import { session } from 'electron'
 import { PopupView } from '../popup'
 import { ExtensionStore } from '../store'
 import { getIconImage } from './common'
+
+const debug = require('debug')('electron-chrome-extensions:browserAction')
 
 interface ExtensionAction {
   backgroundColor?: string
@@ -23,7 +24,7 @@ interface ExtensionActionStore extends Partial<ExtensionAction> {
 }
 
 export class BrowserActionAPI {
-  private sessionActionMap = new Map<Electron.Session, Map<string, ExtensionActionStore>>()
+  private sessionActionMap = new WeakMap<Electron.Session, Map<string, ExtensionActionStore>>()
   private popup?: PopupView
 
   private observers: Set<Electron.WebContents> = new Set()
@@ -162,8 +163,7 @@ export class BrowserActionAPI {
       if (toggleExtension) return
     }
 
-    // TODO: activeTab needs to be refactored to support one active tab per window
-    const { activeTab } = this.store
+    const activeTab = this.store.getActiveTabFromWebContents(event.sender)
     if (!activeTab) {
       throw new Error(`Unable to get active tab`)
     }
@@ -171,7 +171,7 @@ export class BrowserActionAPI {
     const popupUrl = this.getPopupUrl(activeTab.session, extensionId, activeTab.id)
 
     if (popupUrl) {
-      const win = BrowserWindow.fromWebContents(activeTab)
+      const win = this.store.tabToWindow.get(activeTab)
       if (!win) {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
@@ -180,6 +180,7 @@ export class BrowserActionAPI {
       this.store.emitPublic('browser-action-popup-created', this.popup)
     } else {
       // TODO: dispatch click action
+      debug('browserAction.onClicked not yet implemented for non-popup extensions')
     }
   }
 
