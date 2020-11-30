@@ -8,7 +8,17 @@ const debug = require('debug')('electron-chrome-extensions:store')
 export class ExtensionStore extends EventEmitter {
   private router = ExtensionRouter.get()
 
+  /** Tabs observed by the extensions system. */
   tabs = new Set<Electron.WebContents>()
+
+  /**
+   * Map of tabs to their parent window.
+   *
+   * It's not possible to access the parent of a BrowserView so we must manage
+   * this ourselves.
+   */
+  tabToWindow = new WeakMap<Electron.WebContents, Electron.BrowserWindow>()
+
   extensionHosts = new Set<Electron.WebContents>()
 
   activeTabId?: number
@@ -80,12 +90,13 @@ export class ExtensionStore extends EventEmitter {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
 
-  addTab(tab: Electron.WebContents) {
+  addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
     if (this.tabs.has(tab)) {
       return
     }
 
     this.tabs.add(tab)
+    this.tabToWindow.set(tab, window)
 
     if (typeof this.activeTabId === 'undefined') {
       this.activeTab = tab
@@ -99,13 +110,21 @@ export class ExtensionStore extends EventEmitter {
       throw new Error('createTab not implemented')
     }
 
-    const tab = await this.impl.createTab(event, details)
+    const result = await this.impl.createTab(event, details)
+
+    if (!Array.isArray(result)) {
+      throw new Error('createTab must return an array of [tab, window]')
+    }
+
+    const [tab, window] = result
 
     if (typeof tab !== 'object' || !webContents.fromId(tab.id)) {
       throw new Error('createTab must return a WebContents')
+    } else if (typeof window !== 'object') {
+      throw new Error('createTab must return a BrowserWindow')
     }
 
-    this.addTab(tab)
+    this.addTab(tab, window)
 
     return tab
   }

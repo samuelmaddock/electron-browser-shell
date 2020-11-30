@@ -77,8 +77,7 @@ const getParentWindowOfTab = (tab) => {
 class TabbedBrowserWindow {
   constructor(options) {
     this.session = options.session || session.defaultSession
-
-    const extensions = (this.extensions = options.extensions)
+    this.extensions = options.extensions
 
     // Can't inheret BrowserWindow
     // https://github.com/electron/electron/issues/23#issuecomment-19613241
@@ -93,15 +92,17 @@ class TabbedBrowserWindow {
 
     this.tabs = new Tabs(this.window)
 
+    const self = this
+
     this.tabs.on('tab-created', function onTabCreated(tab) {
       if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
 
       // Track tab that may have been created outside of the extensions API.
-      extensions.addTab(tab.webContents)
+      self.extensions.addTab(tab.webContents, tab.window)
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
-      extensions.selectTab(tab.webContents)
+      self.extensions.selectTab(tab.webContents)
     })
 
     queueMicrotask(() => {
@@ -168,7 +169,7 @@ class Browser {
         if (details.url) tab.loadURL(details.url || newTabUrl)
         if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
 
-        return tab.webContents
+        return [tab.webContents, tab.window]
       },
       selectTab: (event, tab) => {
         const win = this.getIpcWindow(event)
@@ -193,8 +194,11 @@ class Browser {
 
     const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
 
-    const installedExtensions = await loadExtensions(this.session, path.join(__dirname, '../../../extensions'))
-    installedExtensions.forEach(extension => {
+    const installedExtensions = await loadExtensions(
+      this.session,
+      path.join(__dirname, '../../../extensions')
+    )
+    installedExtensions.forEach((extension) => {
       this.extensions.addExtension(extension)
     })
 

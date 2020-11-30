@@ -1,6 +1,5 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron'
 import { ExtensionStore } from '../store'
-import { getParentWindowOfTab } from './common'
 
 const getWindowState = (win: BrowserWindow): chrome.windows.Window['state'] => {
   if (win.isMaximized()) return 'maximized'
@@ -30,7 +29,7 @@ export class WindowsAPI {
       height: win.getSize()[1],
       tabs: Array.from(this.store.tabs)
         .filter((tab) => {
-          const ownerWindow = getParentWindowOfTab(tab)
+          const ownerWindow = this.store.tabToWindow.get(tab)
           return ownerWindow?.id === win.id
         })
         .map((tab) => this.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
@@ -56,7 +55,7 @@ export class WindowsAPI {
 
   private getWindowFromId(sender: Electron.WebContents, id: number) {
     if (id === WindowsAPI.WINDOW_ID_CURRENT) {
-      return getParentWindowOfTab(sender)
+      return this.store.tabToWindow.get(sender) || BrowserWindow.fromWebContents(sender)
     } else {
       return BrowserWindow.fromId(id)
     }

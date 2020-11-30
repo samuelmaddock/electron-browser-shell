@@ -92,7 +92,7 @@ const { Extensions } = require('electron-chrome-extensions')
 * `options` Object (optional)
   * `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
-  * `createTab(event, details) => Promise<Electron.WebContents>` (optional) -
+  * `createTab(event, details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
     Called when `chrome.tabs.create` is invoked by an extension. Allows the
     application to handle how tabs are created.
   * `selectTab(event, webContents)` (optional) - Called when
@@ -108,9 +108,9 @@ new Extensions({
   createTab(event, details) {
     const tab = myTabApi.createTab()
     if (details.url) {
-      tab.loadURL(details.url)
+      tab.webContents.loadURL(details.url)
     }
-    return tab
+    return [tab.webContents, tab.browserWindow]
   },
   createWindow(event, details) {
     const window = new BrowserWindow()
@@ -125,10 +125,11 @@ project.
 
 #### Instance Methods
 
-##### `extensions.addTab(tab)`
+##### `extensions.addTab(tab, window)`
 
 - `tab` Electron.WebContents - A tab that the extension system should keep
   track of.
+- `window` Electron.BrowserWindow - The window which owns the tab.
 
 Makes the tab accessible from the `chrome.tabs` API.
 

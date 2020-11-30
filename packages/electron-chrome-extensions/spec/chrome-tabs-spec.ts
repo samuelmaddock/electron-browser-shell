@@ -64,7 +64,7 @@ describe('chrome.tabs', () => {
       webPreferences: { session: customSession, nodeIntegration: true },
     })
 
-    extensions.addTab(w.webContents)
+    extensions.addTab(w.webContents, w)
 
     await w.loadURL(url)
   })
@@ -115,7 +115,7 @@ describe('chrome.tabs', () => {
         webPreferences: { session: customSession, nodeIntegration: true },
       })
 
-      extensions.addTab(secondWindow.webContents)
+      extensions.addTab(secondWindow.webContents, secondWindow)
 
       const result = await exec('query', { active: true })
 

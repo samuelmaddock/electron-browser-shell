@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { ExtensionStore } from '../store'
-import { getParentWindowOfTab, TabContents } from './common'
+import { TabContents } from './common'
 import { WindowsAPI } from './windows'
 
 const debug = require('debug')('electron-chrome-extensions:tabs')
@@ -71,7 +71,7 @@ export class TabsAPI {
 
   private createTabDetails(tab: TabContents) {
     const tabId = tab.id
-    const win = getParentWindowOfTab(tab)
+    const win = this.store.tabToWindow.get(tab)
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details: chrome.tabs.Tab = {
@@ -323,7 +323,7 @@ export class TabsAPI {
 
     const tab = this.store.getTabById(tabId)
     if (!tab) return
-    const win = getParentWindowOfTab(tab)
+    const win = this.store.tabToWindow.get(tab)
 
     this.store.activeTab = tab
 

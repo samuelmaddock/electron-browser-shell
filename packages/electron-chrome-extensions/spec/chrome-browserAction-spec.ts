@@ -59,7 +59,7 @@ describe('chrome.browserAction', () => {
       webPreferences: { session: customSession, nodeIntegration: true },
     })
 
-    extensions.addTab(w.webContents)
+    extensions.addTab(w.webContents, w)
 
     await w.loadURL(url)
   })
