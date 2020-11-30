@@ -1,5 +1,5 @@
 import { session } from 'electron'
-import { PopupView } from '../popup'
+import { PopupAnchorRect, PopupView } from '../popup'
 import { ExtensionStore } from '../store'
 import { getIconImage } from './common'
 
@@ -155,7 +155,11 @@ export class BrowserActionAPI {
       : []
   }
 
-  private onClicked(event: Electron.IpcMainInvokeEvent, extensionId: string) {
+  private onClicked(
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
+    anchorRect: PopupAnchorRect
+  ) {
     if (this.popup) {
       const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
       this.popup.destroy()
@@ -176,7 +180,7 @@ export class BrowserActionAPI {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
 
-      this.popup = new PopupView(extensionId, win, popupUrl)
+      this.popup = new PopupView({ extensionId, browserWindow: win, url: popupUrl, anchorRect })
 
       debug(`opened popup: ${popupUrl}`)
 

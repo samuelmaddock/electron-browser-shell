@@ -29,8 +29,11 @@ export const injectBrowserAction = () => {
       return actions
     },
 
-    activate: (extensionId: string) => {
-      invoke('browserAction.activate', extensionId)
+    activate: (
+      extensionId: string,
+      boundingRect: { x: number; y: number; width: number; height: number }
+    ) => {
+      invoke('browserAction.activate', extensionId, boundingRect)
     },
   }
 
@@ -114,7 +117,14 @@ button {
       }
 
       private onClick() {
-        browserAction.activate(this.id)
+        const rect = this.getBoundingClientRect()
+
+        browserAction.activate(this.id, {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        })
       }
 
       private getBadge() {
