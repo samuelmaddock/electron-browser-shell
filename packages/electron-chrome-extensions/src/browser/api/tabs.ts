@@ -3,6 +3,8 @@ import { ExtensionStore } from '../store'
 import { getParentWindowOfTab, TabContents } from './common'
 import { WindowsAPI } from './windows'
 
+const debug = require('debug')('electron-chrome-extensions:tabs')
+
 export class TabsAPI {
   static TAB_ID_NONE = -1
   static WINDOW_ID_NONE = -1
@@ -64,7 +66,7 @@ export class TabsAPI {
     this.onCreated(tabId)
     this.onActivated(tabId)
 
-    console.log(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
+    debug(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
   private createTabDetails(tab: TabContents) {

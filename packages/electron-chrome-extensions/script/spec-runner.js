@@ -57,6 +57,7 @@ async function runMainProcessElectronTests () {
 
   const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '..'),
+    env: process.env,
     stdio: 'inherit'
   });
   if (status !== 0) {

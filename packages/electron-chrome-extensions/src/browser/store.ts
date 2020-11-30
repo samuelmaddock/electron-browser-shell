@@ -3,6 +3,8 @@ import { EventEmitter } from 'events'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionRouter, Handler } from './router'
 
+const debug = require('debug')('electron-chrome-extensions:store')
+
 export class ExtensionStore extends EventEmitter {
   private router = ExtensionRouter.get()
 
@@ -106,5 +108,17 @@ export class ExtensionStore extends EventEmitter {
     this.addTab(tab)
 
     return tab
+  }
+
+  addExtensionHost(host: Electron.WebContents) {
+    if (this.extensionHosts.has(host)) return
+
+    this.extensionHosts.add(host)
+
+    host.once('destroyed', () => {
+      this.extensionHosts.delete(host)
+    })
+
+    debug(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
   }
 }

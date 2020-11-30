@@ -13,5 +13,8 @@
   "dependencies": {
     "electron": "^11.0.3",
     "electron-chrome-extensions": "1.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.2"
   }
 }

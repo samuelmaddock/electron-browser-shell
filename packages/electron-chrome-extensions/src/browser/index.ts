@@ -7,7 +7,6 @@ import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
-import { TabContents } from './api/common'
 import { ContextMenusAPI } from './api/context-menus'
 import { RuntimeAPI } from './api/runtime'
 import { ChromeExtensionImpl } from './impl'
@@ -93,15 +92,7 @@ export class Extensions extends EventEmitter {
    * can also be used in other special cases.
    */
   addExtensionHost(host: Electron.WebContents) {
-    if (this.store.extensionHosts.has(host)) return
-
-    this.store.extensionHosts.add(host)
-
-    host.once('destroyed', () => {
-      this.store.extensionHosts.delete(host)
-    })
-
-    console.log(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
+    this.store.addExtensionHost(host)
   }
 
   /**

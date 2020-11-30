@@ -1,5 +1,17 @@
 import { ipcMain, Session } from 'electron'
 
+const createDebug = require('debug')
+
+// Shorten base64 encoded icons
+const shortenValues = (k: string, v: any) =>
+  typeof v === 'string' && v.length > 128 ? v.substr(0, 128) + '...' : v
+
+createDebug.formatters.r = (value: any) => {
+  return value ? JSON.stringify(value, shortenValues, '  ') : value
+}
+
+const debug = createDebug('electron-chrome-extensions:router')
+
 export type Handler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => void
 
 type HandlerMap = Map<string, Handler>
@@ -22,6 +34,8 @@ export class ExtensionRouter {
     handlerName: string,
     ...args: any[]
   ) => {
+    debug(`received '${handlerName}'`, args)
+
     if (typeof handlerName !== 'string') {
       throw new Error('handlerName must be of type string')
     }
@@ -37,6 +51,8 @@ export class ExtensionRouter {
     }
 
     const result = await handler(event, ...args)
+
+    debug(`${handlerName} result: %r`, result)
 
     return result
   }
