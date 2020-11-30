@@ -177,6 +177,9 @@ export class BrowserActionAPI {
       }
 
       this.popup = new PopupView(extensionId, win, popupUrl)
+
+      debug(`opened popup: ${popupUrl}`)
+
       this.store.emitPublic('browser-action-popup-created', this.popup)
     } else {
       // TODO: dispatch click action

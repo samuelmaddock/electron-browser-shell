@@ -22,6 +22,15 @@ export class PopupView {
       } as any,
     })
 
+    const untypedWebContents = this.browserView.webContents as any
+    untypedWebContents.on('preferred-size-changed', this.updatePreferredSize)
+
+    this.browserView.setBackgroundColor('#ff0000')
+    this.browserView.webContents.loadURL(url)
+
+    this.browserWindow.addBrowserView(this.browserView)
+    this.browserView.webContents.focus()
+
     // Set default size where preferredSizeMode isn't supported
     this.browserView.setBounds({
       x: this.browserWindow.getSize()[0] - 256,
@@ -29,17 +38,6 @@ export class PopupView {
       width: 256,
       height: 400,
     })
-
-    const untypedWebContents = this.browserView.webContents as any
-    untypedWebContents.on('preferred-size-changed', this.updatePreferredSize)
-
-    this.browserView.setBackgroundColor('#ff0000')
-    this.browserView.webContents.loadURL(url)
-
-    // this.view.webContents.openDevTools({ mode: 'detach', activate: true })
-
-    this.browserWindow.addBrowserView(this.browserView)
-    this.browserView.webContents.focus()
 
     // TODO:
     this.browserView.webContents.once('blur' as any, this.destroy)
