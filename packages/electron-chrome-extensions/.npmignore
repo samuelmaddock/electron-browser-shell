@@ -1,3 +1,5 @@
 src
+spec
+script
 webpack.config.js
 tsconfig.json
