@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow } from 'electron'
+import { BrowserWindow, Session } from 'electron'
 
 const debug = require('debug')('electron-chrome-extensions:popup')
 
@@ -11,7 +11,8 @@ export interface PopupAnchorRect {
 
 interface PopupViewOptions {
   extensionId: string
-  browserWindow: BrowserWindow
+  session: Session
+  parent: BrowserWindow
   url: string
   anchorRect: PopupAnchorRect
 }
@@ -26,90 +27,127 @@ export class PopupView {
     maxHeight: 600,
   }
 
-  browserView?: BrowserView
   browserWindow?: BrowserWindow
+  parent?: BrowserWindow
   extensionId: string
 
   private anchorRect: PopupAnchorRect
   private destroyed: boolean = false
 
   constructor(opts: PopupViewOptions) {
-    this.browserWindow = opts.browserWindow
+    this.parent = opts.parent
     this.extensionId = opts.extensionId
     this.anchorRect = opts.anchorRect
 
-    this.browserView = new BrowserView({
+    this.browserWindow = new BrowserWindow({
+      show: false,
+      frame: false,
+      parent: opts.parent,
+      movable: false,
+      maximizable: false,
+      minimizable: false,
+      skipTaskbar: true,
+      backgroundColor: '#ffffff',
       webPreferences: {
+        session: opts.session,
+        sandbox: true,
+        nodeIntegration: false,
+        nodeIntegrationInWorker: false,
+        nativeWindowOpen: true,
+        worldSafeExecuteJavaScript: true,
         contextIsolation: true,
-        preferredSizeMode: true,
-      } as any,
+        ...({
+          preferredSizeMode: true,
+        } as any),
+      },
     })
 
-    const untypedWebContents = this.browserView.webContents as any
+    const untypedWebContents = this.browserWindow.webContents as any
     untypedWebContents.on('preferred-size-changed', this.updatePreferredSize)
 
-    this.browserView.setBackgroundColor('#ff0000')
-    this.browserView.webContents.loadURL(opts.url)
-
-    this.browserWindow.addBrowserView(this.browserView)
-    this.browserView.webContents.focus()
-
     // Set default size where preferredSizeMode isn't supported
-    this.browserView.setBounds({
-      ...this.browserView.getBounds(),
+    this.browserWindow.setBounds({
+      ...this.browserWindow.getBounds(),
       width: 256,
       height: 400,
     })
 
     this.updatePosition()
 
-    // TODO:
-    this.browserView.webContents.once('blur' as any, this.destroy)
+    this.browserWindow.webContents.on('devtools-closed', this.maybeClose)
+    this.browserWindow.on('blur', this.maybeClose)
+    this.browserWindow.on('closed', this.destroy)
+    this.parent.once('closed', this.destroy)
 
-    this.browserWindow.once('closed', this.destroy)
+    this.load(opts.url)
+  }
+
+  async load(url: string) {
+    const win = this.browserWindow!
+
+    try {
+      await win.webContents.loadURL(url)
+    } catch (e) {
+      console.error(e)
+    }
+
+    if (this.destroyed) return
+    win.show()
   }
 
   destroy = () => {
     if (this.destroyed) return
 
-    if (this.browserView) {
-      if (this.browserWindow) {
-        if (!this.browserWindow.isDestroyed()) {
-          this.browserWindow.off('closed', this.destroy)
-          this.browserWindow.removeBrowserView(this.browserView)
-        }
-        this.browserWindow = undefined
+    this.destroyed = true
+
+    debug(`destroying ${this.extensionId}`)
+
+    if (this.parent) {
+      if (!this.parent.isDestroyed()) {
+        this.parent.off('closed', this.destroy)
       }
-
-      const { webContents } = this.browserView
-
-      if (!webContents.isDestroyed() && webContents.isDevToolsOpened()) {
-        webContents.closeDevTools()
-      }
-
-      this.browserView = undefined
+      this.parent = undefined
     }
 
-    this.destroyed = true
+    if (this.browserWindow) {
+      if (!this.browserWindow.isDestroyed()) {
+        const { webContents } = this.browserWindow
+
+        if (!webContents.isDestroyed() && webContents.isDevToolsOpened()) {
+          webContents.closeDevTools()
+        }
+
+        this.browserWindow.off('closed', this.destroy)
+        this.browserWindow.destroy()
+      }
+
+      this.browserWindow = undefined
+    }
   }
 
   isDestroyed() {
     return this.destroyed
   }
 
-  private updatePosition() {
-    if (!this.browserView || !this.browserWindow) return
+  private maybeClose = () => {
+    // Keep open if webContents is being inspected
+    if (!this.browserWindow?.isDestroyed() && this.browserWindow?.webContents.isDevToolsOpened()) {
+      debug('preventing close due to DevTools being open')
+      return
+    }
 
-    const winBounds = this.browserWindow.getContentBounds()
-    const viewBounds = this.browserView.getBounds()
+    this.destroy()
+  }
+
+  private updatePosition() {
+    if (!this.browserWindow || !this.parent) return
+
+    const winBounds = this.parent.getBounds()
+    const viewBounds = this.browserWindow.getBounds()
 
     // TODO: support more orientations than just top-right
-    let x = this.anchorRect.x + this.anchorRect.width - viewBounds.width
-    let y = this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
-
-    // Clamp to window
-    x = Math.max(0, Math.min(winBounds.width - viewBounds.width, x))
-    y = Math.max(0, Math.min(winBounds.height - viewBounds.height, y))
+    let x = winBounds.x + this.anchorRect.x + this.anchorRect.width - viewBounds.width
+    let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
 
     // Convert to ints
     x = Math.floor(x)
@@ -117,19 +155,19 @@ export class PopupView {
 
     debug(`updatePosition`, { x, y })
 
-    this.browserView.setBounds({
-      ...this.browserView.getBounds(),
+    this.browserWindow.setBounds({
+      ...this.browserWindow.getBounds(),
       x,
       y,
     })
   }
 
   private updatePreferredSize = (event: Electron.Event, size: Electron.Size) => {
-    if (!this.browserView || !this.browserWindow) return
+    if (!this.browserWindow || !this.parent) return
 
-    const windowWidth = this.browserWindow.getSize()[0]
+    const windowWidth = this.parent.getSize()[0]
 
-    this.browserView?.setBounds({
+    this.browserWindow?.setBounds({
       x: windowWidth - size.width,
       y: 0,
       width: Math.min(PopupView.BOUNDS.maxWidth, Math.max(size.width, PopupView.BOUNDS.minWidth)),

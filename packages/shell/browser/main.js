@@ -145,7 +145,24 @@ class Browser {
   }
 
   getIpcWindow(event) {
-    return event.sender ? this.getWindowFromWebContents(event.sender) : null
+    let win = null
+
+    if (event.sender) {
+      win = this.getWindowFromWebContents(event.sender)
+
+      // If sent from a popup window, we may need to get the parent window of the popup.
+      if (!win) {
+        const browserWindow = getParentWindowOfTab(event.sender)
+        if (browserWindow && !browserWindow.isDestroyed()) {
+          const parentWindow = browserWindow.getParentWindow()
+          if (parentWindow) {
+            win = this.getWindowFromWebContents(parentWindow.webContents)
+          }
+        }
+      }
+    }
+
+    return win
   }
 
   async init() {

@@ -164,7 +164,10 @@ export class BrowserActionAPI {
       const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
       this.popup.destroy()
       this.popup = undefined
-      if (toggleExtension) return
+      if (toggleExtension) {
+        debug('skipping activate to close popup')
+        return
+      }
     }
 
     const activeTab = this.store.getActiveTabFromWebContents(event.sender)
@@ -180,7 +183,13 @@ export class BrowserActionAPI {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
 
-      this.popup = new PopupView({ extensionId, browserWindow: win, url: popupUrl, anchorRect })
+      this.popup = new PopupView({
+        extensionId,
+        session: this.store.session,
+        parent: win,
+        url: popupUrl,
+        anchorRect,
+      })
 
       debug(`opened popup: ${popupUrl}`)
 
