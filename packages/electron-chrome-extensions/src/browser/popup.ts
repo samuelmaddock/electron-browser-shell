@@ -34,6 +34,9 @@ export class PopupView {
   private anchorRect: PopupAnchorRect
   private destroyed: boolean = false
 
+  /** Preferred size changes are only received in Electron v12+ */
+  private usingPreferredSize = false
+
   constructor(opts: PopupViewOptions) {
     this.parent = opts.parent
     this.extensionId = opts.extensionId
@@ -46,6 +49,7 @@ export class PopupView {
       movable: false,
       maximizable: false,
       minimizable: false,
+      resizable: false,
       skipTaskbar: true,
       backgroundColor: '#ffffff',
       webPreferences: {
@@ -65,15 +69,6 @@ export class PopupView {
     const untypedWebContents = this.browserWindow.webContents as any
     untypedWebContents.on('preferred-size-changed', this.updatePreferredSize)
 
-    // Set default size where preferredSizeMode isn't supported
-    this.browserWindow.setBounds({
-      ...this.browserWindow.getBounds(),
-      width: 256,
-      height: 400,
-    })
-
-    this.updatePosition()
-
     this.browserWindow.webContents.on('devtools-closed', this.maybeClose)
     this.browserWindow.on('blur', this.maybeClose)
     this.browserWindow.on('closed', this.destroy)
@@ -82,7 +77,7 @@ export class PopupView {
     this.load(opts.url)
   }
 
-  async load(url: string) {
+  private async load(url: string) {
     const win = this.browserWindow!
 
     try {
@@ -92,6 +87,19 @@ export class PopupView {
     }
 
     if (this.destroyed) return
+
+    if (!this.usingPreferredSize) {
+      // Set large initial size to avoid overflow
+      this.setSize({ width: PopupView.BOUNDS.maxWidth, height: PopupView.BOUNDS.maxHeight })
+
+      // Wait for content and layout to load
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      if (this.destroyed) return
+
+      await this.queryPreferredSize()
+      if (this.destroyed) return
+    }
+
     win.show()
   }
 
@@ -129,6 +137,26 @@ export class PopupView {
     return this.destroyed
   }
 
+  setSize(rect: Partial<Electron.Rectangle>) {
+    if (!this.browserWindow || !this.parent) return
+
+    const width = Math.floor(
+      Math.min(PopupView.BOUNDS.maxWidth, Math.max(rect.width || 0, PopupView.BOUNDS.minWidth))
+    )
+
+    const height = Math.floor(
+      Math.min(PopupView.BOUNDS.maxHeight, Math.max(rect.height || 0, PopupView.BOUNDS.minHeight))
+    )
+
+    debug(`setSize`, { width, height })
+
+    this.browserWindow?.setBounds({
+      ...this.browserWindow.getBounds(),
+      width,
+      height,
+    })
+  }
+
   private maybeClose = () => {
     // Keep open if webContents is being inspected
     if (!this.browserWindow?.isDestroyed() && this.browserWindow?.webContents.isDevToolsOpened()) {
@@ -162,21 +190,26 @@ export class PopupView {
     })
   }
 
+  /** Backwards compat for Electron <12 */
+  private async queryPreferredSize() {
+    if (this.usingPreferredSize || this.destroyed) return
+
+    const rect = await this.browserWindow!.webContents.executeJavaScript(
+      `((${() => {
+        const rect = document.body.getBoundingClientRect()
+        return { width: rect.width, height: rect.height }
+      }})())`
+    )
+
+    if (this.destroyed) return
+
+    this.setSize({ width: rect.width, height: rect.height })
+    this.updatePosition()
+  }
+
   private updatePreferredSize = (event: Electron.Event, size: Electron.Size) => {
-    if (!this.browserWindow || !this.parent) return
-
-    const windowWidth = this.parent.getSize()[0]
-
-    this.browserWindow?.setBounds({
-      x: windowWidth - size.width,
-      y: 0,
-      width: Math.min(PopupView.BOUNDS.maxWidth, Math.max(size.width, PopupView.BOUNDS.minWidth)),
-      height: Math.min(
-        PopupView.BOUNDS.maxHeight,
-        Math.max(size.height, PopupView.BOUNDS.minHeight)
-      ),
-    })
-
+    this.usingPreferredSize = true
+    this.setSize(size)
     this.updatePosition()
   }
 }
