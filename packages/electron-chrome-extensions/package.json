@@ -1,11 +1,12 @@
 {
   "name": "electron-chrome-extensions",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && webpack",
-    "test": "node ./script/spec-runner.js"
+    "test": "node ./script/spec-runner.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "electron",
