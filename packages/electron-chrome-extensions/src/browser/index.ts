@@ -9,6 +9,7 @@ import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
 import { ContextMenusAPI } from './api/context-menus'
 import { RuntimeAPI } from './api/runtime'
+import { CookiesAPI } from './api/cookies'
 import { ChromeExtensionImpl } from './impl'
 
 const DEFAULT_PRELOAD_PATH = path.join(__dirname, 'preload.js')
@@ -25,6 +26,7 @@ export class Extensions extends EventEmitter {
 
   private browserAction: BrowserActionAPI
   private contextMenus: ContextMenusAPI
+  private cookies: CookiesAPI
   private runtime: RuntimeAPI
   private tabs: TabsAPI
   private webNavigation: WebNavigationAPI
@@ -39,6 +41,7 @@ export class Extensions extends EventEmitter {
 
     this.browserAction = new BrowserActionAPI(this.store)
     this.contextMenus = new ContextMenusAPI(this.store)
+    this.cookies = new CookiesAPI(this.store)
     this.runtime = new RuntimeAPI(this.store)
     this.tabs = new TabsAPI(this.store)
     this.webNavigation = new WebNavigationAPI(this.store)

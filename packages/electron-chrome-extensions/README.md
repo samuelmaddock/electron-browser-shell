@@ -220,6 +220,15 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.browserAction.disable
 - [ ] chrome.browserAction.onClicked
 
+### [`chrome.cookies`](https://developer.chrome.com/extensions/cookies)
+
+- [x] chrome.cookies.get
+- [x] chrome.cookies.getAll
+- [x] chrome.cookies.set
+- [x] chrome.cookies.remove
+- [x] chrome.cookies.getAllCookieStores
+- [ ] chrome.cookies.onChanged
+
 ### [`chrome.contextMenus`](https://developer.chrome.com/extensions/contextMenus)
 
 - [x] chrome.contextMenus.create
@@ -300,7 +309,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [x] chrome.windows.get
 - [ ] chrome.windows.getCurrent
 - [ ] chrome.windows.getLastFocused
-- [ ] chrome.windows.getAll
+- [x] chrome.windows.getAll
 - [x] chrome.windows.create
 - [x] chrome.windows.update
 - [x] chrome.windows.remove

@@ -247,6 +247,16 @@ export const injectExtensionAPIs = () => {
       onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
     }
 
+    const cookies: Partial<typeof chrome.cookies> = {
+      ...chrome.cookies,
+      get: invokeExtension('cookies.get'),
+      getAll: invokeExtension('cookies.getAll'),
+      set: invokeExtension('cookies.set'),
+      remove: invokeExtension('cookies.remove'),
+      getAllCookieStores: invokeExtension('cookies.getAllCookieStores'),
+      onChanged: new ExtensionEvent('cookies.onChanged'),
+    }
+
     class ChromeSetting implements Partial<chrome.types.ChromeSetting> {
       set() {}
       get() {}
@@ -266,6 +276,7 @@ export const injectExtensionAPIs = () => {
 
     Object.assign(chrome, {
       contextMenus,
+      cookies,
       privacy,
       runtime,
       tabs,
