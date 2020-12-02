@@ -11,6 +11,9 @@ export class ExtensionStore extends EventEmitter {
   /** Tabs observed by the extensions system. */
   tabs = new Set<Electron.WebContents>()
 
+  /** Windows observed by the extensions system. */
+  windows = new Set<Electron.BrowserWindow>()
+
   /**
    * Map of tabs to their parent window.
    *
@@ -81,12 +84,11 @@ export class ExtensionStore extends EventEmitter {
   }
 
   addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
-    if (this.tabs.has(tab)) {
-      return
-    }
+    if (this.tabs.has(tab)) return
 
     this.tabs.add(tab)
     this.tabToWindow.set(tab, window)
+    this.windows.add(window)
 
     const activeTab = this.getActiveTabFromWebContents(tab)
     if (!activeTab) {
@@ -97,9 +99,20 @@ export class ExtensionStore extends EventEmitter {
   }
 
   removeTab(tab: Electron.WebContents) {
+    if (!this.tabs.has(tab)) return
+
+    const win = this.tabToWindow.get(tab)!
+
     this.tabs.delete(tab)
     this.tabToWindow.delete(tab)
+
     // TODO: clear active tab
+
+    // Clear window if it has no remaining tabs
+    const windowHasTabs = Array.from(this.tabs).find((tab) => this.tabToWindow.get(tab) === win)
+    if (!windowHasTabs) {
+      this.windows.delete(win)
+    }
   }
 
   async createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {

@@ -14,6 +14,7 @@ export class WindowsAPI {
 
   constructor(private store: ExtensionStore) {
     store.handle('windows.get', this.get.bind(this))
+    store.handle('windows.getAll', this.getAll.bind(this))
     store.handle('windows.create', this.create.bind(this))
     store.handle('windows.update', this.update.bind(this))
     store.handle('windows.remove', this.remove.bind(this))
@@ -65,6 +66,10 @@ export class WindowsAPI {
     const win = this.getWindowFromId(event.sender, windowId)
     if (!win) return { id: WindowsAPI.WINDOW_ID_NONE }
     return this.getWindowDetails(win)
+  }
+
+  private getAll(event: Electron.IpcMainInvokeEvent) {
+    return Array.from(this.store.windows).map(this.getWindowDetails.bind(this))
   }
 
   private async create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {

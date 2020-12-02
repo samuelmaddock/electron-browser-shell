@@ -93,7 +93,7 @@ export class PopupView {
       this.setSize({ width: PopupView.BOUNDS.maxWidth, height: PopupView.BOUNDS.maxHeight })
 
       // Wait for content and layout to load
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       if (this.destroyed) return
 
       await this.queryPreferredSize()
@@ -161,6 +161,14 @@ export class PopupView {
     // Keep open if webContents is being inspected
     if (!this.browserWindow?.isDestroyed() && this.browserWindow?.webContents.isDevToolsOpened()) {
       debug('preventing close due to DevTools being open')
+      return
+    }
+
+    // For extension popups with a login form, the user may need to access a
+    // program outside of the app. Closing the popup would then add
+    // inconvenience.
+    if (!BrowserWindow.getFocusedWindow()) {
+      debug('preventing close due to focus residing outside of the app')
       return
     }
 
