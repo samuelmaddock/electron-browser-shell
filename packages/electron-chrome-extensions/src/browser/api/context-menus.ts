@@ -197,7 +197,7 @@ export class ContextMenusAPI {
       selectionText: params.selectionText,
       checked: false, // TODO
       menuItemId,
-      frameId: -1, // TODO
+      frameId: -1, // TODO: match frameURL with webFrameMain in Electron 12
       frameUrl: params.frameURL,
       editable: params.isEditable,
       mediaType: params.mediaType,

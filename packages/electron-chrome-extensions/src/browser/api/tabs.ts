@@ -91,7 +91,7 @@ export class TabsAPI {
       selected: true,
       status: tab.isLoading() ? 'loading' : 'complete',
       title: tab.getTitle(),
-      url: tab.getURL(),
+      url: tab.getURL(), // TODO: tab.mainFrame.url (Electron 12)
       width,
       windowId: win ? win.id : -1,
     }
