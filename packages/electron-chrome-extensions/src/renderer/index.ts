@@ -115,148 +115,6 @@ export const injectExtensionAPIs = () => {
       }
     }
 
-    const chrome = window.chrome || {}
-    const extensionId = chrome.runtime?.id
-    const manifest: chrome.runtime.Manifest =
-      (extensionId && chrome.runtime.getManifest()) || ({} as any)
-
-    const webNavigation = {
-      ...chrome.webNavigation,
-      getFrame: invokeExtension('webNavigation.getFrame'),
-      onBeforeNavigate: new ExtensionEvent('webNavigation.onBeforeNavigate'),
-      onCompleted: new ExtensionEvent('webNavigation.onCompleted'),
-      onCreatedNavigationTarget: new ExtensionEvent('webNavigation.onCreatedNavigationTarget'),
-      onCommitted: new ExtensionEvent('webNavigation.onCommitted'),
-      onHistoryStateUpdated: new ExtensionEvent('webNavigation.onHistoryStateUpdated'),
-    }
-
-    const browserAction: Partial<typeof chrome.browserAction> = {
-      setTitle: invokeExtension('browserAction.setTitle', { extensionId }),
-      getTitle: invokeExtension('browserAction.getTitle', { extensionId, noop: true }),
-
-      setIcon: invokeExtension('browserAction.setIcon', {
-        extensionId,
-        serialize: (details: any) => {
-          if (details.imageData) {
-            if (details.imageData instanceof ImageData) {
-              details.imageData = imageData2base64(details.imageData)
-            } else {
-              details.imageData = Object.entries(details.imageData).reduce(
-                (obj: any, pair: any[]) => {
-                  obj[pair[0]] = imageData2base64(pair[1])
-                  return obj
-                },
-                {}
-              )
-            }
-          }
-
-          return [details]
-        },
-      }),
-
-      setPopup: invokeExtension('browserAction.setPopup', { extensionId }),
-      getPopup: invokeExtension('browserAction.getPopup', { extensionId, noop: true }),
-
-      setBadgeText: invokeExtension('browserAction.setBadgeText', { extensionId }),
-      getBadgeText: invokeExtension('browserAction.getBadgeText', { extensionId, noop: true }),
-
-      setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor', {
-        extensionId,
-      }),
-      getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor', {
-        extensionId,
-        noop: true,
-      }),
-
-      enable: invokeExtension('browserAction.enable', { extensionId, noop: true }),
-      disable: invokeExtension('browserAction.disable', { extensionId, noop: true }),
-
-      onClicked: new ExtensionEvent('browserAction.onClicked'),
-    }
-
-    let menuCounter = 0
-    const menuCallbacks: { [key: string]: chrome.contextMenus.CreateProperties['onclick'] } = {}
-    const menuCreate = invokeExtension('contextMenus.create', { extensionId })
-
-    const contextMenus: Partial<typeof chrome.contextMenus> = {
-      ...chrome.contextMenus,
-      create: function (
-        createProperties: chrome.contextMenus.CreateProperties,
-        callback?: Function
-      ) {
-        if (typeof createProperties.id === 'undefined') {
-          createProperties.id = `${++menuCounter}`
-        }
-        if (createProperties.onclick) {
-          menuCallbacks[createProperties.id] = createProperties.onclick
-          delete createProperties.onclick
-        }
-        menuCreate(createProperties, callback)
-        return createProperties.id
-      },
-      update: invokeExtension('contextMenus.update', { noop: true }),
-      remove: invokeExtension('contextMenus.remove', { extensionId }),
-      removeAll: invokeExtension('contextMenus.removeAll', { extensionId }),
-      onClicked: new ExtensionEvent('contextMenus.onClicked'),
-    }
-
-    contextMenus.onClicked?.addListener((info, tab) => {
-      const callback = menuCallbacks[info.menuItemId]
-      if (callback && tab) callback(info, tab)
-    })
-
-    const runtime: Partial<typeof chrome.runtime> = {
-      ...chrome.runtime,
-      openOptionsPage: invokeExtension('runtime.openOptionsPage', { extensionId }),
-    }
-
-    const tabs: Partial<typeof chrome.tabs> = {
-      ...chrome.tabs,
-      create: invokeExtension('tabs.create'),
-      get: invokeExtension('tabs.get'),
-      getCurrent: invokeExtension('tabs.getCurrent'),
-      getAllInWindow: invokeExtension('tabs.getAllInWindow'),
-      insertCSS: invokeExtension('tabs.insertCSS'),
-      query: invokeExtension('tabs.query'),
-      reload: invokeExtension('tabs.reload'),
-      update: invokeExtension('tabs.update'),
-      remove: invokeExtension('tabs.remove'),
-      goBack: invokeExtension('tabs.goBack'),
-      goForward: invokeExtension('tabs.goForward'),
-      onCreated: new ExtensionEvent('tabs.onCreated'),
-      onRemoved: new ExtensionEvent('tabs.onRemoved'),
-      onUpdated: new ExtensionEvent('tabs.onUpdated'),
-      onActivated: new ExtensionEvent('tabs.onActivated'),
-    }
-
-    const webRequest: Partial<typeof chrome.webRequest> = {
-      ...chrome.webRequest,
-      onHeadersReceived: new ExtensionEvent('webRequest.onHeadersReceived'),
-    }
-
-    const windows: Partial<typeof chrome.windows> = {
-      ...chrome.windows,
-      WINDOW_ID_NONE: -1,
-      WINDOW_ID_CURRENT: -2,
-      get: invokeExtension('windows.get'),
-      getAll: invokeExtension('windows.getAll'),
-      create: invokeExtension('windows.create'),
-      update: invokeExtension('windows.update'),
-      remove: invokeExtension('windows.remove'),
-      onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
-    }
-
-    const cookies: Partial<typeof chrome.cookies> = {
-      ...chrome.cookies,
-      get: invokeExtension('cookies.get'),
-      getAll: invokeExtension('cookies.getAll'),
-      set: invokeExtension('cookies.set'),
-      remove: invokeExtension('cookies.remove'),
-      getAllCookieStores: invokeExtension('cookies.getAllCookieStores'),
-      onChanged: new ExtensionEvent('cookies.onChanged'),
-    }
-
     class ChromeSetting implements Partial<chrome.types.ChromeSetting> {
       set() {}
       get() {}
@@ -264,30 +122,240 @@ export const injectExtensionAPIs = () => {
       // onChange: chrome.types.ChromeSettingChangedEvent
     }
 
-    const privacy = {
-      network: {
-        networkPredictionEnabled: new ChromeSetting(),
-        webRTCIPHandlingPolicy: new ChromeSetting(),
+    const chrome = window.chrome || {}
+    const extensionId = chrome.runtime?.id
+    const manifest: chrome.runtime.Manifest =
+      (extensionId && chrome.runtime.getManifest()) || ({} as any)
+
+    type DeepPartial<T> = {
+      [P in keyof T]?: DeepPartial<T[P]>
+    }
+
+    type APIFactoryMap = {
+      [apiName in keyof typeof chrome]: {
+        shouldInject?: () => boolean
+        factory: (base: DeepPartial<typeof chrome[apiName]>) => DeepPartial<typeof chrome[apiName]>
+      }
+    }
+
+    /**
+     * Factories for each additional chrome.* API.
+     */
+    const apiDefinitions: Partial<APIFactoryMap> = {
+      browserAction: {
+        shouldInject: () => !!manifest.browser_action,
+        factory: (base) => {
+          const api = {
+            ...base,
+
+            setTitle: invokeExtension('browserAction.setTitle', { extensionId }),
+            getTitle: invokeExtension('browserAction.getTitle', { extensionId, noop: true }),
+
+            setIcon: invokeExtension('browserAction.setIcon', {
+              extensionId,
+              serialize: (details: any) => {
+                if (details.imageData) {
+                  if (details.imageData instanceof ImageData) {
+                    details.imageData = imageData2base64(details.imageData)
+                  } else {
+                    details.imageData = Object.entries(details.imageData).reduce(
+                      (obj: any, pair: any[]) => {
+                        obj[pair[0]] = imageData2base64(pair[1])
+                        return obj
+                      },
+                      {}
+                    )
+                  }
+                }
+
+                return [details]
+              },
+            }),
+
+            setPopup: invokeExtension('browserAction.setPopup', { extensionId }),
+            getPopup: invokeExtension('browserAction.getPopup', { extensionId, noop: true }),
+
+            setBadgeText: invokeExtension('browserAction.setBadgeText', { extensionId }),
+            getBadgeText: invokeExtension('browserAction.getBadgeText', {
+              extensionId,
+              noop: true,
+            }),
+
+            setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor', {
+              extensionId,
+            }),
+            getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor', {
+              extensionId,
+              noop: true,
+            }),
+
+            enable: invokeExtension('browserAction.enable', { extensionId, noop: true }),
+            disable: invokeExtension('browserAction.disable', { extensionId, noop: true }),
+
+            onClicked: new ExtensionEvent('browserAction.onClicked'),
+          }
+
+          return api
+        },
       },
-      websites: {
-        hyperlinkAuditingEnabled: new ChromeSetting(),
+
+      contextMenus: {
+        factory: (base) => {
+          let menuCounter = 0
+          const menuCallbacks: {
+            [key: string]: chrome.contextMenus.CreateProperties['onclick']
+          } = {}
+          const menuCreate = invokeExtension('contextMenus.create', { extensionId })
+
+          const api = {
+            ...base,
+            create: function (
+              createProperties: chrome.contextMenus.CreateProperties,
+              callback?: Function
+            ) {
+              if (typeof createProperties.id === 'undefined') {
+                createProperties.id = `${++menuCounter}`
+              }
+              if (createProperties.onclick) {
+                menuCallbacks[createProperties.id] = createProperties.onclick
+                delete createProperties.onclick
+              }
+              menuCreate(createProperties, callback)
+              return createProperties.id
+            },
+            update: invokeExtension('contextMenus.update', { noop: true }),
+            remove: invokeExtension('contextMenus.remove', { extensionId }),
+            removeAll: invokeExtension('contextMenus.removeAll', { extensionId }),
+            onClicked: new ExtensionEvent<
+              (info: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab) => void
+            >('contextMenus.onClicked'),
+          }
+
+          api.onClicked.addListener((info, tab) => {
+            const callback = menuCallbacks[info.menuItemId]
+            if (callback && tab) callback(info, tab)
+          })
+
+          return api
+        },
+      },
+
+      cookies: {
+        factory: (base) => {
+          return {
+            ...base,
+            get: invokeExtension('cookies.get'),
+            getAll: invokeExtension('cookies.getAll'),
+            set: invokeExtension('cookies.set'),
+            remove: invokeExtension('cookies.remove'),
+            getAllCookieStores: invokeExtension('cookies.getAllCookieStores'),
+            onChanged: new ExtensionEvent('cookies.onChanged'),
+          }
+        },
+      },
+
+      privacy: {
+        factory: (base) => {
+          return {
+            ...base,
+            network: {
+              networkPredictionEnabled: new ChromeSetting(),
+              webRTCIPHandlingPolicy: new ChromeSetting(),
+            },
+            websites: {
+              hyperlinkAuditingEnabled: new ChromeSetting(),
+            },
+          }
+        },
+      },
+
+      runtime: {
+        factory: (base) => {
+          return {
+            ...base,
+            openOptionsPage: invokeExtension('runtime.openOptionsPage', { extensionId }),
+          }
+        },
+      },
+
+      tabs: {
+        factory: (base) => {
+          return {
+            ...base,
+            create: invokeExtension('tabs.create'),
+            get: invokeExtension('tabs.get'),
+            getCurrent: invokeExtension('tabs.getCurrent'),
+            getAllInWindow: invokeExtension('tabs.getAllInWindow'),
+            insertCSS: invokeExtension('tabs.insertCSS'),
+            query: invokeExtension('tabs.query'),
+            reload: invokeExtension('tabs.reload'),
+            update: invokeExtension('tabs.update'),
+            remove: invokeExtension('tabs.remove'),
+            goBack: invokeExtension('tabs.goBack'),
+            goForward: invokeExtension('tabs.goForward'),
+            onCreated: new ExtensionEvent('tabs.onCreated'),
+            onRemoved: new ExtensionEvent('tabs.onRemoved'),
+            onUpdated: new ExtensionEvent('tabs.onUpdated'),
+            onActivated: new ExtensionEvent('tabs.onActivated'),
+          }
+        },
+      },
+
+      webNavigation: {
+        factory: (base) => {
+          return {
+            ...base,
+            getFrame: invokeExtension('webNavigation.getFrame'),
+            onBeforeNavigate: new ExtensionEvent('webNavigation.onBeforeNavigate'),
+            onCompleted: new ExtensionEvent('webNavigation.onCompleted'),
+            onCreatedNavigationTarget: new ExtensionEvent(
+              'webNavigation.onCreatedNavigationTarget'
+            ),
+            onCommitted: new ExtensionEvent('webNavigation.onCommitted'),
+            onHistoryStateUpdated: new ExtensionEvent('webNavigation.onHistoryStateUpdated'),
+          }
+        },
+      },
+
+      webRequest: {
+        factory: (base) => {
+          return {
+            ...base,
+            onHeadersReceived: new ExtensionEvent('webRequest.onHeadersReceived'),
+          }
+        },
+      },
+
+      windows: {
+        factory: (base) => {
+          return {
+            ...base,
+            WINDOW_ID_NONE: -1,
+            WINDOW_ID_CURRENT: -2,
+            get: invokeExtension('windows.get'),
+            getAll: invokeExtension('windows.getAll'),
+            create: invokeExtension('windows.create'),
+            update: invokeExtension('windows.update'),
+            remove: invokeExtension('windows.remove'),
+            onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
+          }
+        },
       },
     }
 
-    Object.assign(chrome, {
-      contextMenus,
-      cookies,
-      privacy,
-      runtime,
-      tabs,
-      webNavigation,
-      webRequest,
-      windows,
+    // Create lazy initializers for all APIs
+    Object.keys(apiDefinitions).forEach((key: any) => {
+      const apiName: keyof typeof chrome = key
+      const baseApi = chrome[apiName] as any
+      const definition = apiDefinitions[apiName]!
+
+      // Allow APIs to opt-out of being available in this context.
+      if (definition.shouldInject && !definition.shouldInject()) return
+
+      Object.defineProperty(chrome, apiName, {
+        get: () => definition.factory(baseApi),
+      })
     })
-
-    if (manifest.browser_action) {
-      Object.assign(chrome, { browserAction })
-    }
 
     // Remove access to internals
     delete (window as any).electron
