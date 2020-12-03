@@ -56,6 +56,7 @@
         height: 100%;
         display: flex;
         flex-direction: row;
+        min-width: 0;
       }
 
       #createtab {
@@ -125,15 +126,17 @@
       }
 
       .app-drag {
-        flex: 1 1 auto;
+        flex: 1 0 auto;
         -webkit-app-region: drag;
         height: calc(100% - 5px);
+        min-width: 2rem;
         align-self: flex-end;
       }
       
       .window-controls {
         display: flex;
         flex-direction: row;
+        flex: 0 0 auto;
       }
 
       .window-controls .control {
