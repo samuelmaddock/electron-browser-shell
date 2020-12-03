@@ -327,6 +327,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 
 ### electron
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
+- Chrome extensions are not supported in non-persistent/incognito sessions.
 
 ## License
 
