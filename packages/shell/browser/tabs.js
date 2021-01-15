@@ -70,8 +70,13 @@ class Tabs extends EventEmitter {
   destroy() {
     this.tabList.forEach((tab) => tab.destroy())
     this.tabList = []
+
     this.selected = undefined
-    this.window = undefined
+
+    if (this.window) {
+      this.window.destroy()
+      this.window = undefined
+    }
   }
 
   get(tabId) {
