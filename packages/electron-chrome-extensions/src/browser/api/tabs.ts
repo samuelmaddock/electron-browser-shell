@@ -127,7 +127,7 @@ export class TabsAPI {
     event: Electron.IpcMainInvokeEvent,
     details: chrome.tabs.CreateProperties = {}
   ) {
-    const tab = await this.store.createTab(event, details)
+    const tab = await this.store.createTab(details)
     const tabDetails = this.getTabDetails(tab)
     if (details.active) {
       queueMicrotask(() => this.onActivated(tab.id))
@@ -171,7 +171,7 @@ export class TabsAPI {
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
         if (isSet(info.windowId)) {
           if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
-            if (this.store.activeWindowId !== tab.windowId) return false
+            if (this.store.lastFocusedWindowId !== tab.windowId) return false
           } else if (info.windowId !== tab.windowId) {
             return false
           }
@@ -235,13 +235,10 @@ export class TabsAPI {
 
   private remove(event: Electron.IpcMainInvokeEvent, id: number | number[]) {
     const ids = Array.isArray(id) ? id : [id]
-    const hasRemoveTab = typeof this.store.impl.removeTab === 'function'
 
     ids.forEach((tabId) => {
-      if (hasRemoveTab) {
-        const tab = this.store.getTabById(tabId)
-        if (tab) this.store.impl.removeTab!(event, tab)
-      }
+      const tab = this.store.getTabById(tabId)
+      if (tab) this.store.removeTab(tab)
       this.onRemoved(tabId)
     })
   }

@@ -307,15 +307,15 @@ Although certain APIs may not be implemented, some methods and properties are st
 ### [`chrome.windows`](https://developer.chrome.com/extensions/windows)
 
 - [x] chrome.windows.get
-- [ ] chrome.windows.getCurrent
-- [ ] chrome.windows.getLastFocused
+- [x] chrome.windows.getCurrent
+- [x] chrome.windows.getLastFocused
 - [x] chrome.windows.getAll
 - [x] chrome.windows.create
 - [x] chrome.windows.update
 - [x] chrome.windows.remove
-- [ ] chrome.windows.onCreated
-- [ ] chrome.windows.onRemoved
-- [ ] chrome.windows.onFocusChanged
+- [x] chrome.windows.onCreated
+- [x] chrome.windows.onRemoved
+- [x] chrome.windows.onFocusChanged
 - [ ] chrome.windows.onBoundsChanged
 </details>
 

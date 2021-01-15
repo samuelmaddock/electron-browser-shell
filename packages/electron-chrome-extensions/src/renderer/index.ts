@@ -344,10 +344,13 @@ export const injectExtensionAPIs = () => {
             WINDOW_ID_NONE: -1,
             WINDOW_ID_CURRENT: -2,
             get: invokeExtension('windows.get'),
+            getLastFocused: invokeExtension('windows.getLastFocused'),
             getAll: invokeExtension('windows.getAll'),
             create: invokeExtension('windows.create'),
             update: invokeExtension('windows.update'),
             remove: invokeExtension('windows.remove'),
+            onCreated: new ExtensionEvent('windows.onCreated'),
+            onRemoved: new ExtensionEvent('windows.onRemoved'),
             onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
           }
         },

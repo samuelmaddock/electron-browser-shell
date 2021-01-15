@@ -1,6 +1,8 @@
 import { BrowserWindow } from 'electron'
 import { ExtensionStore } from '../store'
 
+const debug = require('debug')('electron-chrome-extensions:windows')
+
 const getWindowState = (win: BrowserWindow): chrome.windows.Window['state'] => {
   if (win.isMaximized()) return 'maximized'
   if (win.isMinimized()) return 'minimized'
@@ -14,10 +16,33 @@ export class WindowsAPI {
 
   constructor(private store: ExtensionStore) {
     store.handle('windows.get', this.get.bind(this))
+    // TODO: how does getCurrent differ from getLastFocused?
+    store.handle('windows.getCurrent', this.getLastFocused.bind(this))
+    store.handle('windows.getLastFocused', this.getLastFocused.bind(this))
     store.handle('windows.getAll', this.getAll.bind(this))
     store.handle('windows.create', this.create.bind(this))
     store.handle('windows.update', this.update.bind(this))
     store.handle('windows.remove', this.remove.bind(this))
+
+    store.on('window-added', this.observeWindow.bind(this))
+  }
+
+  private observeWindow(window: Electron.BrowserWindow) {
+    const windowId = window.id
+
+    window.on('focus', () => {
+      this.onFocusChanged(windowId)
+    })
+
+    window.once('closed', () => {
+      this.store.windowDetailsCache.delete(windowId)
+      this.store.removeWindow(window)
+      this.onRemoved(windowId)
+    })
+
+    this.onCreated(windowId)
+
+    debug(`Observing window[${windowId}]`)
   }
 
   private createWindowDetails(win: BrowserWindow) {
@@ -31,7 +56,7 @@ export class WindowsAPI {
       tabs: Array.from(this.store.tabs)
         .filter((tab) => {
           const ownerWindow = this.store.tabToWindow.get(tab)
-          return ownerWindow?.id === win.id
+          return ownerWindow?.isDestroyed() ? false : ownerWindow?.id === win.id
         })
         .map((tab) => this.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
         .filter(Boolean),
@@ -54,18 +79,23 @@ export class WindowsAPI {
     return details
   }
 
-  private getWindowFromId(sender: Electron.WebContents, id: number) {
+  private getWindowFromId(id: number) {
     if (id === WindowsAPI.WINDOW_ID_CURRENT) {
-      return this.store.tabToWindow.get(sender) || BrowserWindow.fromWebContents(sender)
+      return this.store.getCurrentWindow()
     } else {
-      return BrowserWindow.fromId(id)
+      return this.store.getWindowById(id)
     }
   }
 
   private get(event: Electron.IpcMainInvokeEvent, windowId: number) {
-    const win = this.getWindowFromId(event.sender, windowId)
+    const win = this.getWindowFromId(windowId)
     if (!win) return { id: WindowsAPI.WINDOW_ID_NONE }
     return this.getWindowDetails(win)
+  }
+
+  private getLastFocused(event: Electron.IpcMainInvokeEvent) {
+    const win = this.store.getLastFocusedWindow()
+    return win ? this.getWindowDetails(win) : null
   }
 
   private getAll(event: Electron.IpcMainInvokeEvent) {
@@ -73,14 +103,8 @@ export class WindowsAPI {
   }
 
   private async create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
-    if (typeof this.store.impl.createWindow !== 'function') {
-      return {}
-    }
-
-    const win = await this.store.impl.createWindow(event, details)
-    const winDetails = this.getWindowDetails(win)
-
-    return winDetails
+    const win = await this.store.createWindow(event, details)
+    return this.getWindowDetails(win)
   }
 
   private async update(
@@ -88,8 +112,8 @@ export class WindowsAPI {
     windowId: number,
     updateProperties: chrome.windows.UpdateInfo = {}
   ) {
-    const win = this.getWindowFromId(event.sender, windowId)
-    if (!win || win.webContents.session !== this.store.session) return
+    const win = this.getWindowFromId(windowId)
+    if (!win) return
 
     const props = updateProperties
 
@@ -113,18 +137,32 @@ export class WindowsAPI {
     return this.createWindowDetails(win)
   }
 
-  private remove(
+  private async remove(
     event: Electron.IpcMainInvokeEvent,
     windowId: number = WindowsAPI.WINDOW_ID_CURRENT
   ) {
-    const win = this.getWindowFromId(event.sender, windowId)
-    if (!win || win.webContents.session !== this.store.session) return
-    win.close()
+    const win = this.getWindowFromId(windowId)
+    if (!win) return
+    const removedWindowId = win.id
+    await this.store.removeWindow(win)
+    this.onRemoved(removedWindowId)
   }
 
-  // onRemoved(win) {
-  //   sendToHosts('windows.onRemoved', {
-  //     windowId: win.id
-  //   })
-  // }
+  onCreated(windowId: number) {
+    const window = this.store.getWindowById(windowId)
+    if (!window) return
+    const windowDetails = this.getWindowDetails(window)
+    this.store.sendToHosts('windows.onCreated', windowDetails)
+  }
+
+  onRemoved(windowId: number) {
+    this.store.sendToHosts('windows.onRemoved', windowId)
+  }
+
+  onFocusChanged(windowId: number) {
+    if (this.store.lastFocusedWindowId === windowId) return
+
+    this.store.lastFocusedWindowId = windowId
+    this.store.sendToHosts('windows.onFocusChanged', windowId)
+  }
 }

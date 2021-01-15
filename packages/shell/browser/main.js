@@ -111,6 +111,11 @@ class TabbedBrowserWindow {
     })
   }
 
+  destroy() {
+    this.tabs.destroy()
+    this.window.destroy()
+  }
+
   getFocusedTab() {
     return this.tabs.selected
   }
@@ -139,9 +144,13 @@ class Browser {
     return this.windows.find((w) => w.window.isFocused()) || this.windows[0]
   }
 
+  getWindowFromBrowserWindow(window) {
+    return !window.isDestroyed() ? this.windows.find((win) => win.id === window.id) : null
+  }
+
   getWindowFromWebContents(webContents) {
     const window = getParentWindowOfTab(webContents)
-    return window ? this.windows.find((win) => win.id === window.id) : null
+    return window ? this.getWindowFromBrowserWindow(window) : null
   }
 
   getIpcWindow(event) {
@@ -175,11 +184,14 @@ class Browser {
     this.extensions = new Extensions({
       session: this.session,
 
-      createTab: (event, details) => {
+      createTab: (details) => {
         const win =
-          typeof details.windowId === 'number'
-            ? this.windows.find((w) => w.id === details.windowId)
-            : this.getIpcWindow(event)
+          typeof details.windowId === 'number' &&
+          this.windows.find((w) => w.id === details.windowId)
+
+        if (!win) {
+          throw new Error(`Unable to find windowId=${details.windowId}`)
+        }
 
         const tab = win.tabs.create()
 
@@ -188,21 +200,25 @@ class Browser {
 
         return [tab.webContents, tab.window]
       },
-      selectTab: (event, tab) => {
-        const win = this.getIpcWindow(event)
+      selectTab: (tab, browserWindow) => {
+        const win = this.getWindowFromBrowserWindow(browserWindow)
         win.tabs.select(tab.id)
       },
-      removeTab: (event, tab) => {
-        const win = this.getIpcWindow(event)
-        win.tabs.remove(tab.id)
+      removeTab: (tab, browserWindow) => {
+        const win = this.getWindowFromBrowserWindow(browserWindow)
+        if (win) win.tabs.remove(tab.id)
       },
 
-      createWindow: (event, details) => {
+      createWindow: (details) => {
         const win = this.createWindow({
           initialUrl: details.url || newTabUrl,
         })
         // if (details.active) tabs.select(tab.id)
         return win.window
+      },
+      removeWindow: (browserWindow) => {
+        const win = this.getWindowFromBrowserWindow(browserWindow)
+        win.destroy()
       },
     })
 
@@ -219,8 +235,8 @@ class Browser {
       this.extensions.addExtension(extension)
     })
 
-    this.extensions.on('active-tab-changed', (tab) => {
-      const win = this.getWindowFromWebContents(tab)
+    this.extensions.on('active-tab-changed', (tab, browserWindow) => {
+      const win = this.getWindowFromBrowserWindow(browserWindow)
       win.tabs.select(tab.id)
     })
 

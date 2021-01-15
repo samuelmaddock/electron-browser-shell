@@ -13,6 +13,10 @@ class Tab {
   }
 
   destroy() {
+    if (this.destroyed) return
+
+    this.destroyed = true
+
     this.hide()
 
     this.window.removeBrowserView(this.view)
@@ -67,7 +71,6 @@ class Tabs extends EventEmitter {
     this.tabList.forEach((tab) => tab.destroy())
     this.tabList = []
     this.selected = undefined
-    this.window.destroy()
     this.window = undefined
   }
 

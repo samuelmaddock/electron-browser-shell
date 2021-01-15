@@ -14,6 +14,8 @@ export class ExtensionStore extends EventEmitter {
   /** Windows observed by the extensions system. */
   windows = new Set<Electron.BrowserWindow>()
 
+  lastFocusedWindowId?: number
+
   /**
    * Map of tabs to their parent window.
    *
@@ -26,16 +28,6 @@ export class ExtensionStore extends EventEmitter {
 
   /** Map of windows to their active tab. */
   private windowToActiveTab = new WeakMap<Electron.BrowserWindow, Electron.WebContents>()
-
-  get activeWindowId() {
-    // TODO: better implementation
-    const activeWindow = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-    return activeWindow.id
-  }
-
-  get activeWindow() {
-    return this.activeWindowId ? BrowserWindow.fromId(this.activeWindowId) : undefined
-  }
 
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
@@ -79,6 +71,56 @@ export class ExtensionStore extends EventEmitter {
     this.router.handle(this.session, name, callback)
   }
 
+  getWindowById(windowId: number) {
+    return Array.from(this.windows).find(
+      (window) => !window.isDestroyed() && window.id === windowId
+    )
+  }
+
+  getLastFocusedWindow() {
+    return this.lastFocusedWindowId ? this.getWindowById(this.lastFocusedWindowId) : null
+  }
+
+  getCurrentWindow() {
+    return this.getLastFocusedWindow()
+  }
+
+  addWindow(window: Electron.BrowserWindow) {
+    if (this.windows.has(window)) return
+
+    this.windows.add(window)
+
+    if (typeof this.lastFocusedWindowId !== 'number') {
+      this.lastFocusedWindowId = window.id
+    }
+
+    this.emit('window-added', window)
+  }
+
+  async createWindow(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
+    if (typeof this.impl.createWindow !== 'function') {
+      throw new Error('createWindow is not implemented')
+    }
+
+    const win = await this.impl.createWindow(details)
+
+    this.addWindow(win)
+
+    return win
+  }
+
+  async removeWindow(window: Electron.BrowserWindow) {
+    if (!this.windows.has(window)) return
+
+    this.windows.delete(window)
+
+    if (typeof this.impl.removeWindow === 'function') {
+      await this.impl.removeWindow(window)
+    } else {
+      window.destroy()
+    }
+  }
+
   getTabById(tabId: number) {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
@@ -88,7 +130,7 @@ export class ExtensionStore extends EventEmitter {
 
     this.tabs.add(tab)
     this.tabToWindow.set(tab, window)
-    this.windows.add(window)
+    this.addWindow(window)
 
     const activeTab = this.getActiveTabFromWebContents(tab)
     if (!activeTab) {
@@ -113,14 +155,23 @@ export class ExtensionStore extends EventEmitter {
     if (!windowHasTabs) {
       this.windows.delete(win)
     }
+
+    if (typeof this.impl.removeTab === 'function') {
+      this.impl.removeTab(tab, win)
+    }
   }
 
-  async createTab(event: Electron.IpcMainInvokeEvent, details: chrome.tabs.CreateProperties) {
+  async createTab(details: chrome.tabs.CreateProperties) {
     if (typeof this.impl.createTab !== 'function') {
-      throw new Error('createTab not implemented')
+      throw new Error('createTab is not implemented')
     }
 
-    const result = await this.impl.createTab(event, details)
+    // Fallback to current window
+    if (!details.windowId) {
+      details.windowId = this.lastFocusedWindowId
+    }
+
+    const result = await this.impl.createTab(details)
 
     if (!Array.isArray(result)) {
       throw new Error('createTab must return an array of [tab, window]')
@@ -168,7 +219,7 @@ export class ExtensionStore extends EventEmitter {
     this.windowToActiveTab.set(win, tab)
 
     if (tab.id !== prevActiveTab?.id) {
-      this.emitPublic('active-tab-changed', tab)
+      this.emitPublic('active-tab-changed', tab, win)
     }
   }
 }

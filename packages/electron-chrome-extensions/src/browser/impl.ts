@@ -5,11 +5,10 @@ export interface ExtensionEvent {
 /** App-specific implementation details for extensions. */
 export interface ChromeExtensionImpl {
   createTab?(
-    event: ExtensionEvent,
     details: chrome.tabs.CreateProperties
   ): Promise<[Electron.WebContents, Electron.BrowserWindow]>
-  selectTab?(event: ExtensionEvent, tab: Electron.WebContents): void
-  removeTab?(event: ExtensionEvent, tab: Electron.WebContents): void
+  selectTab?(tab: Electron.WebContents, window: Electron.BrowserWindow): void
+  removeTab?(tab: Electron.WebContents, window: Electron.BrowserWindow): void
 
   /**
    * Populate additional details to a tab descriptor which gets passed back to
@@ -17,8 +16,6 @@ export interface ChromeExtensionImpl {
    */
   assignTabDetails?(details: chrome.tabs.Tab, tab: Electron.WebContents): void
 
-  createWindow?(
-    event: ExtensionEvent,
-    details: chrome.windows.CreateData
-  ): Promise<Electron.BrowserWindow>
+  createWindow?(details: chrome.windows.CreateData): Promise<Electron.BrowserWindow>
+  removeWindow?(window: Electron.BrowserWindow): void
 }

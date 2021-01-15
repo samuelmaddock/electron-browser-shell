@@ -20,10 +20,10 @@ export class RuntimeAPI extends EventEmitter {
     if (manifest.options_ui) {
       // Embedded option not support (!options_ui.open_in_new_tab)
       const url = `chrome-extension://${extensionId}/${manifest.options_ui.page}`
-      await this.store.createTab(event, { url, active: true })
+      await this.store.createTab({ url, active: true })
     } else if (manifest.options_page) {
       const url = `chrome-extension://${extensionId}/${manifest.options_page}`
-      await this.store.createTab(event, { url, active: true })
+      await this.store.createTab({ url, active: true })
     }
   }
 }
