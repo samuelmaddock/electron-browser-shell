@@ -49,16 +49,16 @@ const { Extensions } = require('electron-chrome-extensions')
 
   const extensions = new Extensions({
     session: browserSession,
-    createTab(event, details) {
+    createTab(details) {
       // Optionally implemented for chrome.tabs.create support
     },
-    selectTab(event, tab) {
+    selectTab(tab, browserWindow) {
       // Optionally implemented for chrome.tabs.update support
     },
-    removeTab(event, tab) {
+    removeTab(tab, browserWindow) {
       // Optionally implemented for chrome.tabs.remove support
     },
-    createWindow(event, details) {
+    createWindow(details) {
       // Optionally implemented for chrome.windows.create support
     }
   })
@@ -92,27 +92,29 @@ const { Extensions } = require('electron-chrome-extensions')
 * `options` Object (optional)
   * `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
-  * `createTab(event, details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
+  * `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
     Called when `chrome.tabs.create` is invoked by an extension. Allows the
     application to handle how tabs are created.
-  * `selectTab(event, webContents)` (optional) - Called when
+  * `selectTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.update` is invoked by an extension with the option to set the
     active tab.
-  * `removeTab(event, webContents)` (optional) - Called when
+  * `removeTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.remove` is invoked by an extension.
-  * `createWindow(event, details) => Promise<Electron.BrowserWindow>`
+  * `createWindow(details) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.create` is invoked by an extension.
+  * `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
+    (optional) - Called when `chrome.windows.remove` is invoked by an extension.
 
 ```ts
 new Extensions({
-  createTab(event, details) {
+  createTab(details) {
     const tab = myTabApi.createTab()
     if (details.url) {
       tab.webContents.loadURL(details.url)
     }
     return [tab.webContents, tab.browserWindow]
   },
-  createWindow(event, details) {
+  createWindow(details) {
     const window = new BrowserWindow()
     return window
   }
