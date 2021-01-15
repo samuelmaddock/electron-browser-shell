@@ -317,6 +317,7 @@ export const injectExtensionAPIs = () => {
           return {
             ...base,
             getFrame: invokeExtension('webNavigation.getFrame'),
+            getAllFrames: invokeExtension('webNavigation.getAllFrames'),
             onBeforeNavigate: new ExtensionEvent('webNavigation.onBeforeNavigate'),
             onCompleted: new ExtensionEvent('webNavigation.onCompleted'),
             onCreatedNavigationTarget: new ExtensionEvent(
