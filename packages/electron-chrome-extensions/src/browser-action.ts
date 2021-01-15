@@ -89,8 +89,14 @@ button {
   background-repeat: no-repeat;
   background-size: 80%;
   border: none;
+  border-radius: 4px;
   padding: 0;
   position: relative;
+  outline: none;
+}
+
+button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .badge {
