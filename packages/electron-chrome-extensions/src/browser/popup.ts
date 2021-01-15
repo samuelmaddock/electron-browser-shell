@@ -61,7 +61,7 @@ export class PopupView {
         worldSafeExecuteJavaScript: true,
         contextIsolation: true,
         ...({
-          preferredSizeMode: true,
+          enablePreferredSizeMode: true,
         } as any),
       },
     })
@@ -216,6 +216,7 @@ export class PopupView {
   }
 
   private updatePreferredSize = (event: Electron.Event, size: Electron.Size) => {
+    debug('updatePreferredSize', size)
     this.usingPreferredSize = true
     this.setSize(size)
     this.updatePosition()
