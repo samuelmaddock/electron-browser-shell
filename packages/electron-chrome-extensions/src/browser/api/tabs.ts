@@ -12,6 +12,7 @@ export class TabsAPI {
 
   constructor(private store: ExtensionStore) {
     store.handle('tabs.get', this.get.bind(this))
+    store.handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
     store.handle('tabs.getCurrent', this.getCurrent.bind(this))
     store.handle('tabs.create', this.create.bind(this))
     store.handle('tabs.insertCSS', this.insertCSS.bind(this))
@@ -116,6 +117,24 @@ export class TabsAPI {
     const tab = this.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
+  }
+
+  private getAllInWindow(
+    event: Electron.IpcMainInvokeEvent,
+    windowId: number = TabsAPI.WINDOW_ID_CURRENT
+  ) {
+    if (windowId === TabsAPI.WINDOW_ID_CURRENT) windowId = this.store.lastFocusedWindowId!
+
+    const tabs = Array.from(this.store.tabs).filter((tab) => {
+      if (tab.isDestroyed()) return false
+
+      const browserWindow = this.store.tabToWindow.get(tab)
+      if (!browserWindow || browserWindow.isDestroyed()) return
+
+      return browserWindow.id === windowId
+    })
+
+    return tabs.map(this.getTabDetails.bind(this))
   }
 
   private getCurrent(event: Electron.IpcMainInvokeEvent) {
