@@ -278,6 +278,17 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      storage: {
+        factory: (base) => {
+          return {
+            ...base,
+            // TODO: provide a backend for browsers to opt-in to
+            managed: base.local,
+            sync: base.local,
+          }
+        },
+      },
+
       tabs: {
         factory: (base) => {
           return {
