@@ -368,15 +368,30 @@ export const injectExtensionAPIs = () => {
       if (definition.shouldInject && !definition.shouldInject()) return
 
       Object.defineProperty(chrome, apiName, {
-        get: () => definition.factory(baseApi),
+        get: () => {
+          const api = definition.factory(baseApi)
+          Object.defineProperty(chrome, apiName, {
+            value: api,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          })
+          return api
+        },
+        enumerable: true,
+        configurable: true,
       })
     })
 
     // Remove access to internals
     delete (window as any).electron
 
-    // Prevent APIs from being overwritten. I'm not sure why this happens yet...
-    Object.freeze(chrome)
+    Object.defineProperty(window, 'chrome', {
+      configurable: false,
+      enumerable: true,
+      value: chrome,
+      writable: true,
+    })
 
     void 0 // no return
   }
