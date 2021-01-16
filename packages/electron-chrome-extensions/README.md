@@ -256,6 +256,12 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [x] chrome.runtime.openOptionsPage
 - [x] chrome.runtime.sendMessage
 
+### [`chrome.storage`](https://developer.chrome.com/extensions/storage)
+
+- [x] chrome.storage.local
+- [x] chrome.storage.managed - fallback to `local`
+- [x] chrome.storage.sync - fallback to `local`
+
 ### [`chrome.tabs`](https://developer.chrome.com/extensions/tabs)
 
 - [x] chrome.tabs.get
