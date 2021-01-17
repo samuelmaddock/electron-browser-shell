@@ -220,7 +220,7 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.browserAction.getBadgeBackgroundColor
 - [ ] chrome.browserAction.enable
 - [ ] chrome.browserAction.disable
-- [ ] chrome.browserAction.onClicked
+- [x] chrome.browserAction.onClicked
 
 ### [`chrome.cookies`](https://developer.chrome.com/extensions/cookies)
 

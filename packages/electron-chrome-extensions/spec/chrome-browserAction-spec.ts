@@ -1,20 +1,43 @@
 import { expect } from 'chai'
-import { BrowserView } from 'electron'
+import { BrowserView, Extension, ipcMain, WebContents } from 'electron'
 import { emittedOnce } from './events-helpers'
 
-import { useExtensionBrowser, useServer } from './hooks'
+import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
-  const browser = useExtensionBrowser({ url: server.getUrl, extensionName: 'chrome-browserAction' })
+
+  const activateExtension = async (webContents: WebContents, extension: Extension) => {
+    // TODO: use preload script with `injectBrowserAction()`
+    await webContents.executeJavaScript(
+      `require('electron').ipcRenderer.invoke('CHROME_EXT', 'browserAction.activate', '${extension.id}')`
+    )
+  }
+
+  describe('onClicked', () => {
+    const browser = useExtensionBrowser({
+      url: server.getUrl,
+      extensionName: 'chrome-browserAction-click',
+    })
+
+    it('fires listeners when activated', async () => {
+      const tabPromise = emittedOnce(ipcMain, 'success')
+      await activateExtension(browser.window.webContents, browser.extension)
+      const [_, tabDetails] = await tabPromise
+      expect(tabDetails).to.be.an('object')
+      expect(tabDetails.id).to.equal(browser.window.webContents.id)
+    })
+  })
 
   describe('popup', () => {
+    const browser = useExtensionBrowser({
+      url: server.getUrl,
+      extensionName: 'chrome-browserAction-popup',
+    })
+
     it('opens when the browser action is clicked', async () => {
       const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
-      // TODO: use preload script with `injectBrowserAction()`
-      await browser.window.webContents.executeJavaScript(
-        `require('electron').ipcRenderer.invoke('CHROME_EXT', 'browserAction.activate', '${browser.extension.id}')`
-      )
+      await activateExtension(browser.window.webContents, browser.extension)
       const [popup] = await popupPromise
       expect(popup.extensionId).to.equal(browser.extension.id)
     })
@@ -27,10 +50,7 @@ describe('chrome.browserAction', () => {
       browser.extensions.selectTab(view.webContents)
 
       const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
-      // TODO: use preload script with `injectBrowserAction()`
-      await browser.window.webContents.executeJavaScript(
-        `require('electron').ipcRenderer.invoke('CHROME_EXT', 'browserAction.activate', '${browser.extension.id}')`
-      )
+      await activateExtension(browser.window.webContents, browser.extension)
       const [popup] = await popupPromise
       expect(popup.extensionId).to.equal(browser.extension.id)
     })

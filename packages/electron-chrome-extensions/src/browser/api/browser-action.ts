@@ -196,8 +196,10 @@ export class BrowserActionAPI {
 
       this.store.emitPublic('browser-action-popup-created', this.popup)
     } else {
-      // TODO: dispatch click action
-      debug('browserAction.onClicked not yet implemented for non-popup extensions')
+      debug(`dispatching onClicked for ${extensionId}`)
+
+      const activeTabDetails = this.store.tabDetailsCache.get(activeTab.id)
+      this.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', activeTabDetails)
     }
   }
 
