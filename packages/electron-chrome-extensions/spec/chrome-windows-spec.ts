@@ -6,12 +6,12 @@ import { useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.windows', () => {
   const server = useServer()
-  const browser = useExtensionBrowser({ url: server.getUrl, extensionName: 'chrome-windows' })
+  const browser = useExtensionBrowser({ url: server.getUrl, extensionName: 'rpc' })
 
   describe('get()', () => {
     it('gets details on the window', async () => {
       const windowId = browser.window.id
-      const result = await browser.exec('get', windowId)
+      const result = await browser.exec('windows.get', windowId)
       expect(result).to.be.an('object')
       expect(result.id).to.equal(windowId)
     })
@@ -22,7 +22,7 @@ describe('chrome.windows', () => {
       // HACK: focus() doesn't actually emit this in tests
       browser.window.emit('focus')
       const windowId = browser.window.id
-      const result = await browser.exec('getLastFocused')
+      const result = await browser.exec('windows.getLastFocused')
       expect(result).to.be.an('object')
       expect(result.id).to.equal(windowId)
     })
@@ -32,13 +32,13 @@ describe('chrome.windows', () => {
     it('removes the window', async () => {
       const windowId = browser.window.id
       const closedPromise = emittedOnce(browser.window, 'closed')
-      browser.exec('remove', windowId)
+      browser.exec('windows.remove', windowId)
       await closedPromise
     })
 
     it('removes the current window', async () => {
       const closedPromise = emittedOnce(browser.window, 'closed')
-      browser.exec('remove')
+      browser.exec('windows.remove')
       await closedPromise
     })
   })

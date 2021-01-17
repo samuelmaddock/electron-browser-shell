@@ -131,3 +131,5 @@ export async function getFiles(directoryPath: string, { filter = null }: any = {
   await new Promise((resolve) => walker.on('end', resolve))
   return files
 }
+
+export const uuid = () => require('uuid').v4()

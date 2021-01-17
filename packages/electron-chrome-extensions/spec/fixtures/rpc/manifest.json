@@ -1,5 +1,5 @@
 {
-  "name": "chrome-windows",
+  "name": "chrome-rpc",
   "version": "1.0",
   "content_scripts": [
     {

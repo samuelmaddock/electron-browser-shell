@@ -4,6 +4,7 @@ import * as path from 'path'
 import { AddressInfo } from 'net'
 import { Extensions } from '../dist'
 import { emittedOnce } from './events-helpers'
+import { uuid } from './spec-helpers'
 
 export const useServer = () => {
   const emptyPage = '<script>console.log("loaded")</script>'
@@ -40,14 +41,14 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
   let customSession: Electron.Session
 
   beforeEach(async () => {
-    customSession = session.fromPartition(`persist:${require('uuid').v4()}`)
+    customSession = session.fromPartition(`persist:${uuid()}`)
     await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 
     extensions = new Extensions({ session: customSession })
 
     w = new BrowserWindow({
       show: false,
-      webPreferences: { session: customSession, nodeIntegration: true },
+      webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false },
     })
 
     extensions.addTab(w.webContents, w)

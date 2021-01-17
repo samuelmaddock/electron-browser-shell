@@ -3,8 +3,10 @@
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const { method, args } = message
 
-  if (typeof chrome.windows[method] === 'function') {
-    chrome.windows[method](...args, reply)
+  const [apiName, subMethod] = method.split('.')
+  
+  if (typeof chrome[apiName][subMethod] === 'function') {
+    chrome[apiName][subMethod](...args, reply)
   }
 
   // Respond asynchronously

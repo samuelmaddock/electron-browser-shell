@@ -82,11 +82,11 @@ export class NotificationsAPI {
       id = arg1
       opts = arg2 as chrome.notifications.NotificationOptions
     } else {
-      return
+      throw new Error('Invalid arguments')
     }
 
     if (typeof opts !== 'object' || !opts.type || !opts.iconUrl || !opts.title || !opts.message) {
-      return
+      throw new Error('Missing required notification options')
     }
 
     const notificationId = createScopedIdentifier(extension, id)
@@ -107,6 +107,10 @@ export class NotificationsAPI {
         icon = opts.iconUrl
       } else {
         icon = await resolveExtensionResource(extension, opts.iconUrl)
+      }
+
+      if (!icon) {
+        throw new Error('Invalid iconUrl')
       }
     }
 
@@ -135,6 +139,8 @@ export class NotificationsAPI {
     })
 
     notification.show()
+
+    return id
   }
 
   private getAll = ({ extension }: ExtensionEvent) => {
