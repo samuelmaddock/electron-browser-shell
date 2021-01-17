@@ -1,4 +1,4 @@
-import { ipcMain, session, BrowserWindow, app } from 'electron'
+import { ipcMain, session, BrowserWindow, app, Extension } from 'electron'
 import * as http from 'http'
 import * as path from 'path'
 import { AddressInfo } from 'net'
@@ -38,13 +38,17 @@ const fixtures = path.join(__dirname, 'fixtures')
 export const useExtensionBrowser = (opts: { url: () => string; extensionName: string }) => {
   let w: Electron.BrowserWindow
   let extensions: Extensions
+  let extension: Extension
   let customSession: Electron.Session
 
   beforeEach(async () => {
     customSession = session.fromPartition(`persist:${uuid()}`)
-    await customSession.loadExtension(path.join(fixtures, opts.extensionName))
+    extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 
     extensions = new Extensions({ session: customSession })
+
+    // TODO: Remove in Electron 12 when we have extension lifecycle events
+    extensions.addExtension(extension)
 
     w = new BrowserWindow({
       show: false,
@@ -62,6 +66,9 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     },
     get extensions() {
       return extensions
+    },
+    get extension() {
+      return extension
     },
     get session() {
       return customSession

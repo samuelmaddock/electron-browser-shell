@@ -1,7 +1,6 @@
 import { expect } from 'chai'
-import { emittedOnce } from './events-helpers'
 
-import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hooks'
+import { useExtensionBrowser, useServer } from './hooks'
 import { uuid } from './spec-helpers'
 
 const basicOpts: chrome.notifications.NotificationOptions = {
