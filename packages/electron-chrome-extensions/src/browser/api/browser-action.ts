@@ -59,15 +59,20 @@ export class BrowserActionAPI {
     store.handle('browserAction.setPopup', setter('popup'))
 
     // browserAction preload API
-    store.handle('browserAction.getAll', this.getAll.bind(this))
-    store.handle('browserAction.activate', this.onClicked.bind(this))
-    store.handle('browserAction.addObserver', (event) => {
-      const { sender: webContents } = event
-      this.observers.add(webContents)
-      webContents.once('destroyed', () => {
-        this.observers.delete(webContents)
-      })
-    })
+    const preloadOpts = { extensionContext: false }
+    store.handle('browserAction.getAll', this.getAll.bind(this), preloadOpts)
+    store.handle('browserAction.activate', this.onClicked.bind(this), preloadOpts)
+    store.handle(
+      'browserAction.addObserver',
+      (event) => {
+        const { sender: webContents } = event
+        this.observers.add(webContents)
+        webContents.once('destroyed', () => {
+          this.observers.delete(webContents)
+        })
+      },
+      preloadOpts
+    )
 
     this.setupSession(this.store.session)
   }

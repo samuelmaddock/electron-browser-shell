@@ -1,7 +1,3 @@
-export interface ExtensionEvent {
-  sender: Electron.WebContents
-}
-
 /** App-specific implementation details for extensions. */
 export interface ChromeExtensionImpl {
   createTab?(

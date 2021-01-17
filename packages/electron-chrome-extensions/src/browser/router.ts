@@ -1,4 +1,4 @@
-import { ipcMain, Session } from 'electron'
+import { Extension, ipcMain, Session, WebContents } from 'electron'
 
 const createDebug = require('debug')
 
@@ -12,7 +12,31 @@ createDebug.formatters.r = (value: any) => {
 
 const debug = createDebug('electron-chrome-extensions:router')
 
-export type Handler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => void
+const getExtensionFromWebContents = (webContents: WebContents) => {
+  let extensionId
+  try {
+    const url = new URL(webContents.getURL())
+    extensionId = url.hostname
+  } catch {
+    return
+  }
+  return webContents.session.getExtension(extensionId)
+}
+
+export interface ExtensionEvent extends Electron.IpcMainInvokeEvent {
+  extension: Extension
+}
+
+export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => void
+
+export interface HandlerOptions {
+  /** Whether an extension context is required to invoke the handler. */
+  extensionContext: boolean
+}
+
+interface Handler extends HandlerOptions {
+  callback: HandlerCallback
+}
 
 type HandlerMap = Map<string, Handler>
 
@@ -50,7 +74,14 @@ export class ExtensionRouter {
       throw new Error(`${handlerName} is not a registered handler`)
     }
 
-    const result = await handler(event, ...args)
+    const extension = getExtensionFromWebContents(event.sender)
+    if (!extension && handler.extensionContext) {
+      throw new Error(`${handlerName} was sent from an unknown extension context`)
+    }
+
+    const extEvent = { ...event, extension: extension! }
+
+    const result = await handler.callback(extEvent, ...args)
 
     debug(`${handlerName} result: %r`, result)
 
@@ -64,9 +95,12 @@ export class ExtensionRouter {
     return this.sessionMap.get(session)!
   }
 
-  handle(session: Session, name: string, callback: Handler): void {
+  handle(session: Session, name: string, callback: HandlerCallback, opts?: HandlerOptions): void {
     const handlers = this.getSessionHandlers(session)
 
-    handlers.set(name, callback)
+    handlers.set(name, {
+      callback,
+      extensionContext: typeof opts?.extensionContext === 'boolean' ? opts.extensionContext : true,
+    })
   }
 }

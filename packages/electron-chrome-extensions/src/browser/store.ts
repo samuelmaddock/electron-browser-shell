@@ -1,7 +1,7 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
 import { ChromeExtensionImpl } from './impl'
-import { ExtensionRouter, Handler } from './router'
+import { ExtensionRouter, HandlerCallback, HandlerOptions } from './router'
 
 const debug = require('debug')('electron-chrome-extensions:store')
 
@@ -67,8 +67,8 @@ export class ExtensionStore extends EventEmitter {
     }
   }
 
-  handle(name: string, callback: Handler) {
-    this.router.handle(this.session, name, callback)
+  handle(name: string, callback: HandlerCallback, opts?: HandlerOptions) {
+    this.router.handle(this.session, name, callback, opts)
   }
 
   getWindowById(windowId: number) {

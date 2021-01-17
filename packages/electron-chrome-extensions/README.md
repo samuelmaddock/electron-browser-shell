@@ -239,6 +239,19 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [x] chrome.contextMenus.removeAll
 - [x] chrome.contextMenus.onClicked
 
+### [`chrome.notifications`](https://developer.chrome.com/extensions/notifications)
+
+- [x] chrome.notifications.clear
+- [x] chrome.notifications.create
+- [x] chrome.notifications.getAll
+- [x] chrome.notifications.getPermissionLevel
+- [x] chrome.notifications.update
+- [ ] chrome.notifications.onButtonClicked
+- [x] chrome.notifications.onClicked
+- [x] chrome.notifications.onClosed
+
+See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/notifications) for how to support them in your app.
+
 ### [`chrome.runtime`](https://developer.chrome.com/extensions/runtime)
 
 - [x] chrome.runtime.connect

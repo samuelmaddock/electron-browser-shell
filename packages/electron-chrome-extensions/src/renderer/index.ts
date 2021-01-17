@@ -254,6 +254,20 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      notifications: {
+        factory: (base) => {
+          return {
+            ...base,
+            clear: invokeExtension('notifications.clear'),
+            create: invokeExtension('notifications.create'),
+            getAll: invokeExtension('notifications.getAll'),
+            getPermissionLevel: invokeExtension('notifications.getPermissionLevel'),
+            update: invokeExtension('notifications.update'),
+            onClicked: new ExtensionEvent('notifications.onClicked'),
+          }
+        },
+      },
+
       privacy: {
         factory: (base) => {
           return {
