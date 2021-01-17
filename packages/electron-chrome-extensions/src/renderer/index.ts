@@ -283,11 +283,12 @@ export const injectExtensionAPIs = () => {
 
       storage: {
         factory: (base) => {
+          const local = base && base.local
           return {
             ...base,
             // TODO: provide a backend for browsers to opt-in to
-            managed: base.local,
-            sync: base.local,
+            managed: local,
+            sync: local,
           }
         },
       },
@@ -361,26 +362,17 @@ export const injectExtensionAPIs = () => {
       },
     }
 
-    // Create lazy initializers for all APIs
+    // Initialize APIs
     Object.keys(apiDefinitions).forEach((key: any) => {
       const apiName: keyof typeof chrome = key
       const baseApi = chrome[apiName] as any
-      const definition = apiDefinitions[apiName]!
+      const api = apiDefinitions[apiName]!
 
       // Allow APIs to opt-out of being available in this context.
-      if (definition.shouldInject && !definition.shouldInject()) return
+      if (api.shouldInject && !api.shouldInject()) return
 
       Object.defineProperty(chrome, apiName, {
-        get: () => {
-          const api = definition.factory(baseApi)
-          Object.defineProperty(chrome, apiName, {
-            value: api,
-            writable: true,
-            enumerable: true,
-            configurable: true,
-          })
-          return api
-        },
+        value: api.factory(baseApi),
         enumerable: true,
         configurable: true,
       })
@@ -389,12 +381,7 @@ export const injectExtensionAPIs = () => {
     // Remove access to internals
     delete (window as any).electron
 
-    Object.defineProperty(window, 'chrome', {
-      configurable: false,
-      enumerable: true,
-      value: chrome,
-      writable: true,
-    })
+    Object.freeze(chrome)
 
     void 0 // no return
   }
