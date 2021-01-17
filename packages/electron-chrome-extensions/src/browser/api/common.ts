@@ -1,8 +1,26 @@
+import { promises as fs } from 'fs'
 import * as path from 'path'
 import { nativeImage } from 'electron'
 
 export interface TabContents extends Electron.WebContents {
   favicon?: string
+}
+
+export const resolveExtensionResource = async (extension: Electron.Extension, uri: string) => {
+  const resPath = path.join(extension.path, uri)
+
+  const relPath = path.relative(extension.path, resPath)
+
+  // prevent any parent traversals
+  if (relPath.includes('..')) return
+
+  try {
+    await fs.stat(resPath)
+  } catch {
+    return // doesn't exist
+  }
+
+  return resPath
 }
 
 export const getIconPath = (extension: Electron.Extension) => {

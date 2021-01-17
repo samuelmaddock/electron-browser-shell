@@ -1,12 +1,28 @@
 import { app, Extension, Notification } from 'electron'
 import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
+import { resolveExtensionResource } from './common'
 
 enum TemplateType {
   Basic = 'basic',
   Image = 'image',
   List = 'list',
   Progress = 'progress',
+}
+
+const getBody = (opts: chrome.notifications.NotificationOptions) => {
+  const { type = TemplateType.Basic } = opts
+
+  switch (type) {
+    case TemplateType.List: {
+      if (!Array.isArray(opts.items)) {
+        throw new Error('List items must be provided for list type')
+      }
+      return opts.items.map((item) => `${item.title} - ${item.message}`).join('\n')
+    }
+    default:
+      return opts.message || ''
+  }
 }
 
 const getUrgency = (
@@ -52,12 +68,10 @@ export class NotificationsAPI {
     const notificationId = createScopedIdentifier(extension, id)
     if (this.registry.has(notificationId)) {
       this.registry.get(notificationId)?.close()
-      return true
     }
-    return false
   }
 
-  private create = ({ extension }: ExtensionEvent, arg1: unknown, arg2?: unknown) => {
+  private create = async ({ extension }: ExtensionEvent, arg1: unknown, arg2?: unknown) => {
     let id: string
     let opts: chrome.notifications.NotificationOptions
 
@@ -81,12 +95,29 @@ export class NotificationsAPI {
       this.registry.get(notificationId)?.close()
     }
 
+    let icon
+
+    if (opts.iconUrl) {
+      let url
+      try {
+        url = new URL(opts.iconUrl)
+      } catch {}
+
+      if (url?.protocol === 'data:') {
+        icon = opts.iconUrl
+      } else {
+        icon = await resolveExtensionResource(extension, opts.iconUrl)
+      }
+    }
+
+    // TODO: buttons, template types
+
     const notification = new Notification({
       title: opts.title,
       subtitle: app.name,
-      body: opts.message,
+      body: getBody(opts),
       silent: opts.silent,
-      // icon: opts.iconUrl, // TODO: convert in renderer
+      icon,
       urgency: getUrgency(opts.priority),
       timeoutType: opts.requireInteraction ? 'never' : 'default',
     })
@@ -113,9 +144,7 @@ export class NotificationsAPI {
   }
 
   private getPermissionLevel = (event: ExtensionEvent) => {
-    // Electron doesn't provide an API to determine this yet as far as I can
-    // tell.
-    return 'granted'
+    return Notification.isSupported() ? 'granted' : 'denied'
   }
 
   private update = (
