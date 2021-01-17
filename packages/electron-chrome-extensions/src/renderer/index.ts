@@ -5,7 +5,6 @@ export const injectExtensionAPIs = () => {
   interface ExtensionMessageOptions {
     noop?: boolean
     serialize?: (...args: any[]) => any[]
-    extensionId?: string
   }
 
   const invokeExtension = async function (
@@ -27,11 +26,6 @@ export const injectExtensionAPIs = () => {
 
     if (options.serialize) {
       args = options.serialize(...args)
-    }
-
-    // Include extensionId in payload
-    if (options.extensionId) {
-      args.splice(0, 0, options.extensionId)
     }
 
     let result
@@ -148,11 +142,10 @@ export const injectExtensionAPIs = () => {
           const api = {
             ...base,
 
-            setTitle: invokeExtension('browserAction.setTitle', { extensionId }),
-            getTitle: invokeExtension('browserAction.getTitle', { extensionId, noop: true }),
+            setTitle: invokeExtension('browserAction.setTitle'),
+            getTitle: invokeExtension('browserAction.getTitle', { noop: true }),
 
             setIcon: invokeExtension('browserAction.setIcon', {
-              extensionId,
               serialize: (details: any) => {
                 if (details.imageData) {
                   if (details.imageData instanceof ImageData) {
@@ -172,25 +165,21 @@ export const injectExtensionAPIs = () => {
               },
             }),
 
-            setPopup: invokeExtension('browserAction.setPopup', { extensionId }),
-            getPopup: invokeExtension('browserAction.getPopup', { extensionId, noop: true }),
+            setPopup: invokeExtension('browserAction.setPopup'),
+            getPopup: invokeExtension('browserAction.getPopup', { noop: true }),
 
-            setBadgeText: invokeExtension('browserAction.setBadgeText', { extensionId }),
+            setBadgeText: invokeExtension('browserAction.setBadgeText'),
             getBadgeText: invokeExtension('browserAction.getBadgeText', {
-              extensionId,
               noop: true,
             }),
 
-            setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor', {
-              extensionId,
-            }),
+            setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor'),
             getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor', {
-              extensionId,
               noop: true,
             }),
 
-            enable: invokeExtension('browserAction.enable', { extensionId, noop: true }),
-            disable: invokeExtension('browserAction.disable', { extensionId, noop: true }),
+            enable: invokeExtension('browserAction.enable', { noop: true }),
+            disable: invokeExtension('browserAction.disable', { noop: true }),
 
             onClicked: new ExtensionEvent('browserAction.onClicked'),
           }
@@ -205,7 +194,7 @@ export const injectExtensionAPIs = () => {
           const menuCallbacks: {
             [key: string]: chrome.contextMenus.CreateProperties['onclick']
           } = {}
-          const menuCreate = invokeExtension('contextMenus.create', { extensionId })
+          const menuCreate = invokeExtension('contextMenus.create')
 
           const api = {
             ...base,
@@ -224,8 +213,8 @@ export const injectExtensionAPIs = () => {
               return createProperties.id
             },
             update: invokeExtension('contextMenus.update', { noop: true }),
-            remove: invokeExtension('contextMenus.remove', { extensionId }),
-            removeAll: invokeExtension('contextMenus.removeAll', { extensionId }),
+            remove: invokeExtension('contextMenus.remove'),
+            removeAll: invokeExtension('contextMenus.removeAll'),
             onClicked: new ExtensionEvent<
               (info: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab) => void
             >('contextMenus.onClicked'),
@@ -287,7 +276,7 @@ export const injectExtensionAPIs = () => {
         factory: (base) => {
           return {
             ...base,
-            openOptionsPage: invokeExtension('runtime.openOptionsPage', { extensionId }),
+            openOptionsPage: invokeExtension('runtime.openOptionsPage'),
           }
         },
       },

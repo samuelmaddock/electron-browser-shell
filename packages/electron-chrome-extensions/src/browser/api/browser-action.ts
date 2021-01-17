@@ -1,5 +1,6 @@
 import { session } from 'electron'
 import { PopupAnchorRect, PopupView } from '../popup'
+import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
 import { getIconImage } from './common'
 
@@ -32,12 +33,11 @@ export class BrowserActionAPI {
 
   constructor(private store: ExtensionStore) {
     const setter = (propName: string) => (
-      event: Electron.IpcMainInvokeEvent,
-      extensionId: string,
+      { sender, extension }: ExtensionEvent,
       details: chrome.browserAction.TabDetails
     ) => {
-      const senderSession = event.sender.session
-      const action = this.getAction(senderSession, extensionId)
+      const senderSession = sender.session
+      const action = this.getAction(senderSession, extension.id)
       const { tabId, ...rest } = details
 
       if (details.tabId) {
@@ -160,11 +160,7 @@ export class BrowserActionAPI {
       : []
   }
 
-  private onClicked(
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    anchorRect: PopupAnchorRect
-  ) {
+  private onClicked({ sender }: ExtensionEvent, extensionId: string, anchorRect: PopupAnchorRect) {
     if (this.popup) {
       const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
       this.popup.destroy()
@@ -175,7 +171,7 @@ export class BrowserActionAPI {
       }
     }
 
-    const activeTab = this.store.getActiveTabFromWebContents(event.sender)
+    const activeTab = this.store.getActiveTabFromWebContents(sender)
     if (!activeTab) {
       throw new Error(`Unable to get active tab`)
     }

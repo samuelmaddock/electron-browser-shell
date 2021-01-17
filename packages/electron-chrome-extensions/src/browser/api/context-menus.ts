@@ -1,5 +1,6 @@
-import { app, ipcMain, Menu, MenuItem } from 'electron'
+import { app, Extension, ipcMain, Menu, MenuItem } from 'electron'
 import { MenuItemConstructorOptions } from 'electron/main'
+import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
 import { getIconImage, matchesPattern } from './common'
 
@@ -138,11 +139,7 @@ export class ContextMenusAPI {
     return menuItems
   }
 
-  private create = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    createProperties: ContextItemProps
-  ) => {
+  private create = ({ extension }: ExtensionEvent, createProperties: ContextItemProps) => {
     const { id, type, title } = createProperties
 
     if (this.menus.has(id!)) {
@@ -158,26 +155,22 @@ export class ContextMenusAPI {
     if (createProperties.parentId) {
       // TODO
     } else {
-      this.addContextItem(extensionId, createProperties)
+      this.addContextItem(extension.id, createProperties)
     }
   }
 
-  private remove = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    menuItemId: string
-  ) => {
-    const items = this.menus.get(extensionId)
+  private remove = ({ extension }: ExtensionEvent, menuItemId: string) => {
+    const items = this.menus.get(extension.id)
     if (items && items.has(menuItemId)) {
       items.delete(menuItemId)
       if (items.size === 0) {
-        this.menus.delete(extensionId)
+        this.menus.delete(extension.id)
       }
     }
   }
 
-  private removeAll = (event: Electron.IpcMainInvokeEvent, extensionId: string) => {
-    this.menus.delete(extensionId)
+  private removeAll = ({ extension }: ExtensionEvent) => {
+    this.menus.delete(extension.id)
   }
 
   private onClicked(
