@@ -60,4 +60,17 @@ describe('chrome.tabs', () => {
       expect(result[1].windowId).to.be.equal(secondWindow.id)
     })
   })
+
+  describe('executeScript()', () => {
+    it('injects code into a tab', async () => {
+      const tabId = browser.window.webContents.id
+      const [result] = await browser.exec('tabs.executeScript', tabId, { code: 'location.href' })
+      expect(result).to.equal(browser.window.webContents.getURL())
+    })
+
+    it('injects code into the active tab', async () => {
+      const [result] = await browser.exec('tabs.executeScript', { code: 'location.href' })
+      expect(result).to.equal(browser.window.webContents.getURL())
+    })
+  })
 })

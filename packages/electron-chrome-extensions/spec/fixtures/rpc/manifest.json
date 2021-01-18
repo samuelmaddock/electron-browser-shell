@@ -12,5 +12,6 @@
     "scripts": ["background.js"],
     "persistent": true
   },
-  "manifest_version": 2
+  "manifest_version": 2,
+  "permissions": [ "webRequest", "webRequestBlocking", "<all_urls>" ]
 }

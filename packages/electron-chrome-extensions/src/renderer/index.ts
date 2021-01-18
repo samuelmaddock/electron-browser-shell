@@ -295,9 +295,29 @@ export const injectExtensionAPIs = () => {
 
       tabs: {
         factory: (base) => {
-          return {
+          const api = {
             ...base,
             create: invokeExtension('tabs.create'),
+            executeScript: function (arg1: unknown, arg2: unknown, arg3: unknown) {
+              // Electron's implementation of chrome.tabs.executeScript is in
+              // C++, but it doesn't support implicit execution in the active
+              // tab. To handle this, we need to get the active tab ID and
+              // pass it into the C++ implementation ourselves.
+              if (typeof arg1 === 'object') {
+                api.query(
+                  { active: true, windowId: chrome.windows.WINDOW_ID_CURRENT },
+                  ([activeTab]: chrome.tabs.Tab[]) => {
+                    api.executeScript(activeTab.id, arg1, arg2)
+                  }
+                )
+              } else {
+                ;(base.executeScript as typeof chrome.tabs.executeScript)(
+                  arg1 as number,
+                  arg2 as chrome.tabs.InjectDetails,
+                  arg3 as () => {}
+                )
+              }
+            },
             get: invokeExtension('tabs.get'),
             getCurrent: invokeExtension('tabs.getCurrent'),
             getAllInWindow: invokeExtension('tabs.getAllInWindow'),
@@ -313,6 +333,7 @@ export const injectExtensionAPIs = () => {
             onUpdated: new ExtensionEvent('tabs.onUpdated'),
             onActivated: new ExtensionEvent('tabs.onActivated'),
           }
+          return api
         },
       },
 
