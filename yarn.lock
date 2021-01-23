@@ -2011,6 +2011,11 @@ duplexify@^3.4.2, duplexify@^3.6.0:
     readable-stream "^2.0.0"
     stream-shift "^1.0.0"
 
+electron-chrome-context-menu@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/electron-chrome-context-menu/-/electron-chrome-context-menu-1.0.0.tgz#861cb8ced59b66b64689c4e839cc01dcdb0b8a6f"
+  integrity sha512-b5HHMCqlWk6eM+alqlJzrUxbJesC2KV1Goctpn3O+GLn3gHH6B21I6V9D01pimr3J+k+6ZS2h8EGpgKQhiIwlw==
+
 electron-to-chromium@^1.3.562:
   version "1.3.562"
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.562.tgz#79c20277ee1c8d0173a22af00e38433b752bc70f"

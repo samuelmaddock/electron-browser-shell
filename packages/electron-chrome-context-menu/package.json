@@ -1,0 +1,25 @@
+{
+  "name": "electron-chrome-context-menu",
+  "version": "1.0.0",
+  "description": "Chrome context menu for Electron browsers",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "electron",
+    "chrome",
+    "context",
+    "menu"
+  ],
+  "repository": "https://github.com/samuelmaddock/electron-browser-shell",
+  "author": "Samuel Maddock <sam@samuelmaddock.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "electron": "^11.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.1.3"
+  }
+}

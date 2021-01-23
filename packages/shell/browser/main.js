@@ -1,11 +1,11 @@
 const path = require('path')
 const { promises: fs } = require('fs')
-const { app, session, BrowserWindow, Menu, MenuItem, clipboard } = require('electron')
+const { app, session, BrowserWindow } = require('electron')
 
 const { Tabs } = require('./tabs')
 const { Extensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
-const { setupContextMenu } = require('./context-menu')
+const buildChromeContextMenu = require('electron-chrome-context-menu')
 
 let webuiExtensionId
 
@@ -304,8 +304,27 @@ class Browser {
     })
 
     webContents.on('context-menu', (event, params) => {
-      setupContextMenu(this, webContents, params)
+      const menu = buildChromeContextMenu({
+        params,
+        webContents,
+        extensionMenuItems: this.extensions.getContextMenuItems(webContents, params),
+        openLink: (url, disposition) => {
+          const win = this.getFocusedWindow()
+
+          switch (disposition) {
+            case 'new-window':
+              this.createWindow({ initialUrl: url })
+              break
+            default:
+              const tab = win.tabs.create()
+              tab.loadURL(url)
+          }
+        },
+      })
+
+      menu.popup()
     })
+
   }
 }
 

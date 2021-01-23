@@ -1,31 +1,76 @@
-const { Menu, MenuItem } = require('electron')
+import { clipboard, Menu, MenuItem } from 'electron'
 
-const setupContextMenu = (browser, webContents, params) => {
-  const win = browser.getFocusedWindow()
+const STRINGS = {
+  openInNewTab: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
+    `Open ${type} in new tab`,
+  openInNewWindow: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
+    `Open ${type} in new window`,
+  copyAddress: (type: 'link' | Electron.ContextMenuParams['mediaType']) => `Copy ${type} address`,
+  undo: 'Undo',
+  cut: 'Cut',
+  copy: 'Copy',
+  delete: 'Delete',
+  paste: 'Paste',
+  selectAll: 'Select All',
+  back: 'Back',
+  forward: 'Forward',
+  reload: 'Reload',
+  inspect: 'Inspect',
+}
+
+type ChromeContextMenuStrings = typeof STRINGS
+
+interface ChromeContextMenuOptions {
+  /** Context menu parameters emitted from the WebContents 'context-menu' event. */
+  params: Electron.ContextMenuParams
+
+  /** WebContents which emitted the 'context-menu' event. */
+  webContents: Electron.WebContents
+
+  /** Handler for opening links. */
+  openLink: (
+    url: string,
+    disposition: 'default' | 'foreground-tab' | 'background-tab' | 'new-window',
+    params: Electron.ContextMenuParams
+  ) => void
+
+  /** Chrome extension menu items. */
+  extensionMenuItems?: MenuItem[]
+
+  /** Strings used to create menu items. Replace this if localization is needed. */
+  strings?: ChromeContextMenuStrings
+}
+
+const buildChromeContextMenu = ({
+  params,
+  webContents,
+  openLink,
+  extensionMenuItems,
+  strings = STRINGS,
+}: ChromeContextMenuOptions): Menu => {
   const menu = new Menu()
 
   if (params.linkURL) {
     menu.append(
       new MenuItem({
-        label: 'Open link in new tab',
+        label: strings.openInNewTab('link'),
         click: () => {
-          const tab = win.tabs.create()
-          tab.loadURL(params.linkURL)
+          openLink(params.linkURL, 'default', params)
         },
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Open link in new window',
+        label: strings.openInNewWindow('link'),
         click: () => {
-          browser.createWindow({ initialUrl: params.linkURL })
+          openLink(params.linkURL, 'new-window', params)
         },
       })
     )
     menu.append(new MenuItem({ type: 'separator' }))
     menu.append(
       new MenuItem({
-        label: 'Copy link address',
+        label: strings.copyAddress('link'),
         click: () => {
           clipboard.writeText(params.linkURL)
         },
@@ -36,16 +81,15 @@ const setupContextMenu = (browser, webContents, params) => {
     // TODO: Loop, Show controls
     menu.append(
       new MenuItem({
-        label: `Open ${params.mediaType} in new tab`,
+        label: strings.openInNewTab(params.mediaType),
         click: () => {
-          const tab = win.tabs.create()
-          tab.loadURL(params.srcURL)
+          openLink(params.srcURL, 'default', params)
         },
       })
     )
     menu.append(
       new MenuItem({
-        label: `Copy ${params.mediaType} address`,
+        label: strings.copyAddress(params.mediaType),
         click: () => {
           clipboard.writeText(params.srcURL)
         },
@@ -57,7 +101,7 @@ const setupContextMenu = (browser, webContents, params) => {
   if (params.isEditable) {
     menu.append(
       new MenuItem({
-        label: 'Undo',
+        label: strings.undo,
         enabled: params.editFlags.canUndo,
         click: () => webContents.undo(),
       })
@@ -65,28 +109,28 @@ const setupContextMenu = (browser, webContents, params) => {
     menu.append(new MenuItem({ type: 'separator' }))
     menu.append(
       new MenuItem({
-        label: 'Cut',
+        label: strings.cut,
         enabled: params.editFlags.canCut,
         click: () => webContents.cut(),
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Copy',
+        label: strings.copy,
         enabled: params.editFlags.canCopy,
         click: () => webContents.copy(),
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Paste',
+        label: strings.paste,
         enabled: params.editFlags.canPaste,
         click: () => webContents.paste(),
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Delete',
+        label: strings.delete,
         enabled: params.editFlags.canDelete,
         click: () => webContents.delete(),
       })
@@ -95,7 +139,7 @@ const setupContextMenu = (browser, webContents, params) => {
     if (params.editFlags.canSelectAll) {
       menu.append(
         new MenuItem({
-          label: 'Select All',
+          label: strings.selectAll,
           click: () => webContents.selectAll(),
         })
       )
@@ -104,7 +148,7 @@ const setupContextMenu = (browser, webContents, params) => {
   } else if (params.selectionText) {
     menu.append(
       new MenuItem({
-        label: 'Copy',
+        label: strings.copy,
         click: () => {
           clipboard.writeText(params.selectionText)
         },
@@ -116,43 +160,41 @@ const setupContextMenu = (browser, webContents, params) => {
   if (menu.items.length === 0) {
     menu.append(
       new MenuItem({
-        label: 'Back',
+        label: strings.back,
         enabled: webContents.canGoBack(),
         click: () => webContents.goBack(),
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Forward',
+        label: strings.forward,
         enabled: webContents.canGoForward(),
         click: () => webContents.goForward(),
       })
     )
     menu.append(
       new MenuItem({
-        label: 'Reload',
+        label: strings.reload,
         click: () => webContents.reload(),
       })
     )
     menu.append(new MenuItem({ type: 'separator' }))
   }
 
-  const items = browser.extensions.getContextMenuItems(webContents, params)
-  items.forEach((item) => menu.append(item))
-  if (items.length > 0) menu.append(new MenuItem({ type: 'separator' }))
+  if (extensionMenuItems) {
+    extensionMenuItems.forEach((item) => menu.append(item))
+    if (extensionMenuItems.length > 0) menu.append(new MenuItem({ type: 'separator' }))
+  }
 
   menu.append(
     new MenuItem({
-      label: 'Inspect',
+      label: strings.inspect,
       click: () => webContents.openDevTools(),
     })
   )
 
-  menu.popup()
-
   return menu
 }
 
-module.exports = {
-  setupContextMenu,
-}
+module.exports = buildChromeContextMenu
+module.exports.default = buildChromeContextMenu
