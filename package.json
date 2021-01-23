@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "packages/shell",
-    "packages/electron-chrome-extensions"
+    "packages/electron-chrome-extensions",
+    "packages/electron-chrome-context-menu"
   ],
   "scripts": {
     "build": "yarn run build-extensions && yarn run build-shell",
