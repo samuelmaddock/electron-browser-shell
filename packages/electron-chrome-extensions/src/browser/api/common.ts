@@ -9,10 +9,8 @@ export interface TabContents extends Electron.WebContents {
 export const resolveExtensionResource = async (extension: Electron.Extension, uri: string) => {
   const resPath = path.join(extension.path, uri)
 
-  const relPath = path.relative(extension.path, resPath)
-
   // prevent any parent traversals
-  if (relPath.includes('..')) return
+  if (!resPath.startsWith(extension.path)) return
 
   try {
     await fs.stat(resPath)
