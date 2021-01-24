@@ -344,12 +344,18 @@ export const injectExtensionAPIs = () => {
             getFrame: invokeExtension('webNavigation.getFrame'),
             getAllFrames: invokeExtension('webNavigation.getAllFrames'),
             onBeforeNavigate: new ExtensionEvent('webNavigation.onBeforeNavigate'),
+            onCommitted: new ExtensionEvent('webNavigation.onCommitted'),
             onCompleted: new ExtensionEvent('webNavigation.onCompleted'),
             onCreatedNavigationTarget: new ExtensionEvent(
               'webNavigation.onCreatedNavigationTarget'
             ),
-            onCommitted: new ExtensionEvent('webNavigation.onCommitted'),
+            onDOMContentLoaded: new ExtensionEvent('webNavigation.onDOMContentLoaded'),
+            onErrorOccurred: new ExtensionEvent('webNavigation.onErrorOccurred'),
             onHistoryStateUpdated: new ExtensionEvent('webNavigation.onHistoryStateUpdated'),
+            onReferenceFragmentUpdated: new ExtensionEvent(
+              'webNavigation.onReferenceFragmentUpdated'
+            ),
+            onTabReplaced: new ExtensionEvent('webNavigation.onTabReplaced'),
           }
         },
       },

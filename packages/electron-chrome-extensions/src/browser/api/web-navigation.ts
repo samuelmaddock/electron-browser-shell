@@ -1,9 +1,7 @@
 import { ExtensionStore } from '../store'
 import * as electron from 'electron'
 
-type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
-  parentFrameId: number
-}
+const debug = require('debug')('electron-chrome-extensions:webNavigation')
 
 // https://github.com/electron/electron/pull/25464
 const getFrame = (frameProcessId: number, frameRoutingId: number) => {
@@ -18,10 +16,8 @@ const getFrameId = (frame: any) =>
   'webFrameMain' in electron ? (frame === frame.top ? 0 : frame.frameTreeNodeId) : -1
 
 const getParentFrameId = (frame: any) => {
-  if (frame && frame.parent) {
-    return frame.parent === frame.top ? 0 : getFrameId(frame.parent)
-  }
-  return -1
+  const parentFrame = frame?.parent
+  return parentFrame ? getFrameId(parentFrame) : -1
 }
 
 const getFrameDetails = (frame: any) => ({
@@ -41,9 +37,12 @@ export class WebNavigationAPI {
   }
 
   private observeTab(tab: Electron.WebContents) {
+    tab.once('will-navigate', this.onCreatedNavigationTarget as any)
+    tab.on('did-start-navigation', this.onBeforeNavigate as any)
+    tab.on('did-frame-finish-load', this.onFinishLoad as any)
     tab.on('did-frame-navigate', this.onCommitted as any)
     tab.on('did-navigate-in-page', this.onHistoryStateUpdated as any)
-    tab.once('will-navigate', this.onCreatedNavigationTarget as any)
+    tab.on('dom-ready', this.onDOMContentLoaded as any)
   }
 
   private getFrame(
@@ -78,6 +77,11 @@ export class WebNavigationAPI {
     return (tab as any).mainFrame.framesInSubtree.map(getFrameDetails)
   }
 
+  private sendNavigationEvent = (eventName: string, details: { url: string }) => {
+    debug(`${eventName} [url: ${details.url}]`)
+    this.store.sendToHosts(`webNavigation.${eventName}`, details)
+  }
+
   private onCreatedNavigationTarget = (
     event: Electron.IpcMainEvent,
     url: string,
@@ -96,7 +100,31 @@ export class WebNavigationAPI {
       tabId: tab.id,
       timeStamp: Date.now(),
     }
-    this.store.sendToHosts('webNavigation.onCreatedNavigationTarget', details)
+    this.sendNavigationEvent('onCreatedNavigationTarget', details)
+  }
+
+  private onBeforeNavigate = (
+    event: Electron.IpcMainEvent,
+    url: string,
+    isInPlace: number,
+    isMainFrame: boolean,
+    frameProcessId: number,
+    frameRoutingId: number
+  ) => {
+    if (isInPlace) return
+
+    const frame = getFrame(frameProcessId, frameRoutingId)
+    const tab = event.sender
+    const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
+      frameId: getFrameId(frame),
+      parentFrameId: getParentFrameId(frame),
+      processId: frameProcessId,
+      tabId: tab.id,
+      timeStamp: Date.now(),
+      url,
+    }
+
+    this.sendNavigationEvent('onBeforeNavigate', details)
   }
 
   private onCommitted = (
@@ -110,7 +138,7 @@ export class WebNavigationAPI {
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
     const tab = event.sender
-    const details: Partial<WebNavigationTransitionCallbackDetails> = {
+    const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
       processId: frameProcessId,
@@ -118,7 +146,7 @@ export class WebNavigationAPI {
       timeStamp: Date.now(),
       url,
     }
-    this.store.sendToHosts('webNavigation.onCommitted', details)
+    this.sendNavigationEvent('onCommitted', details)
   }
 
   private onHistoryStateUpdated = (
@@ -130,9 +158,11 @@ export class WebNavigationAPI {
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
     const tab = event.sender
-    const details: Partial<WebNavigationTransitionCallbackDetails> = {
-      // transitionType: '',
-      // transitionQualifiers: [],
+    const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
+      parentFrameId: number
+    } = {
+      transitionType: '', // TODO
+      transitionQualifiers: [], // TODO
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
       processId: frameProcessId,
@@ -140,6 +170,45 @@ export class WebNavigationAPI {
       timeStamp: Date.now(),
       url,
     }
-    this.store.sendToHosts('webNavigation.onHistoryStateUpdated', details)
+    this.sendNavigationEvent('onHistoryStateUpdated', details)
+  }
+
+  private onDOMContentLoaded = (event: Electron.IpcMainEvent) => {
+    const url = event.sender.getURL()
+    // TODO: Add support for iframes
+    // https://github.com/electron/electron/issues/27344
+    const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
+      frameId: 0,
+      parentFrameId: -1,
+      processId: 0,
+      tabId: event.sender.id,
+      timeStamp: Date.now(),
+      url,
+    }
+    this.sendNavigationEvent('onDOMContentLoaded', details)
+
+    if (!event.sender.isLoadingMainFrame()) {
+      this.sendNavigationEvent('onCompleted', details)
+    }
+  }
+
+  private onFinishLoad = (
+    event: Electron.IpcMainEvent,
+    isMainFrame: boolean,
+    frameProcessId: number,
+    frameRoutingId: number
+  ) => {
+    const frame = getFrame(frameProcessId, frameRoutingId)
+    const tab = event.sender
+    const url = tab.getURL()
+    const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
+      frameId: getFrameId(frame),
+      parentFrameId: getParentFrameId(frame),
+      processId: frameProcessId,
+      tabId: tab.id,
+      timeStamp: Date.now(),
+      url,
+    }
+    this.sendNavigationEvent('onCompleted', details)
   }
 }
