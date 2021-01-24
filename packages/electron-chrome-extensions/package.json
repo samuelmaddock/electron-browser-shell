@@ -33,7 +33,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "colors": "^1.4.0",
-    "electron": "^11.0.3",
+    "electron": "^11.2.1",
     "mocha": "^8.2.1",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.2",
@@ -41,6 +41,9 @@
     "walkdir": "^0.4.1",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
+  },
+  "peerDependencies": {
+    "electron": ">=9.0.0"
   },
   "babel": {
     "presets": [
