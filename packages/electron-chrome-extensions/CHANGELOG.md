@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2021-01-24
+
+### Added
+
+- Basic `chrome.notifications` support
+- `chrome.browserAction.onClicked`
+- `chrome.tabs.executeScript` for the active tab
+- `chrome.webNavigation.onBeforeNavigate`, `chrome.webNavigation.onDOMContentLoaded`, `chrome.webNavigation.onCompleted`
+- `chrome.webNavigation.getFrame` and `chrome.webNavigation.getAllFrames` (Electron 12+)
+
 ## [3.0.0] - 2021-01-15
 
 ### Added 
@@ -26,4 +36,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.1.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.0.0...electron-chrome-extensions@3.1.0
 [3.0.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@2.1.0...electron-chrome-extensions@3.0.0
