@@ -7,6 +7,7 @@ const LABELS = {
     `Open ${type} in new window`,
   copyAddress: (type: 'link' | Electron.ContextMenuParams['mediaType']) => `Copy ${type} address`,
   undo: 'Undo',
+  redo: 'Redo',
   cut: 'Cut',
   copy: 'Copy',
   delete: 'Delete',
@@ -16,6 +17,7 @@ const LABELS = {
   forward: 'Forward',
   reload: 'Reload',
   inspect: 'Inspect',
+  addToDictionary: 'Add to dictionary',
 }
 
 type ChromeContextMenuLabels = typeof LABELS
@@ -52,6 +54,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   const labels = opts.labels || opts.strings || LABELS
 
   const menu = new Menu()
+  const addSeparator = () => menu.append(new MenuItem({ type: 'separator' }))
 
   if (params.linkURL) {
     menu.append(
@@ -70,7 +73,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         },
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
     menu.append(
       new MenuItem({
         label: labels.copyAddress('link'),
@@ -79,7 +82,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         },
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
   } else if (params.mediaType !== 'none') {
     // TODO: Loop, Show controls
     menu.append(
@@ -98,18 +101,47 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         },
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
   }
 
   if (params.isEditable) {
-    menu.append(
-      new MenuItem({
-        label: labels.undo,
-        enabled: params.editFlags.canUndo,
-        click: () => webContents.undo(),
-      })
-    )
-    menu.append(new MenuItem({ type: 'separator' }))
+    if (params.misspelledWord) {
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () => webContents.replaceMisspelling(suggestion),
+          })
+        )
+      }
+
+      if (params.dictionarySuggestions.length > 0) addSeparator()
+
+      menu.append(
+        new MenuItem({
+          label: labels.addToDictionary,
+          click: () => webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+        })
+      )
+    } else {
+      menu.append(
+        new MenuItem({
+          label: labels.redo,
+          enabled: params.editFlags.canRedo,
+          click: () => webContents.redo(),
+        })
+      )
+      menu.append(
+        new MenuItem({
+          label: labels.undo,
+          enabled: params.editFlags.canUndo,
+          click: () => webContents.undo(),
+        })
+      )
+    }
+
+    addSeparator()
+
     menu.append(
       new MenuItem({
         label: labels.cut,
@@ -138,7 +170,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         click: () => webContents.delete(),
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
     if (params.editFlags.canSelectAll) {
       menu.append(
         new MenuItem({
@@ -146,7 +178,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
           click: () => webContents.selectAll(),
         })
       )
-      menu.append(new MenuItem({ type: 'separator' }))
+      addSeparator()
     }
   } else if (params.selectionText) {
     menu.append(
@@ -157,7 +189,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         },
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
   }
 
   if (menu.items.length === 0) {
@@ -181,12 +213,12 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         click: () => webContents.reload(),
       })
     )
-    menu.append(new MenuItem({ type: 'separator' }))
+    addSeparator()
   }
 
   if (extensionMenuItems) {
     extensionMenuItems.forEach((item) => menu.append(item))
-    if (extensionMenuItems.length > 0) menu.append(new MenuItem({ type: 'separator' }))
+    if (extensionMenuItems.length > 0) addSeparator()
   }
 
   menu.append(
