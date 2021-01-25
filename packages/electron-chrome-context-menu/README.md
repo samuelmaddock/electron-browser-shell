@@ -12,7 +12,7 @@
 // ES imports
 import buildChromeContextMenu from 'electron-chrome-context-menu'
 // CommonJS
-const buildChromeContextMenu = require('electron-chrome-context-menu')
+const buildChromeContextMenu = require('electron-chrome-context-menu').default
 
 const { app } = require('electron')
 

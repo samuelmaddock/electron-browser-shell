@@ -46,7 +46,7 @@ interface ChromeContextMenuOptions {
   strings?: ChromeContextMenuLabels
 }
 
-const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => {
+export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => {
   const { params, webContents, openLink, extensionMenuItems } = opts
 
   const labels = opts.labels || opts.strings || LABELS
@@ -199,5 +199,4 @@ const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => {
   return menu
 }
 
-module.exports = buildChromeContextMenu
-module.exports.default = buildChromeContextMenu
+export default buildChromeContextMenu
