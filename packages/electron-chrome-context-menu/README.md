@@ -2,6 +2,10 @@
 
 > Chrome context menu for Electron browsers
 
+Building a modern web browser requires including many features users have grown accustomed to. Context menus are a small, but noticeable feature when done improperly.
+
+This module aims to provide a context menu with close to feature parity to that of Google Chrome.
+
 ## Install
 
 > npm install electron-chrome-context-menu
@@ -30,6 +34,8 @@ app.on('web-contents-created', (event, webContents) => {
   })
 })
 ```
+
+> For a complete example, see the [`electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell) project.
 
 ## API
 

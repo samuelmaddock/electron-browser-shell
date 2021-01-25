@@ -5,7 +5,7 @@ const { app, session, BrowserWindow } = require('electron')
 const { Tabs } = require('./tabs')
 const { Extensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
-const buildChromeContextMenu = require('electron-chrome-context-menu')
+const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 
 let webuiExtensionId
 
@@ -324,7 +324,6 @@ class Browser {
 
       menu.popup()
     })
-
   }
 }
 
