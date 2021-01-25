@@ -1,6 +1,6 @@
 import { clipboard, Menu, MenuItem } from 'electron'
 
-const STRINGS = {
+const LABELS = {
   openInNewTab: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
     `Open ${type} in new tab`,
   openInNewWindow: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
@@ -18,7 +18,7 @@ const STRINGS = {
   inspect: 'Inspect',
 }
 
-type ChromeContextMenuStrings = typeof STRINGS
+type ChromeContextMenuLabels = typeof LABELS
 
 interface ChromeContextMenuOptions {
   /** Context menu parameters emitted from the WebContents 'context-menu' event. */
@@ -37,23 +37,26 @@ interface ChromeContextMenuOptions {
   /** Chrome extension menu items. */
   extensionMenuItems?: MenuItem[]
 
-  /** Strings used to create menu items. Replace this if localization is needed. */
-  strings?: ChromeContextMenuStrings
+  /** Labels used to create menu items. Replace this if localization is needed. */
+  labels?: ChromeContextMenuLabels
+
+  /**
+   * @deprecated Use 'labels' instead.
+   */
+  strings?: ChromeContextMenuLabels
 }
 
-const buildChromeContextMenu = ({
-  params,
-  webContents,
-  openLink,
-  extensionMenuItems,
-  strings = STRINGS,
-}: ChromeContextMenuOptions): Menu => {
+const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => {
+  const { params, webContents, openLink, extensionMenuItems } = opts
+
+  const labels = opts.labels || opts.strings || LABELS
+
   const menu = new Menu()
 
   if (params.linkURL) {
     menu.append(
       new MenuItem({
-        label: strings.openInNewTab('link'),
+        label: labels.openInNewTab('link'),
         click: () => {
           openLink(params.linkURL, 'default', params)
         },
@@ -61,7 +64,7 @@ const buildChromeContextMenu = ({
     )
     menu.append(
       new MenuItem({
-        label: strings.openInNewWindow('link'),
+        label: labels.openInNewWindow('link'),
         click: () => {
           openLink(params.linkURL, 'new-window', params)
         },
@@ -70,7 +73,7 @@ const buildChromeContextMenu = ({
     menu.append(new MenuItem({ type: 'separator' }))
     menu.append(
       new MenuItem({
-        label: strings.copyAddress('link'),
+        label: labels.copyAddress('link'),
         click: () => {
           clipboard.writeText(params.linkURL)
         },
@@ -81,7 +84,7 @@ const buildChromeContextMenu = ({
     // TODO: Loop, Show controls
     menu.append(
       new MenuItem({
-        label: strings.openInNewTab(params.mediaType),
+        label: labels.openInNewTab(params.mediaType),
         click: () => {
           openLink(params.srcURL, 'default', params)
         },
@@ -89,7 +92,7 @@ const buildChromeContextMenu = ({
     )
     menu.append(
       new MenuItem({
-        label: strings.copyAddress(params.mediaType),
+        label: labels.copyAddress(params.mediaType),
         click: () => {
           clipboard.writeText(params.srcURL)
         },
@@ -101,7 +104,7 @@ const buildChromeContextMenu = ({
   if (params.isEditable) {
     menu.append(
       new MenuItem({
-        label: strings.undo,
+        label: labels.undo,
         enabled: params.editFlags.canUndo,
         click: () => webContents.undo(),
       })
@@ -109,28 +112,28 @@ const buildChromeContextMenu = ({
     menu.append(new MenuItem({ type: 'separator' }))
     menu.append(
       new MenuItem({
-        label: strings.cut,
+        label: labels.cut,
         enabled: params.editFlags.canCut,
         click: () => webContents.cut(),
       })
     )
     menu.append(
       new MenuItem({
-        label: strings.copy,
+        label: labels.copy,
         enabled: params.editFlags.canCopy,
         click: () => webContents.copy(),
       })
     )
     menu.append(
       new MenuItem({
-        label: strings.paste,
+        label: labels.paste,
         enabled: params.editFlags.canPaste,
         click: () => webContents.paste(),
       })
     )
     menu.append(
       new MenuItem({
-        label: strings.delete,
+        label: labels.delete,
         enabled: params.editFlags.canDelete,
         click: () => webContents.delete(),
       })
@@ -139,7 +142,7 @@ const buildChromeContextMenu = ({
     if (params.editFlags.canSelectAll) {
       menu.append(
         new MenuItem({
-          label: strings.selectAll,
+          label: labels.selectAll,
           click: () => webContents.selectAll(),
         })
       )
@@ -148,7 +151,7 @@ const buildChromeContextMenu = ({
   } else if (params.selectionText) {
     menu.append(
       new MenuItem({
-        label: strings.copy,
+        label: labels.copy,
         click: () => {
           clipboard.writeText(params.selectionText)
         },
@@ -160,21 +163,21 @@ const buildChromeContextMenu = ({
   if (menu.items.length === 0) {
     menu.append(
       new MenuItem({
-        label: strings.back,
+        label: labels.back,
         enabled: webContents.canGoBack(),
         click: () => webContents.goBack(),
       })
     )
     menu.append(
       new MenuItem({
-        label: strings.forward,
+        label: labels.forward,
         enabled: webContents.canGoForward(),
         click: () => webContents.goForward(),
       })
     )
     menu.append(
       new MenuItem({
-        label: strings.reload,
+        label: labels.reload,
         click: () => webContents.reload(),
       })
     )
@@ -188,7 +191,7 @@ const buildChromeContextMenu = ({
 
   menu.append(
     new MenuItem({
-      label: strings.inspect,
+      label: labels.inspect,
       click: () => webContents.openDevTools(),
     })
   )
