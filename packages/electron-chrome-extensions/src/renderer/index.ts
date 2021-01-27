@@ -58,6 +58,7 @@ export const injectExtensionAPIs = () => {
   // Function body to run in the main world.
   // IMPORTANT: This must be self-contained, no closure variable will be included!
   function mainWorldScript() {
+    // Use context bridge API or closure variable when context isolation is disabled.
     const electron = ((window as any).electron as typeof electronContext) || electronContext
 
     const invokeExtension = (fnName: string, opts: ExtensionMessageOptions = {}) => (
@@ -417,7 +418,7 @@ export const injectExtensionAPIs = () => {
     // Expose extension IPC to main world
     contextBridge.exposeInMainWorld('electron', electronContext)
 
-    // Mutate global 'chrome' object with additional APIs in the main world
+    // Mutate global 'chrome' object with additional APIs in the main world.
     webFrame.executeJavaScript(`(${mainWorldScript}());`)
   } catch {
     // contextBridge threw an error which means we're in the main world so we

@@ -9,7 +9,7 @@ export const injectBrowserAction = () => {
     return ipcRenderer.invoke('CHROME_EXT', name, ...args)
   }
 
-  const browserActionImpl = {
+  const browserAction = {
     addEventListener(name: string, listener: (...args: any[]) => void) {
       internalEmitter.addListener(name, listener)
     },
@@ -40,14 +40,12 @@ export const injectBrowserAction = () => {
   invoke('browserAction.addObserver')
 
   ipcRenderer.on('browserAction.update', () => {
-    browserActionImpl.getAll()
+    browserAction.getAll()
   })
 
   // Function body to run in the main world.
   // IMPORTANT: This must be self-contained, no closure variables can be used!
   function mainWorldScript() {
-    const browserAction = (window as any).browserAction as typeof browserActionImpl
-
     class BrowserActionElement extends HTMLButtonElement {
       private badge?: HTMLDivElement
 
@@ -240,13 +238,14 @@ button:hover {
   }
 
   try {
-    contextBridge.exposeInMainWorld('browserAction', browserActionImpl)
+    contextBridge.exposeInMainWorld('browserAction', browserAction)
 
-    // Mutate global 'chrome' object with additional APIs in the main world
+    // Must execute script in main world to modify custom component registry.
     webFrame.executeJavaScript(`(${mainWorldScript}());`)
   } catch {
-    // contextBridge threw an error which means we're in the main world so we
-    // can just execute our function.
+    // When contextIsolation is disabled, contextBridge will throw an error.
+    // If that's the case, we're in the main world so we can just execute our
+    // function.
     mainWorldScript()
   }
 }
