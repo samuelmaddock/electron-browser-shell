@@ -9,7 +9,8 @@
     "packages/electron-chrome-context-menu"
   ],
   "scripts": {
-    "build": "yarn run build-extensions && yarn run build-shell",
+    "build": "yarn run build-context-menu && yarn run build-extensions && yarn run build-shell",
+    "build-context-menu": "yarn --cwd ./packages/electron-chrome-context-menu build",
     "build-extensions": "yarn --cwd ./packages/electron-chrome-extensions build",
     "build-shell": "yarn --cwd ./packages/shell build",
     "start": "yarn build && yarn --cwd ./packages/shell start",
