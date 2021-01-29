@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-context-menu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Chrome context menu for Electron browsers",
   "main": "dist/index.js",
   "scripts": {
