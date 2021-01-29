@@ -3,10 +3,10 @@ name: Test electron-chrome-extensions
 on:
   push:
     paths:
-    - 'packages/electron-chrome-extensions/**'
+    - 'packages/**'
   pull_request:
     paths:
-    - 'packages/electron-chrome-extensions/**'
+    - 'packages/**'
 
 jobs:
   test:
@@ -26,13 +26,11 @@ jobs:
         yarn install
 
     - name: Build
-      working-directory: ./packages/electron-chrome-extensions
       run: |
         yarn build
 
     - name: Run tests
       uses: GabrielBB/xvfb-action@v1
       with:
-        working-directory: ./packages/electron-chrome-extensions
         run: |
           yarn test

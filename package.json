@@ -9,13 +9,15 @@
     "packages/electron-chrome-context-menu"
   ],
   "scripts": {
-    "build": "yarn run build-context-menu && yarn run build-extensions && yarn run build-shell",
-    "build-context-menu": "yarn --cwd ./packages/electron-chrome-context-menu build",
-    "build-extensions": "yarn --cwd ./packages/electron-chrome-extensions build",
-    "build-shell": "yarn --cwd ./packages/shell build",
+    "build": "yarn run build:context-menu && yarn run build:extensions && yarn run build:shell",
+    "build:context-menu": "yarn --cwd ./packages/electron-chrome-context-menu build",
+    "build:extensions": "yarn --cwd ./packages/electron-chrome-extensions build",
+    "build:shell": "yarn --cwd ./packages/shell build",
     "start": "yarn build && yarn --cwd ./packages/shell start",
     "start:debug": "cross-env DEBUG='electron-chrome-extensions*' yarn start",
-    "test": "yarn --cwd ./packages/electron-chrome-extensions test"
+    "test": "yarn test:extensions && yarn test:shell",
+    "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
+    "test:shell": "yarn --cwd ./packages/shell test"
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
