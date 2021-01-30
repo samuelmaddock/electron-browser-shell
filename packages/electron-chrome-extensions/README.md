@@ -8,6 +8,12 @@
 npm install electron-chrome-extensions
 ```
 
+## Screenshots
+
+| uBlock Origin | Dark Reader |
+|---|---|
+| <img src="https://raw.githubusercontent.com/samuelmaddock/electron-browser-shell/master/packages/electron-chrome-extensions/screenshot-ublock-origin.png" width="405"> | <img src="https://raw.githubusercontent.com/samuelmaddock/electron-browser-shell/master/packages/electron-chrome-extensions/screenshot-dark-reader.png" width="391"> |
+
 ## Usage
 
 ### Basic
