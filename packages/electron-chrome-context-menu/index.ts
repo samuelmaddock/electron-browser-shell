@@ -224,7 +224,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   menu.append(
     new MenuItem({
       label: labels.inspect,
-      click: () => webContents.openDevTools(),
+      click: () => webContents.inspectElement(params.x, params.y),
     })
   )
 
