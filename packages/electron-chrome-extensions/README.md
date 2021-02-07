@@ -117,6 +117,7 @@ const { Extensions } = require('electron-chrome-extensions')
     * `details` [chrome.windows.CreateData](https://developer.chrome.com/docs/extensions/reference/windows/#method-create)
   * `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.remove` is invoked by an extension.
+    * `browserWindow` Electron.BrowserWindow
 
 ```ts
 new Extensions({
