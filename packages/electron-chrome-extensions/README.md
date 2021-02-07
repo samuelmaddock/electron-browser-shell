@@ -96,6 +96,7 @@ const { Extensions } = require('electron-chrome-extensions')
 #### `new Extensions([options])`
 
 * `options` Object (optional)
+  * `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
   * `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
   * `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -

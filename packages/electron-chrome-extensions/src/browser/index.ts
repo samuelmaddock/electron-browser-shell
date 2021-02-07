@@ -1,6 +1,7 @@
 import { app, session as electronSession } from 'electron'
 import { EventEmitter } from 'events'
 import path from 'path'
+import { promises as fs } from 'fs'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -13,16 +14,21 @@ import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
 import { ChromeExtensionImpl } from './impl'
 
-const DEFAULT_PRELOAD_PATH = path.join(__dirname, 'preload.js')
-
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   session?: Electron.Session
+
+  /**
+   * Path to electron-chrome-extensions module files. Might be needed if
+   * JavaScript bundlers like Webpack are used in your build process.
+   */
+  modulePath?: string
 }
 
 /**
  * Provides an implementation of various Chrome extension APIs to a session.
  */
 export class Extensions extends EventEmitter {
+  private modulePath: string
   private store: ExtensionStore
 
   private browserAction: BrowserActionAPI
@@ -37,8 +43,9 @@ export class Extensions extends EventEmitter {
   constructor(opts?: ChromeExtensionOptions) {
     super()
 
-    const { session = electronSession.defaultSession, ...impl } = opts || {}
+    const { session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
 
+    this.modulePath = modulePath || path.join(__dirname, '..')
     this.store = new ExtensionStore(this, session, impl)
 
     this.browserAction = new BrowserActionAPI(this.store)
@@ -55,11 +62,11 @@ export class Extensions extends EventEmitter {
     this.prependPreload()
   }
 
-  private prependPreload() {
+  private async prependPreload() {
     const { session } = this.store
     let preloads = session.getPreloads()
 
-    const preloadPath = DEFAULT_PRELOAD_PATH
+    const preloadPath = path.join(this.modulePath, 'dist/preload.js')
 
     const preloadIndex = preloads.indexOf(preloadPath)
     if (preloadIndex > -1) {
@@ -68,6 +75,18 @@ export class Extensions extends EventEmitter {
 
     preloads = [preloadPath, ...preloads]
     session.setPreloads(preloads)
+
+    let preloadExists = false
+    try {
+      const stat = await fs.stat(preloadPath)
+      preloadExists = stat.isFile()
+    } catch {}
+
+    if (!preloadExists) {
+      console.error(
+        `Unable to access electron-chrome-extensions preload file (${preloadPath}). Consider configuring the 'modulePath' constructor option.`
+      )
+    }
   }
 
   private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
