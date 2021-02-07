@@ -102,13 +102,19 @@ const { Extensions } = require('electron-chrome-extensions')
   * `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
     Called when `chrome.tabs.create` is invoked by an extension. Allows the
     application to handle how tabs are created.
+    * `details` [chrome.tabs.CreateProperties](https://developer.chrome.com/docs/extensions/reference/tabs/#method-create)
   * `selectTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.update` is invoked by an extension with the option to set the
     active tab.
+    * `webContents` Electron.WebContents - The tab to be activated.
+    * `browserWindow` Electron.BrowserWindow - The window which owns the tab.
   * `removeTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.remove` is invoked by an extension.
+    * `webContents` Electron.WebContents - The tab to be removed.
+    * `browserWindow` Electron.BrowserWindow - The window which owns the tab.
   * `createWindow(details) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.create` is invoked by an extension.
+    * `details` [chrome.windows.CreateData](https://developer.chrome.com/docs/extensions/reference/windows/#method-create)
   * `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.remove` is invoked by an extension.
 
@@ -163,7 +169,7 @@ An array of all extension context menu items given the context.
 Adds an extension to be tracked by the `chrome.browserAction` API. This allows
 the extension to appear as a button in the browser top bar.
 
-This method will soon go away and no longer be necessary.
+_Calling this method is not required in Electron >=12._
 
 #### Instance Events
 
