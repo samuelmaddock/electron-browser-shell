@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2021-02-07
+
+### Added
+
+- Added `modulePath` option to `Extensions` constructor.
+
 ## [3.1.1] - 2021-01-27
 
 ### Fixed
@@ -42,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.2.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.1.1...electron-chrome-extensions@3.2.0
 [3.1.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.0.1...electron-chrome-extensions@3.1.1
 [3.1.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.0.0...electron-chrome-extensions@3.1.0
 [3.0.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@2.1.0...electron-chrome-extensions@3.0.0
