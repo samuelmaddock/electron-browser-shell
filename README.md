@@ -38,6 +38,7 @@ Load unpacked extensions into `./extensions` then launch the browser.
 - [x] Initial [extension popup](https://developer.chrome.com/extensions/browserAction) support
 - [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 - [ ] Robust extension popup support
+- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support
 - [ ] Respect extension manifest permissions
 
 ### 🤞 Eventually
