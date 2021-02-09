@@ -36,13 +36,15 @@ export const useServer = () => {
 const fixtures = path.join(__dirname, 'fixtures')
 
 export const useExtensionBrowser = (opts: { url: () => string; extensionName: string }) => {
+  const partition = `persist:${uuid()}`
+
   let w: Electron.BrowserWindow
   let extensions: Extensions
   let extension: Extension
   let customSession: Electron.Session
 
   beforeEach(async () => {
-    customSession = session.fromPartition(`persist:${uuid()}`)
+    customSession = session.fromPartition(partition)
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 
     extensions = new Extensions({ session: customSession })
@@ -73,6 +75,7 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     get session() {
       return customSession
     },
+    partition,
 
     async exec(method: string, ...args: any[]) {
       const p = emittedOnce(ipcMain, 'success')

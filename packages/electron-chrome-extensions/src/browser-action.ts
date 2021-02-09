@@ -4,9 +4,10 @@ import { EventEmitter } from 'events'
 export const injectBrowserAction = () => {
   const actionMap = new Map<string, any>()
   const internalEmitter = new EventEmitter()
+  const observerCounts = new Map<string, number>()
 
-  const invoke = <T>(name: string, ...args: any[]): Promise<T> => {
-    return ipcRenderer.invoke('CHROME_EXT', name, ...args)
+  const invoke = <T>(name: string, partition: string, ...args: any[]): Promise<T> => {
+    return ipcRenderer.invoke('CHROME_EXT_REMOTE', partition, name, ...args)
   }
 
   const browserAction = {
@@ -17,36 +18,58 @@ export const injectBrowserAction = () => {
       internalEmitter.removeListener(name, listener)
     },
 
-    getAction(extensionId: string, partition: string = '') {
+    getAction(extensionId: string) {
       return actionMap.get(extensionId)
     },
-    async getAll(): Promise<any> {
-      const actions = await invoke<any[]>('browserAction.getAll')
-      for (const action of actions) {
+    async getState(partition: string): Promise<{ activeTabId?: number; actions: any[] }> {
+      const state = await invoke<any>('browserAction.getState', partition)
+      for (const action of state.actions) {
         actionMap.set(action.id, action)
       }
-      queueMicrotask(() => internalEmitter.emit('update'))
-      return actions
+      queueMicrotask(() => internalEmitter.emit('update', state))
+      return state
     },
 
     activate: (
+      partition: string,
       extensionId: string,
+      tabId: number,
       boundingRect: { x: number; y: number; width: number; height: number }
     ) => {
-      invoke('browserAction.activate', extensionId, boundingRect)
+      invoke('browserAction.activate', partition, extensionId, tabId, boundingRect)
+    },
+
+    addObserver(partition: string) {
+      let count = observerCounts.has(partition) ? observerCounts.get(partition)! : 0
+      count = count + 1
+      observerCounts.set(partition, count)
+
+      if (count === 1) {
+        invoke('browserAction.addObserver', partition)
+      }
+    },
+    removeObserver(partition: string) {
+      let count = observerCounts.has(partition) ? observerCounts.get(partition)! : 0
+      count = Math.max(count - 1, 0)
+      observerCounts.set(partition, count)
+
+      if (count === 0) {
+        invoke('browserAction.removeObserver', partition)
+      }
     },
   }
 
-  invoke('browserAction.addObserver')
-
   ipcRenderer.on('browserAction.update', () => {
-    browserAction.getAll()
+    for (const partition of observerCounts.keys()) {
+      browserAction.getState(partition)
+    }
   })
 
   // Function body to run in the main world.
   // IMPORTANT: This must be self-contained, no closure variables can be used!
   function mainWorldScript() {
     class BrowserActionElement extends HTMLButtonElement {
+      private updateId?: number
       private badge?: HTMLDivElement
 
       get id(): string {
@@ -66,16 +89,22 @@ export const injectBrowserAction = () => {
         this.setAttribute('tab', `${tab}`)
       }
 
+      get partition(): string {
+        return this.getAttribute('partition') || ''
+      }
+
+      set partition(partition: string) {
+        this.setAttribute('partition', partition)
+      }
+
       static get observedAttributes() {
-        return ['id', 'tab']
+        return ['id', 'tab', 'partition']
       }
 
       constructor() {
         super()
 
         this.addEventListener('click', this.onClick.bind(this))
-
-        browserAction.addEventListener('update', this.update.bind(this))
 
         const style = document.createElement('style')
         style.textContent = `
@@ -116,14 +145,29 @@ button:hover {
         this.appendChild(style)
       }
 
+      connectedCallback() {
+        if (this.isConnected) {
+          this.update()
+        }
+      }
+
+      disconnectedCallback() {
+        if (this.updateId) {
+          cancelAnimationFrame(this.updateId)
+          this.updateId = undefined
+        }
+      }
+
       attributeChangedCallback() {
-        this.update()
+        if (this.isConnected) {
+          this.update()
+        }
       }
 
       private onClick() {
         const rect = this.getBoundingClientRect()
 
-        browserAction.activate(this.id, {
+        browserAction.activate(this.partition, this.id, this.tab, {
           x: rect.left,
           y: rect.top,
           width: rect.width,
@@ -142,6 +186,13 @@ button:hover {
       }
 
       private update() {
+        if (this.updateId) return
+        this.updateId = requestAnimationFrame(this.updateCallback.bind(this))
+      }
+
+      private updateCallback() {
+        this.updateId = undefined
+
         const action = browserAction.getAction(this.id)
 
         const activeTabId = this.tab
@@ -163,6 +214,7 @@ button:hover {
           badge.style.backgroundColor = info.color
         } else if (this.badge) {
           this.badge.remove()
+          this.badge = undefined
         }
       }
     }
@@ -170,6 +222,8 @@ button:hover {
     customElements.define('browser-action', BrowserActionElement, { extends: 'button' })
 
     class BrowserActionListElement extends HTMLElement {
+      private observing: boolean = false
+
       get tab(): number {
         const tabId = parseInt(this.getAttribute('tab') || '', 10)
         return typeof tabId === 'number' && !isNaN(tabId) ? tabId : -1
@@ -204,20 +258,48 @@ button:hover {
   gap: 5px;
 }`
         shadowRoot.appendChild(style)
-
-        this.update()
       }
 
-      attributeChangedCallback() {
-        this.update()
+      connectedCallback() {
+        if (this.isConnected) {
+          this.startObserving()
+          this.fetchState()
+        }
       }
 
-      private async update() {
-        // TODO: filter with `partition` attribute
-        const actions = await browserAction.getAll()
-        const activeTabId = this.tab
+      disconnectedCallback() {
+        this.stopObserving()
+      }
 
-        for (const action of actions) {
+      attributeChangedCallback(name: string, oldValue: any, newValue: any) {
+        if (oldValue === newValue) return
+
+        if (this.isConnected) {
+          this.fetchState()
+        }
+      }
+
+      private startObserving() {
+        if (this.observing) return
+        browserAction.addEventListener('update', this.update)
+        browserAction.addObserver(this.partition)
+        this.observing = true
+      }
+
+      private stopObserving() {
+        if (!this.observing) return
+        browserAction.removeEventListener('update', this.update)
+        browserAction.removeObserver(this.partition)
+      }
+
+      private fetchState = async () => {
+        await browserAction.getState(this.partition)
+      }
+
+      private update = (state: any) => {
+        const activeTabId = this.tab >= 0 ? this.tab : state.activeTabId || -1
+
+        for (const action of state.actions) {
           let browserActionNode = this.shadowRoot?.querySelector(
             `[id=${action.id}]`
           ) as BrowserActionElement
@@ -229,6 +311,7 @@ button:hover {
             browserActionNode = node
             this.shadowRoot?.appendChild(browserActionNode)
           }
+          browserActionNode.partition = this.partition
           browserActionNode.tab = activeTabId
         }
       }

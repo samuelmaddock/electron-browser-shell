@@ -203,10 +203,19 @@ export class ExtensionStore extends EventEmitter {
     debug(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
   }
 
-  getActiveTabFromWebContents(wc: Electron.WebContents): Electron.WebContents | undefined {
-    const win = this.tabToWindow.get(wc) || BrowserWindow.fromWebContents(wc)
+  getActiveTabFromWindow(win: Electron.BrowserWindow) {
     const activeTab = win && !win.isDestroyed() && this.windowToActiveTab.get(win)
     return (activeTab && !activeTab.isDestroyed() && activeTab) || undefined
+  }
+
+  getActiveTabFromWebContents(wc: Electron.WebContents): Electron.WebContents | undefined {
+    const win = this.tabToWindow.get(wc) || BrowserWindow.fromWebContents(wc)
+    return win ? this.getActiveTabFromWindow(win) : undefined
+  }
+
+  getActiveTabOfCurrentWindow() {
+    const win = this.getCurrentWindow()
+    return win ? this.getActiveTabFromWindow(win) : undefined
   }
 
   setActiveTab(tab: Electron.WebContents) {
@@ -220,6 +229,7 @@ export class ExtensionStore extends EventEmitter {
     this.windowToActiveTab.set(win, tab)
 
     if (tab.id !== prevActiveTab?.id) {
+      this.emit('active-tab-changed', tab, win)
       this.emitPublic('active-tab-changed', tab, win)
     }
   }

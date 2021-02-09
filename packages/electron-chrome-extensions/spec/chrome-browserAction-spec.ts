@@ -7,10 +7,14 @@ import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hook
 describe('chrome.browserAction', () => {
   const server = useServer()
 
-  const activateExtension = async (webContents: WebContents, extension: Extension) => {
+  const activateExtension = async (
+    partition: string,
+    webContents: WebContents,
+    extension: Extension
+  ) => {
     // TODO: use preload script with `injectBrowserAction()`
     await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('CHROME_EXT', 'browserAction.activate', '${extension.id}')`
+      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${extension.id}')`
     )
   }
 
@@ -22,7 +26,7 @@ describe('chrome.browserAction', () => {
 
     it('fires listeners when activated', async () => {
       const tabPromise = emittedOnce(ipcMain, 'success')
-      await activateExtension(browser.window.webContents, browser.extension)
+      await activateExtension(browser.partition, browser.window.webContents, browser.extension)
       const [_, tabDetails] = await tabPromise
       expect(tabDetails).to.be.an('object')
       expect(tabDetails.id).to.equal(browser.window.webContents.id)
@@ -37,7 +41,7 @@ describe('chrome.browserAction', () => {
 
     it('opens when the browser action is clicked', async () => {
       const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
-      await activateExtension(browser.window.webContents, browser.extension)
+      await activateExtension(browser.partition, browser.window.webContents, browser.extension)
       const [popup] = await popupPromise
       expect(popup.extensionId).to.equal(browser.extension.id)
     })
@@ -50,7 +54,7 @@ describe('chrome.browserAction', () => {
       browser.extensions.selectTab(view.webContents)
 
       const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
-      await activateExtension(browser.window.webContents, browser.extension)
+      await activateExtension(browser.partition, browser.window.webContents, browser.extension)
       const [popup] = await popupPromise
       expect(popup.extensionId).to.equal(browser.extension.id)
     })

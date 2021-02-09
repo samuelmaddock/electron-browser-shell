@@ -190,16 +190,18 @@ To enable the element on a webpage, you must define a preload script which injec
 
 #### Attributes
 
-- `tab` string - The tab's `Electron.WebContents` ID to use for displaying
-  the relevant browser action state.
+- `partition` string (optional) - The `Electron.Session` partition which extensions are loaded in. Defaults to an empty string which is used by `session.defaultSession`.
+- `tab` string (optional) - The tab's `Electron.WebContents` ID to use for displaying
+  the relevant browser action state. Defaults `-1` which shows the active tab of the browser window.
 
 #### Browser action example
 
 ##### Preload
+Inject the browserAction API to make the `<browser-action-list>` element accessible in your application.
 ```js
 import { injectBrowserAction } from 'electron-chrome-extensions/dist/browser-action'
 
-// Inject <browser-action-list> element into our browser
+// Inject <browser-action-list> element into our page
 if (location.href === 'webui://browser-chrome.html') {
   injectBrowserAction()
 }
@@ -208,8 +210,16 @@ if (location.href === 'webui://browser-chrome.html') {
 > The use of `import` implies that your preload script must be compiled using a JavaScript bundler like Webpack.
 
 ##### Webpage
+Add the `<browser-action-list>` element with attributes appropriate for your application.
 ```html
-<browser-action-list tab="1"></browser-action-list>
+<!-- Show actions for default session and active tab of current window. -->
+<browser-action-list></browser-action-list>
+
+<!-- Show actions for custom session and active tab of current window. -->
+<browser-action-list partition="persist:custom"></browser-action-list>
+
+<!-- Show actions for custom session and a specific tab of current window. -->
+<browser-action-list partition="persist:custom" tab="1"></browser-action-list>
 ```
 
 ## Supported `chrome.*` APIs

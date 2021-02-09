@@ -59,8 +59,8 @@ export class BrowserActionAPI {
     store.handle('browserAction.setPopup', setter('popup'))
 
     // browserAction preload API
-    const preloadOpts = { extensionContext: false }
-    store.handle('browserAction.getAll', this.getAll.bind(this), preloadOpts)
+    const preloadOpts = { allowRemote: true, extensionContext: false }
+    store.handle('browserAction.getState', this.getState.bind(this), preloadOpts)
     store.handle('browserAction.activate', this.onClicked.bind(this), preloadOpts)
     store.handle(
       'browserAction.addObserver',
@@ -73,6 +73,18 @@ export class BrowserActionAPI {
       },
       preloadOpts
     )
+    store.handle(
+      'browserAction.removeObserver',
+      (event) => {
+        const { sender: webContents } = event
+        this.observers.delete(webContents)
+      },
+      preloadOpts
+    )
+
+    this.store.on('active-tab-changed', () => {
+      this.onUpdate()
+    })
 
     this.setupSession(this.store.session)
   }
@@ -152,15 +164,23 @@ export class BrowserActionAPI {
     }
   }
 
-  private getAll(event: Electron.IpcMainInvokeEvent, partition?: string) {
-    const ses = partition ? session.fromPartition(partition) : event.sender.session
+  private getState(event: ExtensionEvent, partition?: string) {
+    const ses =
+      typeof partition === 'string' ? session.fromPartition(partition) : event.sender.session
     const sessionActions = this.sessionActionMap.get(ses)
-    return sessionActions
+    const actions = sessionActions
       ? Array.from(sessionActions.entries()).map((val: any) => ({ id: val[0], ...val[1] }))
       : []
+    const activeTab = this.store.getActiveTabOfCurrentWindow()
+    return { activeTabId: activeTab?.id, actions }
   }
 
-  private onClicked({ sender }: ExtensionEvent, extensionId: string, anchorRect: PopupAnchorRect) {
+  private onClicked(
+    { sender }: ExtensionEvent,
+    extensionId: string,
+    tabId: number,
+    anchorRect: PopupAnchorRect
+  ) {
     if (this.popup) {
       const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
       this.popup.destroy()
@@ -171,15 +191,16 @@ export class BrowserActionAPI {
       }
     }
 
-    const activeTab = this.store.getActiveTabFromWebContents(sender)
-    if (!activeTab) {
+    const tab =
+      tabId >= 0 ? this.store.getTabById(tabId) : this.store.getActiveTabFromWebContents(sender)
+    if (!tab) {
       throw new Error(`Unable to get active tab`)
     }
 
-    const popupUrl = this.getPopupUrl(activeTab.session, extensionId, activeTab.id)
+    const popupUrl = this.getPopupUrl(tab.session, extensionId, tab.id)
 
     if (popupUrl) {
-      const win = this.store.tabToWindow.get(activeTab)
+      const win = this.store.tabToWindow.get(tab)
       if (!win) {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
@@ -198,8 +219,8 @@ export class BrowserActionAPI {
     } else {
       debug(`dispatching onClicked for ${extensionId}`)
 
-      const activeTabDetails = this.store.tabDetailsCache.get(activeTab.id)
-      this.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', activeTabDetails)
+      const tabDetails = this.store.tabDetailsCache.get(tab.id)
+      this.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', tabDetails)
     }
   }
 
@@ -208,8 +229,11 @@ export class BrowserActionAPI {
     this.queuedUpdate = true
     queueMicrotask(() => {
       this.queuedUpdate = false
+      debug(`dispatching update to ${this.observers.size} observer(s)`)
       Array.from(this.observers).forEach((observer) => {
-        observer.send('browserAction.update')
+        if (!observer.isDestroyed()) {
+          observer.send('browserAction.update')
+        }
       })
     })
   }
