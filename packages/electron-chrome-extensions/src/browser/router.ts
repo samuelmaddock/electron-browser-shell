@@ -1,4 +1,4 @@
-import { Extension, ipcMain, Session, WebContents } from 'electron'
+import { Extension, ipcMain, session, Session, WebContents } from 'electron'
 
 const createDebug = require('debug')
 
@@ -23,13 +23,16 @@ const getExtensionFromWebContents = (webContents: WebContents) => {
   return webContents.session.getExtension(extensionId)
 }
 
-export interface ExtensionEvent extends Electron.IpcMainInvokeEvent {
+export interface ExtensionEvent {
+  sender: WebContents
   extension: Extension
 }
 
 export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => void
 
 export interface HandlerOptions {
+  /** Whether the handler can be invoked on behalf of a different session. */
+  allowRemote?: boolean
   /** Whether an extension context is required to invoke the handler. */
   extensionContext: boolean
 }
@@ -51,20 +54,15 @@ export class ExtensionRouter {
 
   private constructor() {
     ipcMain.handle('CHROME_EXT', this.onRouterMessage)
+    ipcMain.handle('CHROME_EXT_REMOTE', this.onRemoteMessage)
   }
 
-  private onRouterMessage = async (
-    event: Electron.IpcMainInvokeEvent,
-    handlerName: string,
-    ...args: any[]
-  ) => {
-    debug(`received '${handlerName}'`, args)
-
+  private getHandler(session: Electron.Session, handlerName: string) {
     if (typeof handlerName !== 'string') {
       throw new Error('handlerName must be of type string')
     }
 
-    const sessionMap = this.sessionMap.get(event.sender.session)
+    const sessionMap = this.sessionMap.get(session)
     if (!sessionMap) {
       throw new Error("Chrome extensions are not supported in the sender's session")
     }
@@ -74,18 +72,53 @@ export class ExtensionRouter {
       throw new Error(`${handlerName} is not a registered handler`)
     }
 
-    const extension = getExtensionFromWebContents(event.sender)
+    return handler
+  }
+
+  private async invokeHandler(
+    event: Electron.IpcMainInvokeEvent,
+    session: Electron.Session,
+    handlerName: string,
+    args: any[]
+  ) {
+    const { sender } = event
+    const handler = this.getHandler(session, handlerName)
+
+    if (sender.session !== session && !handler.allowRemote) {
+      throw new Error(`${handlerName} does not support calling from a remote session`)
+    }
+
+    const extension = getExtensionFromWebContents(sender)
     if (!extension && handler.extensionContext) {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
 
-    const extEvent = { ...event, extension: extension! }
-
+    const extEvent = { sender, extension: extension! }
     const result = await handler.callback(extEvent, ...args)
 
     debug(`${handlerName} result: %r`, result)
 
     return result
+  }
+
+  private onRouterMessage = (
+    event: Electron.IpcMainInvokeEvent,
+    handlerName: string,
+    ...args: any[]
+  ) => {
+    debug(`received '${handlerName}'`, args)
+    return this.invokeHandler(event, event.sender.session, handlerName, args)
+  }
+
+  private onRemoteMessage = (
+    event: Electron.IpcMainInvokeEvent,
+    sessionPartition: string,
+    handlerName: string,
+    ...args: any[]
+  ) => {
+    debug(`received remote '${handlerName}' for '${sessionPartition}'`, args)
+    const ses = session.fromPartition(sessionPartition)
+    return this.invokeHandler(event, ses, handlerName, args)
   }
 
   private getSessionHandlers(session: Session) {
