@@ -1,3 +1,4 @@
+import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
 
 enum CookieStoreID {
@@ -30,7 +31,7 @@ export class CookiesAPI {
   }
 
   private async get(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.cookies.Details
   ): Promise<chrome.cookies.Cookie | null> {
     // TODO: storeId
@@ -46,7 +47,7 @@ export class CookiesAPI {
   }
 
   private async getAll(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.cookies.GetAllDetails
   ): Promise<chrome.cookies.Cookie[]> {
     // TODO: storeId
@@ -63,7 +64,7 @@ export class CookiesAPI {
   }
 
   private async set(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.cookies.SetDetails
   ): Promise<chrome.cookies.Cookie | null> {
     await this.cookies.set(details)
@@ -72,7 +73,7 @@ export class CookiesAPI {
   }
 
   private async remove(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.cookies.Details
   ): Promise<chrome.cookies.Details | null> {
     try {
@@ -83,9 +84,7 @@ export class CookiesAPI {
     return details
   }
 
-  private async getAllCookieStores(
-    event: Electron.IpcMainInvokeEvent
-  ): Promise<chrome.cookies.CookieStore[]> {
+  private async getAllCookieStores(event: ExtensionEvent): Promise<chrome.cookies.CookieStore[]> {
     const tabIds = Array.from(this.store.tabs)
       .map((tab) => (tab.isDestroyed() ? undefined : tab.id))
       .filter(Boolean) as number[]

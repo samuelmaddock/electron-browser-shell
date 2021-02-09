@@ -1,5 +1,6 @@
-import { ExtensionStore } from '../store'
 import * as electron from 'electron'
+import { ExtensionEvent } from '../router'
+import { ExtensionStore } from '../store'
 
 const debug = require('debug')('electron-chrome-extensions:webNavigation')
 
@@ -46,7 +47,7 @@ export class WebNavigationAPI {
   }
 
   private getFrame(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.webNavigation.GetFrameDetails
   ): chrome.webNavigation.GetFrameResultDetails | null {
     const tab = this.store.getTabById(details.tabId)
@@ -69,7 +70,7 @@ export class WebNavigationAPI {
   }
 
   private getAllFrames(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     details: chrome.webNavigation.GetFrameDetails
   ): chrome.webNavigation.GetAllFrameResultDetails[] | null {
     const tab = this.store.getTabById(details.tabId)

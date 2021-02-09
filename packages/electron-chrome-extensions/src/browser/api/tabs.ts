@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron'
+import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
 import { TabContents } from './common'
 import { WindowsAPI } from './windows'
@@ -113,16 +114,13 @@ export class TabsAPI {
     return details
   }
 
-  private get(event: Electron.IpcMainInvokeEvent, tabId: number) {
+  private get(event: ExtensionEvent, tabId: number) {
     const tab = this.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
   }
 
-  private getAllInWindow(
-    event: Electron.IpcMainInvokeEvent,
-    windowId: number = TabsAPI.WINDOW_ID_CURRENT
-  ) {
+  private getAllInWindow(event: ExtensionEvent, windowId: number = TabsAPI.WINDOW_ID_CURRENT) {
     if (windowId === TabsAPI.WINDOW_ID_CURRENT) windowId = this.store.lastFocusedWindowId!
 
     const tabs = Array.from(this.store.tabs).filter((tab) => {
@@ -137,15 +135,12 @@ export class TabsAPI {
     return tabs.map(this.getTabDetails.bind(this))
   }
 
-  private getCurrent(event: Electron.IpcMainInvokeEvent) {
+  private getCurrent(event: ExtensionEvent) {
     const tab = this.store.getActiveTabFromWebContents(event.sender)
     return tab ? this.getTabDetails(tab) : undefined
   }
 
-  private async create(
-    event: Electron.IpcMainInvokeEvent,
-    details: chrome.tabs.CreateProperties = {}
-  ) {
+  private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
     const tab = await this.store.createTab(details)
     const tabDetails = this.getTabDetails(tab)
     if (details.active) {
@@ -154,11 +149,7 @@ export class TabsAPI {
     return tabDetails
   }
 
-  private insertCSS(
-    event: Electron.IpcMainInvokeEvent,
-    tabId: number,
-    details: chrome.tabs.InjectDetails
-  ) {
+  private insertCSS(event: ExtensionEvent, tabId: number, details: chrome.tabs.InjectDetails) {
     const tab = this.store.getTabById(tabId)
     if (!tab) return
 
@@ -168,7 +159,7 @@ export class TabsAPI {
     }
   }
 
-  private query(event: Electron.IpcMainInvokeEvent, info: chrome.tabs.QueryInfo = {}) {
+  private query(event: ExtensionEvent, info: chrome.tabs.QueryInfo = {}) {
     const isSet = (value: any) => typeof value !== 'undefined'
 
     const filteredTabs = Array.from(this.store.tabs)
@@ -208,7 +199,7 @@ export class TabsAPI {
     return filteredTabs
   }
 
-  private reload(event: Electron.IpcMainInvokeEvent, arg1?: unknown, arg2?: unknown) {
+  private reload(event: ExtensionEvent, arg1?: unknown, arg2?: unknown) {
     const tabId: number | undefined = typeof arg1 === 'number' ? arg1 : undefined
     const reloadProperties: chrome.tabs.ReloadProperties | null =
       typeof arg1 === 'object' ? arg1 : typeof arg2 === 'object' ? arg2 : {}
@@ -226,7 +217,7 @@ export class TabsAPI {
     }
   }
 
-  private async update(event: Electron.IpcMainInvokeEvent, arg1?: unknown, arg2?: unknown) {
+  private async update(event: ExtensionEvent, arg1?: unknown, arg2?: unknown) {
     let tabId = typeof arg1 === 'number' ? arg1 : undefined
     const updateProperties: chrome.tabs.UpdateProperties =
       (typeof arg1 === 'object' ? (arg1 as any) : (arg2 as any)) || {}
@@ -252,7 +243,7 @@ export class TabsAPI {
     return this.createTabDetails(tab)
   }
 
-  private remove(event: Electron.IpcMainInvokeEvent, id: number | number[]) {
+  private remove(event: ExtensionEvent, id: number | number[]) {
     const ids = Array.isArray(id) ? id : [id]
 
     ids.forEach((tabId) => {
@@ -262,7 +253,7 @@ export class TabsAPI {
     })
   }
 
-  private goForward(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
+  private goForward(event: ExtensionEvent, arg1?: unknown) {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.store.getTabById(tabId)
@@ -271,7 +262,7 @@ export class TabsAPI {
     tab.goForward()
   }
 
-  private goBack(event: Electron.IpcMainInvokeEvent, arg1?: unknown) {
+  private goBack(event: ExtensionEvent, arg1?: unknown) {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.store.getTabById(tabId)

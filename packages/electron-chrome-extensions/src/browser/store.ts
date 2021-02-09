@@ -1,7 +1,7 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
 import { ChromeExtensionImpl } from './impl'
-import { ExtensionRouter, HandlerCallback, HandlerOptions } from './router'
+import { ExtensionEvent, ExtensionRouter, HandlerCallback, HandlerOptions } from './router'
 
 const debug = require('debug')('electron-chrome-extensions:store')
 
@@ -98,7 +98,7 @@ export class ExtensionStore extends EventEmitter {
     this.emit('window-added', window)
   }
 
-  async createWindow(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
+  async createWindow(event: ExtensionEvent, details: chrome.windows.CreateData) {
     if (typeof this.impl.createWindow !== 'function') {
       throw new Error('createWindow is not implemented')
     }

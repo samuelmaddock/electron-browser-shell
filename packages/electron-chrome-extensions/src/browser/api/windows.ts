@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron'
+import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
 
 const debug = require('debug')('electron-chrome-extensions:windows')
@@ -87,28 +88,28 @@ export class WindowsAPI {
     }
   }
 
-  private get(event: Electron.IpcMainInvokeEvent, windowId: number) {
+  private get(event: ExtensionEvent, windowId: number) {
     const win = this.getWindowFromId(windowId)
     if (!win) return { id: WindowsAPI.WINDOW_ID_NONE }
     return this.getWindowDetails(win)
   }
 
-  private getLastFocused(event: Electron.IpcMainInvokeEvent) {
+  private getLastFocused(event: ExtensionEvent) {
     const win = this.store.getLastFocusedWindow()
     return win ? this.getWindowDetails(win) : null
   }
 
-  private getAll(event: Electron.IpcMainInvokeEvent) {
+  private getAll(event: ExtensionEvent) {
     return Array.from(this.store.windows).map(this.getWindowDetails.bind(this))
   }
 
-  private async create(event: Electron.IpcMainInvokeEvent, details: chrome.windows.CreateData) {
+  private async create(event: ExtensionEvent, details: chrome.windows.CreateData) {
     const win = await this.store.createWindow(event, details)
     return this.getWindowDetails(win)
   }
 
   private async update(
-    event: Electron.IpcMainInvokeEvent,
+    event: ExtensionEvent,
     windowId: number,
     updateProperties: chrome.windows.UpdateInfo = {}
   ) {
@@ -137,10 +138,7 @@ export class WindowsAPI {
     return this.createWindowDetails(win)
   }
 
-  private async remove(
-    event: Electron.IpcMainInvokeEvent,
-    windowId: number = WindowsAPI.WINDOW_ID_CURRENT
-  ) {
+  private async remove(event: ExtensionEvent, windowId: number = WindowsAPI.WINDOW_ID_CURRENT) {
     const win = this.getWindowFromId(windowId)
     if (!win) return
     const removedWindowId = win.id
