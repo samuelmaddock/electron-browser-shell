@@ -12,6 +12,8 @@ createDebug.formatters.r = (value: any) => {
 
 const debug = createDebug('electron-chrome-extensions:router')
 
+const DEFAULT_SESSION = '_self'
+
 const getExtensionFromWebContents = (webContents: WebContents) => {
   let extensionId
   try {
@@ -117,7 +119,10 @@ export class ExtensionRouter {
     ...args: any[]
   ) => {
     debug(`received remote '${handlerName}' for '${sessionPartition}'`, args)
-    const ses = session.fromPartition(sessionPartition)
+    const ses =
+      sessionPartition === DEFAULT_SESSION
+        ? event.sender.session
+        : session.fromPartition(sessionPartition)
     return this.invokeHandler(event, ses, handlerName, args)
   }
 
@@ -134,6 +139,7 @@ export class ExtensionRouter {
     handlers.set(name, {
       callback,
       extensionContext: typeof opts?.extensionContext === 'boolean' ? opts.extensionContext : true,
+      allowRemote: typeof opts?.allowRemote === 'boolean' ? opts.allowRemote : false,
     })
   }
 }

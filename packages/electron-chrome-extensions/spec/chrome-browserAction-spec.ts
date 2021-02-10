@@ -1,8 +1,9 @@
 import { expect } from 'chai'
-import { BrowserView, Extension, ipcMain, WebContents } from 'electron'
-import { emittedOnce } from './events-helpers'
+import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
 
-import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hooks'
+import { emittedOnce } from './events-helpers'
+import { uuid } from './spec-helpers'
+import { useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -10,13 +11,46 @@ describe('chrome.browserAction', () => {
   const activateExtension = async (
     partition: string,
     webContents: WebContents,
-    extension: Extension
+    extension: Extension,
+    tabId: number = -1
   ) => {
     // TODO: use preload script with `injectBrowserAction()`
     await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${extension.id}')`
+      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${extension.id}', ${tabId})`
     )
   }
+
+  describe('messaging', () => {
+    const browser = useExtensionBrowser({
+      url: server.getUrl,
+      extensionName: 'chrome-browserAction-click',
+    })
+
+    it('supports cross-session communication', async () => {
+      const otherSession = session.fromPartition(`persist:${uuid()}`)
+      const view = new BrowserView({
+        webPreferences: { session: otherSession, nodeIntegration: true },
+      })
+      await view.webContents.loadURL(server.getUrl())
+      browser.window.addBrowserView(view)
+      await activateExtension(browser.partition, view.webContents, browser.extension)
+    })
+
+    it('can request action for specific tab', async () => {
+      const tab = browser.window.webContents
+      await activateExtension(browser.partition, tab, browser.extension, tab.id)
+    })
+
+    it('throws for unknown tab', async () => {
+      const p = activateExtension(
+        browser.partition,
+        browser.window.webContents,
+        browser.extension,
+        99999
+      )
+      await expect(p).rejectedWith(/^Error invoking remote method/)
+    })
+  })
 
   describe('onClicked', () => {
     const browser = useExtensionBrowser({

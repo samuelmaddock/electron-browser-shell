@@ -191,8 +191,9 @@ export class BrowserActionAPI {
       }
     }
 
-    const tab =
-      tabId >= 0 ? this.store.getTabById(tabId) : this.store.getActiveTabFromWebContents(sender)
+    debug(`onClicked [extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender.id}]`)
+
+    const tab = tabId >= 0 ? this.store.getTabById(tabId) : this.store.getActiveTabOfCurrentWindow()
     if (!tab) {
       throw new Error(`Unable to get active tab`)
     }

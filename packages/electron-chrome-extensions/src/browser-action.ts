@@ -68,6 +68,8 @@ export const injectBrowserAction = () => {
   // Function body to run in the main world.
   // IMPORTANT: This must be self-contained, no closure variables can be used!
   function mainWorldScript() {
+    const DEFAULT_PARTITION = '_self'
+
     class BrowserActionElement extends HTMLButtonElement {
       private updateId?: number
       private badge?: HTMLDivElement
@@ -89,12 +91,16 @@ export const injectBrowserAction = () => {
         this.setAttribute('tab', `${tab}`)
       }
 
-      get partition(): string {
-        return this.getAttribute('partition') || ''
+      get partition(): string | null {
+        return this.getAttribute('partition')
       }
 
-      set partition(partition: string) {
-        this.setAttribute('partition', partition)
+      set partition(partition: string | null) {
+        if (partition) {
+          this.setAttribute('partition', partition)
+        } else {
+          this.removeAttribute('partition')
+        }
       }
 
       static get observedAttributes() {
@@ -167,7 +173,7 @@ button:hover {
       private onClick() {
         const rect = this.getBoundingClientRect()
 
-        browserAction.activate(this.partition, this.id, this.tab, {
+        browserAction.activate(this.partition || DEFAULT_PARTITION, this.id, this.tab, {
           x: rect.left,
           y: rect.top,
           width: rect.width,
@@ -224,21 +230,29 @@ button:hover {
     class BrowserActionListElement extends HTMLElement {
       private observing: boolean = false
 
-      get tab(): number {
+      get tab(): number | null {
         const tabId = parseInt(this.getAttribute('tab') || '', 10)
-        return typeof tabId === 'number' && !isNaN(tabId) ? tabId : -1
+        return typeof tabId === 'number' && !isNaN(tabId) ? tabId : null
       }
 
-      set tab(tab: number) {
-        this.setAttribute('tab', `${tab}`)
+      set tab(tab: number | null) {
+        if (typeof tab === 'number') {
+          this.setAttribute('tab', `${tab}`)
+        } else {
+          this.removeAttribute('tab')
+        }
       }
 
-      get partition(): string {
-        return this.getAttribute('partition') || ''
+      get partition(): string | null {
+        return this.getAttribute('partition')
       }
 
-      set partition(partition: string) {
-        this.setAttribute('partition', partition)
+      set partition(partition: string | null) {
+        if (partition) {
+          this.setAttribute('partition', partition)
+        } else {
+          this.removeAttribute('partition')
+        }
       }
 
       static get observedAttributes() {
@@ -282,27 +296,36 @@ button:hover {
       private startObserving() {
         if (this.observing) return
         browserAction.addEventListener('update', this.update)
-        browserAction.addObserver(this.partition)
+        browserAction.addObserver(this.partition || DEFAULT_PARTITION)
         this.observing = true
       }
 
       private stopObserving() {
         if (!this.observing) return
         browserAction.removeEventListener('update', this.update)
-        browserAction.removeObserver(this.partition)
+        browserAction.removeObserver(this.partition || DEFAULT_PARTITION)
+        this.observing = false
       }
 
       private fetchState = async () => {
-        await browserAction.getState(this.partition)
+        try {
+          await browserAction.getState(this.partition || DEFAULT_PARTITION)
+        } catch {
+          console.error(
+            `browser-action-list failed to update [tab: ${this.tab}, partition: '${this.partition}']`
+          )
+        }
       }
 
       private update = (state: any) => {
-        const activeTabId = this.tab >= 0 ? this.tab : state.activeTabId || -1
+        const tabId =
+          typeof this.tab === 'number' && this.tab >= 0 ? this.tab : state.activeTabId || -1
 
         for (const action of state.actions) {
           let browserActionNode = this.shadowRoot?.querySelector(
             `[id=${action.id}]`
           ) as BrowserActionElement
+
           if (!browserActionNode) {
             const node = document.createElement('button', {
               is: 'browser-action',
@@ -311,8 +334,9 @@ button:hover {
             browserActionNode = node
             this.shadowRoot?.appendChild(browserActionNode)
           }
-          browserActionNode.partition = this.partition
-          browserActionNode.tab = activeTabId
+
+          if (this.partition) browserActionNode.partition = this.partition
+          browserActionNode.tab = tabId
         }
       }
     }
