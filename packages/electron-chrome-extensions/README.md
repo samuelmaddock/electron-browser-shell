@@ -2,6 +2,10 @@
 
 > Chrome extension API support for Electron.
 
+Electron provides [basic support](https://www.electronjs.org/docs/api/extensions) for Chrome extensions out of the box. However, it only supports a subset of APIs with a focus on DevTools. Concepts like tabs, popups, and extension actions aren't known to Electron.
+
+This library aims to bring extension support in Electron up to the level you'd come to expect from a browser like Google Chrome. API behavior is customizable so you can define how to handle things like tab or window creation specific to your application's needs.
+
 ## Install
 
 ```
@@ -190,9 +194,9 @@ To enable the element on a webpage, you must define a preload script which injec
 
 #### Attributes
 
-- `partition` string (optional) - The `Electron.Session` partition which extensions are loaded in. Defaults to an empty string which is used by `session.defaultSession`.
+- `partition` string (optional) - The `Electron.Session` partition which extensions are loaded in. Defaults to the session in which `<browser-action-list>` lives.
 - `tab` string (optional) - The tab's `Electron.WebContents` ID to use for displaying
-  the relevant browser action state. Defaults `-1` which shows the active tab of the browser window.
+  the relevant browser action state. Defaults to the active tab of the current browser window.
 
 #### Browser action example
 
@@ -212,7 +216,7 @@ if (location.href === 'webui://browser-chrome.html') {
 ##### Webpage
 Add the `<browser-action-list>` element with attributes appropriate for your application.
 ```html
-<!-- Show actions for default session and active tab of current window. -->
+<!-- Show actions for the same session and active tab of current window. -->
 <browser-action-list></browser-action-list>
 
 <!-- Show actions for custom session and active tab of current window. -->
