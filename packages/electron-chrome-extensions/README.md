@@ -238,14 +238,14 @@ Although certain APIs may not be implemented, some methods and properties are st
 ### [`chrome.browserAction`](https://developer.chrome.com/extensions/browserAction)
 
 - [x] chrome.browserAction.setTitle
-- [ ] chrome.browserAction.getTitle
+- [x] chrome.browserAction.getTitle
 - [x] chrome.browserAction.setIcon
 - [x] chrome.browserAction.setPopup
-- [ ] chrome.browserAction.getPopup
+- [x] chrome.browserAction.getPopup
 - [x] chrome.browserAction.setBadgeText
-- [ ] chrome.browserAction.getBadgeText
+- [x] chrome.browserAction.getBadgeText
 - [x] chrome.browserAction.setBadgeBackgroundColor
-- [ ] chrome.browserAction.getBadgeBackgroundColor
+- [x] chrome.browserAction.getBadgeBackgroundColor
 - [ ] chrome.browserAction.enable
 - [ ] chrome.browserAction.disable
 - [x] chrome.browserAction.onClicked

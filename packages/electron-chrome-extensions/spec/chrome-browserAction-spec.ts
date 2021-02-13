@@ -93,4 +93,27 @@ describe('chrome.browserAction', () => {
       expect(popup.extensionId).to.equal(browser.extension.id)
     })
   })
+
+  describe('details', () => {
+    const browser = useExtensionBrowser({
+      url: server.getUrl,
+      extensionName: 'rpc',
+    })
+
+    const props = [
+      { method: 'BadgeBackgroundColor', detail: 'color', value: '#cacaca' },
+      { method: 'BadgeText', detail: 'text' },
+      { method: 'Popup', detail: 'popup' },
+      { method: 'Title', detail: 'title' },
+    ]
+
+    for (const { method, detail, value } of props) {
+      it(`sets and gets ${detail}`, async () => {
+        const newValue = value || uuid()
+        await browser.exec(`browserAction.set${method}`, { [detail]: newValue })
+        const result = await browser.exec(`browserAction.get${method}`)
+        expect(result).to.equal(newValue)
+      })
+    }
+  })
 })

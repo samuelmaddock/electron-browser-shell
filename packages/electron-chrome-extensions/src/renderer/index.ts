@@ -144,7 +144,7 @@ export const injectExtensionAPIs = () => {
             ...base,
 
             setTitle: invokeExtension('browserAction.setTitle'),
-            getTitle: invokeExtension('browserAction.getTitle', { noop: true }),
+            getTitle: invokeExtension('browserAction.getTitle'),
 
             setIcon: invokeExtension('browserAction.setIcon', {
               serialize: (details: any) => {
@@ -167,17 +167,13 @@ export const injectExtensionAPIs = () => {
             }),
 
             setPopup: invokeExtension('browserAction.setPopup'),
-            getPopup: invokeExtension('browserAction.getPopup', { noop: true }),
+            getPopup: invokeExtension('browserAction.getPopup'),
 
             setBadgeText: invokeExtension('browserAction.setBadgeText'),
-            getBadgeText: invokeExtension('browserAction.getBadgeText', {
-              noop: true,
-            }),
+            getBadgeText: invokeExtension('browserAction.getBadgeText'),
 
             setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor'),
-            getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor', {
-              noop: true,
-            }),
+            getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor'),
 
             enable: invokeExtension('browserAction.enable', { noop: true }),
             disable: invokeExtension('browserAction.disable', { noop: true }),

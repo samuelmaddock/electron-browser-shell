@@ -7,7 +7,7 @@ import { getIconImage } from './common'
 const debug = require('debug')('electron-chrome-extensions:browserAction')
 
 interface ExtensionAction {
-  backgroundColor?: string
+  color?: string
   text?: string
   title?: string
   icon?:
@@ -19,6 +19,8 @@ interface ExtensionAction {
     path: string
   }
 }
+
+type ExtensionActionKey = keyof ExtensionAction
 
 interface ExtensionActionStore extends Partial<ExtensionAction> {
   tabs: { [key: string]: ExtensionAction }
@@ -32,31 +34,62 @@ export class BrowserActionAPI {
   private queuedUpdate: boolean = false
 
   constructor(private store: ExtensionStore) {
-    const setter = (propName: string) => (
+    const getter = (propName: ExtensionActionKey) => (
+      { sender, extension }: ExtensionEvent,
+      details: chrome.browserAction.TabDetails = {}
+    ) => {
+      const { tabId } = details
+      const senderSession = sender.session
+      const action = this.getAction(senderSession, extension.id)
+
+      let result
+
+      if (tabId) {
+        if (action.tabs[tabId]) {
+          result = action.tabs[tabId][propName]
+        } else {
+          result = action[propName]
+        }
+      } else {
+        result = action[propName]
+      }
+
+      return result
+    }
+
+    const setter = (propName: ExtensionActionKey) => (
       { sender, extension }: ExtensionEvent,
       details: chrome.browserAction.TabDetails
     ) => {
+      const { tabId } = details
+      const value = (details as any)[propName] || undefined
+      const valueObj = { [propName]: value }
+
       const senderSession = sender.session
       const action = this.getAction(senderSession, extension.id)
-      const { tabId, ...rest } = details
 
-      if (details.tabId) {
-        const tabAction = action.tabs[details.tabId] || (action.tabs[details.tabId] = {})
-        Object.assign(tabAction, rest)
+      if (tabId) {
+        const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
+        Object.assign(tabAction, valueObj)
       } else {
         // TODO: need to handle case where prop is set to undefined and
         // revert the value to its default
-        Object.assign(action, rest)
+        Object.assign(action, valueObj)
       }
 
       this.onUpdate()
     }
 
-    store.handle('browserAction.setBadgeBackgroundColor', setter('backgroundColor'))
-    store.handle('browserAction.setBadgeText', setter('text'))
-    store.handle('browserAction.setTitle', setter('title'))
+    const handleProp = (prop: string, key: ExtensionActionKey) => {
+      store.handle(`browserAction.get${prop}`, getter(key))
+      store.handle(`browserAction.set${prop}`, setter(key))
+    }
+
+    handleProp('BadgeBackgroundColor', 'color')
+    handleProp('BadgeText', 'text')
+    handleProp('Title', 'title')
+    handleProp('Popup', 'popup')
     store.handle('browserAction.setIcon', setter('icon'))
-    store.handle('browserAction.setPopup', setter('popup'))
 
     // browserAction preload API
     const preloadOpts = { allowRemote: true, extensionContext: false }
