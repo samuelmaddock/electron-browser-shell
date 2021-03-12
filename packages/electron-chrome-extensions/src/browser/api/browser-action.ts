@@ -158,7 +158,8 @@ export class BrowserActionAPI {
     return action
   }
 
-  private removeActions(session: Electron.Session, extensionId: string) {
+  // TODO: Make private after backporting extension registry events
+  removeActions(session: Electron.Session, extensionId: string) {
     const sessionActions = this.getSessionActions(session)
 
     if (sessionActions.has(extensionId)) {

@@ -137,4 +137,14 @@ export class Extensions extends EventEmitter {
   addExtension(extension: Electron.Extension) {
     this.browserAction.processExtension(this.store.session, extension)
   }
+
+  /**
+   * Remove extensions from the list of visible extension action buttons.
+   *
+   * This is a temporary API which will go away soon after extension registry
+   * events have been backported from Electron v12.
+   */
+  removeExtension(extension: Electron.Extension) {
+    this.browserAction.removeActions(this.store.session, extension.id)
+  }
 }
