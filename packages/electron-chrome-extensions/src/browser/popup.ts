@@ -88,6 +88,17 @@ export class PopupView {
 
     if (this.destroyed) return
 
+    const hasChildNodes = await this.browserWindow!.webContents.executeJavaScript(
+      `((${() => {
+        return document.body.hasChildNodes();
+      }})())`
+    )
+
+    if (!hasChildNodes) {
+      this.destroy()
+      return
+    }
+
     if (!this.usingPreferredSize) {
       // Set large initial size to avoid overflow
       this.setSize({ width: PopupView.BOUNDS.maxWidth, height: PopupView.BOUNDS.maxHeight })
