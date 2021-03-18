@@ -60,9 +60,9 @@ export class ContextMenusAPI {
     store.handle('contextMenus.remove', this.remove)
     store.handle('contextMenus.removeAll', this.removeAll)
 
-    this.store.session.on('extension-unloaded' as any, (event, extensionId) => {
-      if (this.menus.has(extensionId)) {
-        this.menus.delete(extensionId)
+    this.store.session.on('extension-unloaded' as any, (event, extension) => {
+      if (this.menus.has(extension.id)) {
+        this.menus.delete(extension.id)
       }
     })
   }

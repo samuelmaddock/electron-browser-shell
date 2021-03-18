@@ -55,9 +55,9 @@ export class NotificationsAPI {
     store.handle('notifications.getPermissionLevel', this.getPermissionLevel)
     store.handle('notifications.update', this.update)
 
-    this.store.session.on('extension-unloaded' as any, (event, extensionId) => {
+    this.store.session.on('extension-unloaded' as any, (event, extension) => {
       for (const [key, notification] of this.registry) {
-        if (key.startsWith(extensionId)) {
+        if (key.startsWith(extension.id)) {
           notification.close()
         }
       }
