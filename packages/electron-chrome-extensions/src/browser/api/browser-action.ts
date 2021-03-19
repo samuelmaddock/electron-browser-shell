@@ -68,13 +68,20 @@ export class BrowserActionAPI {
       const senderSession = sender.session
       const action = this.getAction(senderSession, extension.id)
 
-      if (tabId) {
-        const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
-        Object.assign(tabAction, valueObj)
+      if (propName === 'icon' && !value) {
+        debug(`resetting icon to manifest default`)
+        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/browserAction/setIcon#parameters
+        // reprocess extension (which will reset icon)
+        this.processExtension(senderSession, extension)
       } else {
-        // TODO: need to handle case where prop is set to undefined and
-        // revert the value to its default
-        Object.assign(action, valueObj)
+        if (tabId) {
+          const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
+          Object.assign(tabAction, valueObj)
+        } else {
+          // TODO: need to handle case where prop is set to undefined and
+          // revert the value to its default
+          Object.assign(action, valueObj)
+        }
       }
 
       this.onUpdate()
