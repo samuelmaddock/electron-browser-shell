@@ -108,11 +108,20 @@ describe('chrome.browserAction', () => {
     ]
 
     for (const { method, detail, value } of props) {
-      it(`sets and gets ${detail}`, async () => {
+      it(`sets and gets '${detail}'`, async () => {
         const newValue = value || uuid()
         await browser.exec(`browserAction.set${method}`, { [detail]: newValue })
         const result = await browser.exec(`browserAction.get${method}`)
         expect(result).to.equal(newValue)
+      })
+
+      it(`restores initial values for '${detail}'`, async () => {
+        const newValue = value || uuid()
+        const initial = await browser.exec(`browserAction.get${method}`)
+        await browser.exec(`browserAction.set${method}`, { [detail]: newValue })
+        await browser.exec(`browserAction.set${method}`, { [detail]: null })
+        const result = await browser.exec(`browserAction.get${method}`)
+        expect(result).to.equal(initial)
       })
     }
   })
