@@ -129,7 +129,9 @@ export class ExtensionStore extends EventEmitter {
 
     const win = await this.impl.newWindow(details)
 
-    this.addWindow(win)
+    if (win) {
+      this.addWindow(win)
+    }
 
     return win
   }
