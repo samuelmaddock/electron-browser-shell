@@ -80,7 +80,7 @@ export class PopupView {
 
     this.browserWindow.webContents.on('new-window', (event, url) => {
       event.preventDefault()
-      return this.store.createTab({url: url, active:true})
+      return this.store.newWindow({url: url})
     });
 
     this.load(opts.url)

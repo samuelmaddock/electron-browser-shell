@@ -122,6 +122,18 @@ export class ExtensionStore extends EventEmitter {
     }
   }
 
+  async newWindow(details: chrome.windows.CreateData) {
+    if (typeof this.impl.newWindow !== 'function') {
+      throw new Error('newWindow is not implemented')
+    }
+
+    const win = await this.impl.newWindow(details)
+
+    this.addWindow(win)
+
+    return win
+  }
+
   getTabById(tabId: number) {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
