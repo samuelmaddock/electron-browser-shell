@@ -60,7 +60,8 @@ export class ContextMenusAPI {
     store.handle('contextMenus.remove', this.remove)
     store.handle('contextMenus.removeAll', this.removeAll)
 
-    this.store.session.on('extension-unloaded' as any, (event, extension) => {
+    // TODO: remove 'any' when project is upgraded to Electron 12
+    this.store.session.on('extension-unloaded' as any, (event, extension: any) => {
       if (this.menus.has(extension.id)) {
         this.menus.delete(extension.id)
       }
