@@ -143,8 +143,8 @@ button:hover {
   bottom: 1px;
   right: 0;
   pointer-events: none;
-  line-height: 1.2;
-  font-size: 10px;
+  line-height: 1.5;
+  font-size: 9px;
   font-weight: 400;
   overflow: hidden;
   white-space: nowrap;
