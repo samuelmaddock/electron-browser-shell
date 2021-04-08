@@ -134,6 +134,7 @@ button:hover {
 
 .badge {
   box-sizing: border-box;
+  max-width: 100%;
   height: 12px;
   padding: 0 2px;
   border-radius: 2px;
