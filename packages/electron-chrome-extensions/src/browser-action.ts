@@ -129,17 +129,18 @@ button {
 }
 
 button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--browser-action-hover-bg, rgba(255, 255, 255, 0.3));
 }
 
 .badge {
+  box-shadow: 0px 0px 1px 1px var(--browser-action-badge-outline, #444);
   box-sizing: border-box;
   max-width: 100%;
   height: 12px;
   padding: 0 2px;
   border-radius: 2px;
   position: absolute;
-  bottom: 0;
+  bottom: 1px;
   right: 0;
   pointer-events: none;
   line-height: 1.2;
