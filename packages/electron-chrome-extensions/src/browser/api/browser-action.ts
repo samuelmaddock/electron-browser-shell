@@ -22,6 +22,25 @@ interface ExtensionAction {
 
 type ExtensionActionKey = keyof ExtensionAction
 
+const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionAction | undefined => {
+  const manifest = extension.manifest as chrome.runtime.Manifest
+  const { browser_action } = manifest
+  if (typeof browser_action === 'object') {
+    const action: ExtensionAction = {}
+
+    action.title = browser_action.default_title || manifest.name
+
+    const iconImage = getIconImage(extension)
+    if (iconImage) action.icon = iconImage.toDataURL()
+
+    if (browser_action.default_popup) {
+      action.popup = { path: browser_action.default_popup }
+    }
+
+    return action
+  }
+}
+
 interface ExtensionActionStore extends Partial<ExtensionAction> {
   tabs: { [key: string]: ExtensionAction }
 }
@@ -62,7 +81,13 @@ export class BrowserActionAPI {
       details: chrome.browserAction.TabDetails
     ) => {
       const { tabId } = details
-      const value = (details as any)[propName] || undefined
+      let value = (details as any)[propName] || undefined
+
+      if (typeof value === 'undefined') {
+        const defaults = getBrowserActionDefaults(extension)
+        value = defaults ? defaults[propName] : value
+      }
+
       const valueObj = { [propName]: value }
 
       const senderSession = sender.session
@@ -72,8 +97,6 @@ export class BrowserActionAPI {
         const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
         Object.assign(tabAction, valueObj)
       } else {
-        // TODO: need to handle case where prop is set to undefined and
-        // revert the value to its default
         Object.assign(action, valueObj)
       }
 
@@ -182,19 +205,10 @@ export class BrowserActionAPI {
 
   // TODO: Make private after backporting extension registry events
   processExtension(session: Electron.session, extension: Electron.Extension) {
-    const manifest = extension.manifest as chrome.runtime.Manifest
-    const { browser_action } = manifest
-    if (typeof browser_action === 'object') {
+    const defaultAction = getBrowserActionDefaults(extension)
+    if (defaultAction) {
       const action = this.getAction(session, extension.id)
-
-      action.title = browser_action.default_title || manifest.name
-
-      const iconImage = getIconImage(extension)
-      if (iconImage) action.icon = iconImage.toDataURL()
-
-      if (browser_action.default_popup) {
-        action.popup = { path: browser_action.default_popup }
-      }
+      Object.assign(action, defaultAction)
     }
   }
 
