@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [3.4.0] - 2021-04-07
+
+### Added
+
+- Added `Extensions.removeExtension(extension)`.
+
+### Changed
+
+- Improvements to the browser action styles.
+
+### Fixed
+
+- Errors being thrown in Electron 12 when `'extension-unloaded'` is emitted.
+
 ## [3.3.0] - 2021-02-10
 
 ### Added
@@ -62,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.4.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.3.0...electron-chrome-extensions@3.4.0
 [3.3.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.2.0...electron-chrome-extensions@3.3.0
 [3.2.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.1.1...electron-chrome-extensions@3.2.0
 [3.1.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.0.1...electron-chrome-extensions@3.1.1

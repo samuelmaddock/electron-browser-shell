@@ -176,6 +176,14 @@ the extension to appear as a button in the browser top bar.
 
 _Calling this method is not required in Electron >=12._
 
+##### `extensions.removeExtension(extension)`
+
+- `extension` Electron.Extension
+
+Remove an extension tracked by the `chrome.browserAction` API.
+
+_Calling this method is not required in Electron >=12._
+
 #### Instance Events
 
 ##### Event: 'browser-action-popup-created'
