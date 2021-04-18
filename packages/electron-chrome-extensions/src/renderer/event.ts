@@ -2,6 +2,9 @@ import { ipcRenderer } from 'electron'
 
 export const addExtensionListener = (name: string, callback: Function) => {
   ipcRenderer.addListener(name, function (event, ...args) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(name, '(result)', ...args)
+    }
     callback(...args)
   })
 }

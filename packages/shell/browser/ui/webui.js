@@ -40,44 +40,7 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
-    this.setupBrowserListeners()
     this.initTabs()
-  }
-
-  setupBrowserListeners() {
-    if (!chrome.tabs.onCreated) {
-      throw new Error(`chrome global not setup. Did the extension preload not get run?`)
-    }
-
-    chrome.tabs.onCreated.addListener((tab) => {
-      if (tab.windowId !== this.windowId) return
-      this.tabList.push(tab)
-      this.renderTabs()
-    })
-
-    chrome.tabs.onActivated.addListener((activeInfo) => {
-      if (activeInfo.windowId !== this.windowId) return
-
-      this.setActiveTab(activeInfo)
-
-      this.initTabs() // get updated info on all tabs
-    })
-
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-      const tab = this.tabList.find((tab) => tab.id === tabId)
-      if (!tab) return
-      Object.assign(tab, changeInfo)
-      this.renderTabs()
-      if (tabId === this.activeTabId) this.renderToolbar(tab)
-    })
-
-    chrome.tabs.onRemoved.addListener((tabId) => {
-      const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
-      if (tabIndex > -1) {
-        this.tabList.splice(tabIndex, 1)
-        this.$.tabList.querySelector(`[data-tab-id="${tabId}"]`).remove()
-      }
-    })
   }
 
   async initTabs() {
@@ -89,6 +52,58 @@ class WebUI {
     if (activeTab) {
       this.setActiveTab(activeTab)
     }
+
+    // Wait to setup tabs and windowId prior to listening for updates.
+    this.setupBrowserListeners()
+  }
+
+  setupBrowserListeners() {
+    if (!chrome.tabs.onCreated) {
+      throw new Error(`chrome global not setup. Did the extension preload not get run?`)
+    }
+
+    const findTab = (tabId) => {
+      const existingTab = this.tabList.find((tab) => tab.id === tabId)
+      return existingTab
+    }
+
+    const findOrCreateTab = (tabId) => {
+      const existingTab = findTab(tabId)
+      if (existingTab) return existingTab
+
+      const newTab = { id: tabId }
+      this.tabList.push(newTab)
+      return newTab
+    }
+
+    chrome.tabs.onCreated.addListener((tab) => {
+      if (tab.windowId !== this.windowId) return
+      const newTab = findOrCreateTab(tab.id)
+      Object.assign(newTab, tab)
+      this.renderTabs()
+    })
+
+    chrome.tabs.onActivated.addListener((activeInfo) => {
+      if (activeInfo.windowId !== this.windowId) return
+
+      this.setActiveTab(activeInfo)
+    })
+
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, details) => {
+      const tab = findTab(tabId)
+      if (!tab) return
+      Object.assign(tab, details)
+      this.renderTabs()
+      if (tabId === this.activeTabId) this.renderToolbar(tab)
+    })
+
+    chrome.tabs.onRemoved.addListener((tabId) => {
+      const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
+      if (tabIndex > -1) {
+        this.tabList.splice(tabIndex, 1)
+        this.$.tabList.querySelector(`[data-tab-id="${tabId}"]`).remove()
+      }
+    })
   }
 
   setActiveTab(activeTab) {

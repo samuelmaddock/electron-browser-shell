@@ -8,6 +8,13 @@ import { useExtensionBrowser, useServer } from './hooks'
 describe('chrome.browserAction', () => {
   const server = useServer()
 
+  const defaultAnchorRect = {
+    x: 0,
+    y: 0,
+    width: 16,
+    height: 16,
+  }
+
   const activateExtension = async (
     partition: string,
     webContents: WebContents,
@@ -16,7 +23,9 @@ describe('chrome.browserAction', () => {
   ) => {
     // TODO: use preload script with `injectBrowserAction()`
     await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${extension.id}', ${tabId})`
+      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${
+        extension.id
+      }', ${tabId}, ${JSON.stringify(defaultAnchorRect)})`
     )
   }
 
@@ -29,7 +38,7 @@ describe('chrome.browserAction', () => {
     it('supports cross-session communication', async () => {
       const otherSession = session.fromPartition(`persist:${uuid()}`)
       const view = new BrowserView({
-        webPreferences: { session: otherSession, nodeIntegration: true },
+        webPreferences: { session: otherSession, nodeIntegration: true, contextIsolation: false },
       })
       await view.webContents.loadURL(server.getUrl())
       browser.window.addBrowserView(view)
@@ -81,7 +90,9 @@ describe('chrome.browserAction', () => {
     })
 
     it('opens when BrowserView is the active tab', async () => {
-      const view = new BrowserView({ webPreferences: { session: browser.session } })
+      const view = new BrowserView({
+        webPreferences: { session: browser.session, contextIsolation: false },
+      })
       await view.webContents.loadURL(server.getUrl())
       browser.window.addBrowserView(view)
       browser.extensions.addTab(view.webContents, browser.window)

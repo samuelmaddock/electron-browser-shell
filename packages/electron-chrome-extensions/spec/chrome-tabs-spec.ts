@@ -48,7 +48,11 @@ describe('chrome.tabs', () => {
     it('gets the active tab of multiple windows', async () => {
       const secondWindow = new BrowserWindow({
         show: false,
-        webPreferences: { session: browser.session, nodeIntegration: true },
+        webPreferences: {
+          session: browser.session,
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
       })
 
       browser.extensions.addTab(secondWindow.webContents, secondWindow)

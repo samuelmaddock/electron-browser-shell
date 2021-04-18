@@ -379,7 +379,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 ## Limitations
 
 ### electron-chrome-extensions
-- Electron v11 is recommended. Minimum support requires Electron v9.
+- Electron v12 is recommended. Minimum support requires Electron v9.
 - Chrome's Manifest V3 extensions are not yet supported.
 
 ### electron
