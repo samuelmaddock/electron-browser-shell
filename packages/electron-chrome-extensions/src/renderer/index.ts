@@ -260,6 +260,8 @@ export const injectExtensionAPIs = () => {
             getPermissionLevel: invokeExtension('notifications.getPermissionLevel'),
             update: invokeExtension('notifications.update'),
             onClicked: new ExtensionEvent('notifications.onClicked'),
+            onButtonClicked: new ExtensionEvent('notifications.onButtonClicked'),
+            onClosed: new ExtensionEvent('notifications.onClosed'),
           }
         },
       },
