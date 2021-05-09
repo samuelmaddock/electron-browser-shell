@@ -53,8 +53,12 @@ async function loadExtensions(session, extensionsPath) {
 
   for (const extPath of extensionDirectories.filter(Boolean)) {
     console.log(`Loading extension from ${extPath}`)
-    const extensionInfo = await session.loadExtension(extPath)
-    results.push(extensionInfo)
+    try {
+      const extensionInfo = await session.loadExtension(extPath)
+      results.push(extensionInfo)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return results
