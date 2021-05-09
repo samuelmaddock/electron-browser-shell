@@ -202,11 +202,11 @@ class Browser {
       },
       selectTab: (tab, browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
-        win.tabs.select(tab.id)
+        win?.tabs.select(tab.id)
       },
       removeTab: (tab, browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
-        if (win) win.tabs.remove(tab.id)
+        win?.tabs.remove(tab.id)
       },
 
       createWindow: (details) => {
@@ -218,7 +218,7 @@ class Browser {
       },
       removeWindow: (browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
-        win.destroy()
+        win?.destroy()
       },
     })
 
