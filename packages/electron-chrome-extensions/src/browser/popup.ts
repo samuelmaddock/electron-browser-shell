@@ -37,6 +37,8 @@ export class PopupView {
   /** Preferred size changes are only received in Electron v12+ */
   private usingPreferredSize = false
 
+  private readyPromise: Promise<void>
+
   constructor(opts: PopupViewOptions) {
     this.parent = opts.parent
     this.extensionId = opts.extensionId
@@ -74,10 +76,10 @@ export class PopupView {
     this.browserWindow.on('closed', this.destroy)
     this.parent.once('closed', this.destroy)
 
-    this.load(opts.url)
+    this.readyPromise = this.load(opts.url)
   }
 
-  private async load(url: string) {
+  private async load(url: string): Promise<void> {
     const win = this.browserWindow!
 
     try {
@@ -135,6 +137,11 @@ export class PopupView {
 
   isDestroyed() {
     return this.destroyed
+  }
+
+  /** Resolves when the popup finishes loading. */
+  whenReady() {
+    return this.readyPromise
   }
 
   setSize(rect: Partial<Electron.Rectangle>) {

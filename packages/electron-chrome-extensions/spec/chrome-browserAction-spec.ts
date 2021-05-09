@@ -135,5 +135,18 @@ describe('chrome.browserAction', () => {
         expect(result).to.equal(initial)
       })
     }
+
+    it('uses custom popup when opening browser action', async () => {
+      const popupUuid = uuid()
+      const popupPath = `popup.html?${popupUuid}`
+      await browser.exec('browserAction.setPopup', { popup: popupPath })
+      const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
+      await activateExtension(browser.partition, browser.window.webContents, browser.extension)
+      const [popup] = await popupPromise
+      await popup.whenReady()
+      expect(popup.browserWindow.webContents.getURL()).to.equal(
+        `chrome-extension://${browser.extension.id}/${popupPath}`
+      )
+    })
   })
 })

@@ -15,9 +15,7 @@ interface ExtensionAction {
     | {
         path: string
       }
-  popup?: {
-    path: string
-  }
+  popup?: string
 }
 
 type ExtensionActionKey = keyof ExtensionAction
@@ -34,7 +32,7 @@ const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionActio
     if (iconImage) action.icon = iconImage.toDataURL()
 
     if (browser_action.default_popup) {
-      action.popup = { path: browser_action.default_popup }
+      action.popup = browser_action.default_popup
     }
 
     return action
@@ -198,8 +196,8 @@ export class BrowserActionAPI {
 
   private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
     const action = this.getAction(session, extensionId)
-    const popupPath =
-      (action.tabs[tabId] && action.tabs[tabId].popup?.path) || action.popup?.path || undefined
+    console.log(`getPopupUrl ${extensionId}`, action)
+    const popupPath = action.tabs[tabId]?.popup || action.popup || undefined
     return popupPath && `chrome-extension://${extensionId}/${popupPath}`
   }
 
