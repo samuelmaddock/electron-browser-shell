@@ -13,6 +13,7 @@ import { RuntimeAPI } from './api/runtime'
 import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
 import { ChromeExtensionImpl } from './impl'
+import { CommandsAPI } from './api/commands'
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   session?: Electron.Session
@@ -33,6 +34,7 @@ export class Extensions extends EventEmitter {
 
   private browserAction: BrowserActionAPI
   private contextMenus: ContextMenusAPI
+  private commands: CommandsAPI
   private cookies: CookiesAPI
   private notifications: NotificationsAPI
   private runtime: RuntimeAPI
@@ -50,6 +52,7 @@ export class Extensions extends EventEmitter {
 
     this.browserAction = new BrowserActionAPI(this.store)
     this.contextMenus = new ContextMenusAPI(this.store)
+    this.commands = new CommandsAPI(this.store)
     this.cookies = new CookiesAPI(this.store)
     this.notifications = new NotificationsAPI(this.store)
     this.runtime = new RuntimeAPI(this.store)

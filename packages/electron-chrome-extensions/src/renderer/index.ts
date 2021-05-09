@@ -185,6 +185,16 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      commands: {
+        factory: (base) => {
+          return {
+            ...base,
+            getAll: invokeExtension('commands.getAll'),
+            onCommand: new ExtensionEvent('commands.onCommand'),
+          }
+        },
+      },
+
       contextMenus: {
         factory: (base) => {
           let menuCounter = 0
