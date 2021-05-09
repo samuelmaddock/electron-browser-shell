@@ -110,8 +110,15 @@ class WebUI {
     this.activeTabId = activeTab.id || activeTab.tabId
     this.windowId = activeTab.windowId
 
-    const tab = this.tabList.find((tab) => tab.id === this.activeTabId)
-    if (tab) this.renderToolbar(tab)
+    for (const tab of this.tabList) {
+      if (tab.id === this.activeTabId) {
+        tab.active = true;
+        this.renderTab(tab)
+        this.renderToolbar(tab)
+      } else {
+        tab.active = false
+      }
+    }
   }
 
   onAddressUrlKeyPress(event) {
@@ -136,26 +143,30 @@ class WebUI {
     return tabElem
   }
 
+  renderTab(tab) {
+    let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
+    if (!tabElem) tabElem = this.createTabNode(tab)
+
+    if (tab.active) {
+      tabElem.dataset.active = ''
+    } else {
+      delete tabElem.dataset.active
+    }
+
+    const favicon = tabElem.querySelector('.favicon')
+    if (tab.favIconUrl) {
+      favicon.src = tab.favIconUrl
+    } else {
+      delete favicon.src
+    }
+
+    tabElem.querySelector('.title').textContent = tab.title
+    tabElem.querySelector('.audio').disabled = !tab.audible
+  }
+
   renderTabs() {
-    this.tabList.forEach((tab) => {
-      let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
-      if (!tabElem) tabElem = this.createTabNode(tab)
-
-      if (tab.active) {
-        tabElem.dataset.active = ''
-      } else {
-        delete tabElem.dataset.active
-      }
-
-      const favicon = tabElem.querySelector('.favicon')
-      if (tab.favIconUrl) {
-        favicon.src = tab.favIconUrl
-      } else {
-        delete favicon.src
-      }
-
-      tabElem.querySelector('.title').textContent = tab.title
-      tabElem.querySelector('.audio').disabled = !tab.audible
+    this.tabList.forEach(tab => {
+      this.renderTab(tab)
     })
   }
 
