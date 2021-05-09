@@ -224,7 +224,13 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   menu.append(
     new MenuItem({
       label: labels.inspect,
-      click: () => webContents.inspectElement(params.x, params.y),
+      click: () => {
+        webContents.inspectElement(params.x, params.y)
+
+        if (!webContents.isDevToolsFocused()) {
+          webContents.devToolsWebContents?.focus()
+        }
+      },
     })
   )
 
