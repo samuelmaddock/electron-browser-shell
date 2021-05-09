@@ -22,7 +22,7 @@ export const resolveExtensionResource = async (extension: Electron.Extension, ur
 }
 
 export const getIconPath = (extension: Electron.Extension) => {
-  const { browser_action } = extension.manifest
+  const { browser_action, icons } = extension.manifest
   const { default_icon } = browser_action
 
   if (typeof default_icon === 'string') {
@@ -31,6 +31,10 @@ export const getIconPath = (extension: Electron.Extension) => {
   } else if (typeof default_icon === 'object') {
     const key = Object.keys(default_icon).pop() as any
     const iconPath = path.join(extension.path, default_icon[key])
+    return iconPath
+  } else if (typeof icons === 'object') {
+    const key = Object.keys(icons).pop() as any
+    const iconPath = path.join(extension.path, icons[key])
     return iconPath
   }
 }
