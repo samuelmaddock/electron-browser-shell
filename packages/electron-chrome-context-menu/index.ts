@@ -1,4 +1,4 @@
-import { clipboard, Menu, MenuItem } from 'electron'
+import { BrowserWindow, clipboard, Menu, MenuItem } from 'electron'
 
 const LABELS = {
   openInNewTab: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
@@ -18,6 +18,26 @@ const LABELS = {
   reload: 'Reload',
   inspect: 'Inspect',
   addToDictionary: 'Add to dictionary',
+  exitFullScreen: 'Exit full screen',
+}
+
+const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
+  return BrowserWindow.getAllWindows().find((win) => {
+    if (win.webContents === webContents) return true
+
+    let browserViews: Electron.BrowserView[]
+
+    if ('getBrowserViews' in win) {
+      browserViews = win.getBrowserViews()
+    } else if ('getBrowserView' in win) {
+      // @ts-ignore
+      browserViews = [win.getBrowserView()]
+    } else {
+      browserViews = []
+    }
+
+    return browserViews.some((view) => view.webContents === webContents)
+  })
 }
 
 type ChromeContextMenuLabels = typeof LABELS
@@ -193,6 +213,22 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   }
 
   if (menu.items.length === 0) {
+    const browserWindow = getBrowserWindowFromWebContents(webContents)
+
+    // TODO: Electron needs a way to detect whether we're in HTML5 full screen.
+    // Also need to properly exit full screen in Blink rather than just exiting
+    // the Electron BrowserWindow.
+    if (browserWindow?.fullScreen) {
+      menu.append(
+        new MenuItem({
+          label: labels.exitFullScreen,
+          click: () => browserWindow.setFullScreen(false),
+        })
+      )
+
+      addSeparator()
+    }
+
     menu.append(
       new MenuItem({
         label: labels.back,
