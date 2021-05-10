@@ -48,8 +48,8 @@ app.on('web-contents-created', (event, webContents) => {
     * `url` String
     * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`, and `new-window`.
     * `params` Electron.ContextMenuParams
-  * `extensionMenuItems` Electron.MenuItem[] (optional) - Collection of menu items for activate web extensions.
-  * `strings` Object (optional) - Strings used to create menu items. Replace this if localization is needed.
+  * `extensionMenuItems` Electron.MenuItem[] (optional) - Collection of menu items for active web extensions.
+  * `labels` Object (optional) - Labels used to create menu items. Replace this if localization is needed.
 
 ## License
 
