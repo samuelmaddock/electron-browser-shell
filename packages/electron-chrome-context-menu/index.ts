@@ -1,4 +1,4 @@
-import { BrowserWindow, clipboard, Menu, MenuItem } from 'electron'
+import { app, BrowserWindow, clipboard, Menu, MenuItem } from 'electron'
 
 const LABELS = {
   openInNewTab: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
@@ -19,6 +19,7 @@ const LABELS = {
   inspect: 'Inspect',
   addToDictionary: 'Add to dictionary',
   exitFullScreen: 'Exit full screen',
+  emoji: 'Emoji',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -131,6 +132,17 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         click: () => webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
       })
     } else {
+      if (
+        app.isEmojiPanelSupported() &&
+        !['number', 'tel', 'other'].includes(params.inputFieldType)
+      ) {
+        append({
+          label: labels.emoji,
+          click: () => app.showEmojiPanel(),
+        })
+        appendSeparator()
+      }
+
       append({
         label: labels.redo,
         enabled: params.editFlags.canRedo,
