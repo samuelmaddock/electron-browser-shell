@@ -74,142 +74,113 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   const labels = opts.labels || opts.strings || LABELS
 
   const menu = new Menu()
-  const addSeparator = () => menu.append(new MenuItem({ type: 'separator' }))
+  const append = (opts: Electron.MenuItemConstructorOptions) => menu.append(new MenuItem(opts))
+  const appendSeparator = () => menu.append(new MenuItem({ type: 'separator' }))
 
   if (params.linkURL) {
-    menu.append(
-      new MenuItem({
-        label: labels.openInNewTab('link'),
-        click: () => {
-          openLink(params.linkURL, 'default', params)
-        },
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.openInNewWindow('link'),
-        click: () => {
-          openLink(params.linkURL, 'new-window', params)
-        },
-      })
-    )
-    addSeparator()
-    menu.append(
-      new MenuItem({
-        label: labels.copyAddress('link'),
-        click: () => {
-          clipboard.writeText(params.linkURL)
-        },
-      })
-    )
-    addSeparator()
+    append({
+      label: labels.openInNewTab('link'),
+      click: () => {
+        openLink(params.linkURL, 'default', params)
+      },
+    })
+    append({
+      label: labels.openInNewWindow('link'),
+      click: () => {
+        openLink(params.linkURL, 'new-window', params)
+      },
+    })
+    appendSeparator()
+    append({
+      label: labels.copyAddress('link'),
+      click: () => {
+        clipboard.writeText(params.linkURL)
+      },
+    })
+    appendSeparator()
   } else if (params.mediaType !== 'none') {
     // TODO: Loop, Show controls
-    menu.append(
-      new MenuItem({
-        label: labels.openInNewTab(params.mediaType),
-        click: () => {
-          openLink(params.srcURL, 'default', params)
-        },
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.copyAddress(params.mediaType),
-        click: () => {
-          clipboard.writeText(params.srcURL)
-        },
-      })
-    )
-    addSeparator()
+    append({
+      label: labels.openInNewTab(params.mediaType),
+      click: () => {
+        openLink(params.srcURL, 'default', params)
+      },
+    })
+    append({
+      label: labels.copyAddress(params.mediaType),
+      click: () => {
+        clipboard.writeText(params.srcURL)
+      },
+    })
+    appendSeparator()
   }
 
   if (params.isEditable) {
     if (params.misspelledWord) {
       for (const suggestion of params.dictionarySuggestions) {
-        menu.append(
-          new MenuItem({
-            label: suggestion,
-            click: () => webContents.replaceMisspelling(suggestion),
-          })
-        )
+        append({
+          label: suggestion,
+          click: () => webContents.replaceMisspelling(suggestion),
+        })
       }
 
-      if (params.dictionarySuggestions.length > 0) addSeparator()
+      if (params.dictionarySuggestions.length > 0) appendSeparator()
 
-      menu.append(
-        new MenuItem({
-          label: labels.addToDictionary,
-          click: () => webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
-        })
-      )
+      append({
+        label: labels.addToDictionary,
+        click: () => webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+      })
     } else {
-      menu.append(
-        new MenuItem({
-          label: labels.redo,
-          enabled: params.editFlags.canRedo,
-          click: () => webContents.redo(),
-        })
-      )
-      menu.append(
-        new MenuItem({
-          label: labels.undo,
-          enabled: params.editFlags.canUndo,
-          click: () => webContents.undo(),
-        })
-      )
+      append({
+        label: labels.redo,
+        enabled: params.editFlags.canRedo,
+        click: () => webContents.redo(),
+      })
+      append({
+        label: labels.undo,
+        enabled: params.editFlags.canUndo,
+        click: () => webContents.undo(),
+      })
     }
 
-    addSeparator()
+    appendSeparator()
 
-    menu.append(
-      new MenuItem({
-        label: labels.cut,
-        enabled: params.editFlags.canCut,
-        click: () => webContents.cut(),
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.copy,
-        enabled: params.editFlags.canCopy,
-        click: () => webContents.copy(),
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.paste,
-        enabled: params.editFlags.canPaste,
-        click: () => webContents.paste(),
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.delete,
-        enabled: params.editFlags.canDelete,
-        click: () => webContents.delete(),
-      })
-    )
-    addSeparator()
+    append({
+      label: labels.cut,
+      enabled: params.editFlags.canCut,
+      click: () => webContents.cut(),
+    })
+    append({
+      label: labels.copy,
+      enabled: params.editFlags.canCopy,
+      click: () => webContents.copy(),
+    })
+    append({
+      label: labels.paste,
+      enabled: params.editFlags.canPaste,
+      click: () => webContents.paste(),
+    })
+    append({
+      label: labels.delete,
+      enabled: params.editFlags.canDelete,
+      click: () => webContents.delete(),
+    })
+    appendSeparator()
     if (params.editFlags.canSelectAll) {
-      menu.append(
-        new MenuItem({
-          label: labels.selectAll,
-          click: () => webContents.selectAll(),
-        })
-      )
-      addSeparator()
+      append({
+        label: labels.selectAll,
+        click: () => webContents.selectAll(),
+      })
+      appendSeparator()
     }
   } else if (params.selectionText) {
-    menu.append(
-      new MenuItem({
-        label: labels.copy,
-        click: () => {
-          clipboard.writeText(params.selectionText)
-        },
-      })
-    )
-    addSeparator()
+    append({
+      label: labels.copy,
+      click: () => {
+        clipboard.writeText(params.selectionText)
+      },
+    })
+    appendSeparator()
   }
 
   if (menu.items.length === 0) {
@@ -219,56 +190,46 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
     // Also need to properly exit full screen in Blink rather than just exiting
     // the Electron BrowserWindow.
     if (browserWindow?.fullScreen) {
-      menu.append(
-        new MenuItem({
-          label: labels.exitFullScreen,
-          click: () => browserWindow.setFullScreen(false),
-        })
-      )
+      append({
+        label: labels.exitFullScreen,
+        click: () => browserWindow.setFullScreen(false),
+      })
 
-      addSeparator()
+      appendSeparator()
     }
 
-    menu.append(
-      new MenuItem({
-        label: labels.back,
-        enabled: webContents.canGoBack(),
-        click: () => webContents.goBack(),
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.forward,
-        enabled: webContents.canGoForward(),
-        click: () => webContents.goForward(),
-      })
-    )
-    menu.append(
-      new MenuItem({
-        label: labels.reload,
-        click: () => webContents.reload(),
-      })
-    )
-    addSeparator()
+    append({
+      label: labels.back,
+      enabled: webContents.canGoBack(),
+      click: () => webContents.goBack(),
+    })
+    append({
+      label: labels.forward,
+      enabled: webContents.canGoForward(),
+      click: () => webContents.goForward(),
+    })
+    append({
+      label: labels.reload,
+      click: () => webContents.reload(),
+    })
+    appendSeparator()
   }
 
   if (extensionMenuItems) {
     extensionMenuItems.forEach((item) => menu.append(item))
-    if (extensionMenuItems.length > 0) addSeparator()
+    if (extensionMenuItems.length > 0) appendSeparator()
   }
 
-  menu.append(
-    new MenuItem({
-      label: labels.inspect,
-      click: () => {
-        webContents.inspectElement(params.x, params.y)
+  append({
+    label: labels.inspect,
+    click: () => {
+      webContents.inspectElement(params.x, params.y)
 
-        if (!webContents.isDevToolsFocused()) {
-          webContents.devToolsWebContents?.focus()
-        }
-      },
-    })
-  )
+      if (!webContents.isDevToolsFocused()) {
+        webContents.devToolsWebContents?.focus()
+      }
+    },
+  })
 
   return menu
 }
