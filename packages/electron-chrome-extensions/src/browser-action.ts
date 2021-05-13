@@ -10,6 +10,13 @@ export const injectBrowserAction = () => {
     return ipcRenderer.invoke('CHROME_EXT_REMOTE', partition, name, ...args)
   }
 
+  interface ActivateDetails {
+    eventType: string
+    extensionId: string
+    tabId: number
+    anchorRect: { x: number; y: number; width: number; height: number }
+  }
+
   const browserAction = {
     addEventListener(name: string, listener: (...args: any[]) => void) {
       internalEmitter.addListener(name, listener)
@@ -30,13 +37,8 @@ export const injectBrowserAction = () => {
       return state
     },
 
-    activate: (
-      partition: string,
-      extensionId: string,
-      tabId: number,
-      boundingRect: { x: number; y: number; width: number; height: number }
-    ) => {
-      invoke('browserAction.activate', partition, extensionId, tabId, boundingRect)
+    activate: (partition: string, details: ActivateDetails) => {
+      invoke('browserAction.activate', partition, details)
     },
 
     addObserver(partition: string) {
@@ -110,7 +112,9 @@ export const injectBrowserAction = () => {
       constructor() {
         super()
 
+        // TODO: event delegation
         this.addEventListener('click', this.onClick.bind(this))
+        this.addEventListener('contextmenu', this.onContextMenu.bind(this))
 
         const style = document.createElement('style')
         style.textContent = `
@@ -171,15 +175,31 @@ button:hover {
         }
       }
 
-      private onClick() {
+      private activate(event: Event) {
         const rect = this.getBoundingClientRect()
 
-        browserAction.activate(this.partition || DEFAULT_PARTITION, this.id, this.tab, {
-          x: rect.left,
-          y: rect.top,
-          width: rect.width,
-          height: rect.height,
+        browserAction.activate(this.partition || DEFAULT_PARTITION, {
+          eventType: event.type,
+          extensionId: this.id,
+          tabId: this.tab,
+          anchorRect: {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+          },
         })
+      }
+
+      private onClick(event: MouseEvent) {
+        this.activate(event)
+      }
+
+      private onContextMenu(event: MouseEvent) {
+        event.stopImmediatePropagation()
+        event.preventDefault()
+
+        this.activate(event)
       }
 
       private getBadge() {

@@ -57,7 +57,7 @@ Load unpacked extensions into `./extensions` then launch the browser.
 
 ### ❌ Not planned
 
-- [Chrome App APIs](https://developer.chrome.com/apps/api_index)
+- [Chrome Platform App APIs](https://developer.chrome.com/docs/extensions/reference/#platform_apps_apis)
 
 ## License
 

@@ -6,11 +6,39 @@ export interface TabContents extends Electron.WebContents {
   favicon?: string
 }
 
-export const resolveExtensionResource = async (extension: Electron.Extension, uri: string) => {
+export type ContextMenuType =
+  | 'all'
+  | 'page'
+  | 'frame'
+  | 'selection'
+  | 'link'
+  | 'editable'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'launcher'
+  | 'browser_action'
+  | 'page_action'
+  | 'action'
+
+export const getExtensionUrl = (extension: Electron.Extension, uri: string) => {
+  try {
+    return new URL(uri, extension.url).href
+  } catch {}
+}
+
+const resolveExtensionPath = (extension: Electron.Extension, uri: string) => {
   const resPath = path.join(extension.path, uri)
 
   // prevent any parent traversals
   if (!resPath.startsWith(extension.path)) return
+
+  return resPath
+}
+
+export const validateExtensionResource = async (extension: Electron.Extension, uri: string) => {
+  const resPath = resolveExtensionPath(extension, uri)
+  if (!resPath) return
 
   try {
     await fs.stat(resPath)

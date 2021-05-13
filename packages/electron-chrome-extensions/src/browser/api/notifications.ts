@@ -1,7 +1,7 @@
 import { app, Extension, Notification } from 'electron'
 import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
-import { resolveExtensionResource } from './common'
+import { validateExtensionResource } from './common'
 
 enum TemplateType {
   Basic = 'basic',
@@ -107,7 +107,7 @@ export class NotificationsAPI {
       if (url?.protocol === 'data:') {
         icon = opts.iconUrl
       } else {
-        icon = await resolveExtensionResource(extension, opts.iconUrl)
+        icon = await validateExtensionResource(extension, opts.iconUrl)
       }
 
       if (!icon) {

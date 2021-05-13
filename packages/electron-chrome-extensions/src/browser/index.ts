@@ -134,8 +134,7 @@ export class Extensions extends EventEmitter {
   /**
    * Add extensions to be visible as an extension action button.
    *
-   * This is a temporary API which will go away soon after extension registry
-   * events have been backported from Electron v12.
+   * @deprecated Not needed in Electron >=12.
    */
   addExtension(extension: Electron.Extension) {
     this.browserAction.processExtension(this.store.session, extension)
@@ -144,8 +143,7 @@ export class Extensions extends EventEmitter {
   /**
    * Remove extensions from the list of visible extension action buttons.
    *
-   * This is a temporary API which will go away soon after extension registry
-   * events have been backported from Electron v12.
+   * @deprecated Not needed in Electron >=12.
    */
   removeExtension(extension: Electron.Extension) {
     this.browserAction.removeActions(this.store.session, extension.id)

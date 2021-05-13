@@ -1,30 +1,15 @@
-import { app, Extension, ipcMain, Menu, MenuItem } from 'electron'
+import { MenuItem } from 'electron'
 import { MenuItemConstructorOptions } from 'electron/main'
 import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
-import { getIconImage, matchesPattern } from './common'
+import { ContextMenuType, getIconImage, matchesPattern } from './common'
 
 type ContextItemProps = chrome.contextMenus.CreateProperties
 
-type ContextType =
-  | 'all'
-  | 'page'
-  | 'frame'
-  | 'selection'
-  | 'link'
-  | 'editable'
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'launcher'
-  | 'browser_action'
-  | 'page_action'
-  | 'action'
-
 const DEFAULT_CONTEXTS = ['page']
 
-const getContextTypesFromParams = (params: Electron.ContextMenuParams): Set<ContextType> => {
-  const contexts = new Set<ContextType>(['all'])
+const getContextTypesFromParams = (params: Electron.ContextMenuParams): Set<ContextMenuType> => {
+  const contexts = new Set<ContextMenuType>(['all'])
 
   switch (params.mediaType) {
     case 'audio':
@@ -66,6 +51,8 @@ export class ContextMenusAPI {
         this.menus.delete(extension.id)
       }
     })
+
+    this.store.buildMenuItems = this.buildMenuItemsForExtension.bind(this)
   }
 
   private addContextItem(extensionId: string, props: ContextItemProps) {
@@ -103,7 +90,7 @@ export class ContextMenusAPI {
 
       const contexts = props.contexts || DEFAULT_CONTEXTS
       const contextTypes = getContextTypesFromParams(params)
-      const inContext = contexts.some((context) => contextTypes.has(context as ContextType))
+      const inContext = contexts.some((context) => contextTypes.has(context as ContextMenuType))
       if (!inContext) return false
 
       const targetUrl = params.srcURL || params.linkURL
@@ -134,6 +121,26 @@ export class ContextMenusAPI {
           const menuItem = buildMenuItem(extension, props)
           menuItems.push(menuItem)
         }
+      }
+    }
+
+    return menuItems
+  }
+
+  private buildMenuItemsForExtension(extensionId: string, menuType: ContextMenuType) {
+    const menuItems: Electron.MenuItem[] = []
+
+    const extensionItems = this.menus.get(extensionId)
+    if (!extensionItems) return menuItems
+
+    console.log(JSON.stringify(Array.from(extensionItems), null, '  '))
+
+    for (const [, props] of extensionItems) {
+      if (props.contexts?.includes(menuType) || props.contexts?.includes('all')) {
+        const menuItem = new MenuItem({
+          label: props.title,
+        })
+        menuItems.push(menuItem)
       }
     }
 

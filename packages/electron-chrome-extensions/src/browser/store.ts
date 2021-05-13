@@ -1,5 +1,6 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
+import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent, ExtensionRouter, HandlerCallback, HandlerOptions } from './router'
 
@@ -232,5 +233,10 @@ export class ExtensionStore extends EventEmitter {
       this.emit('active-tab-changed', tab, win)
       this.emitPublic('active-tab-changed', tab, win)
     }
+  }
+
+  buildMenuItems(extensionId: string, menuType: ContextMenuType): Electron.MenuItem[] {
+    // This function is overwritten by ContextMenusAPI
+    return []
   }
 }
