@@ -291,7 +291,7 @@ export class BrowserActionAPI {
   }
 
   private activateContextMenu(details: ActivateDetails) {
-    const { extensionId, tabId, anchorRect } = details
+    const { extensionId, anchorRect } = details
 
     const extension = this.store.session.getExtension(extensionId)
     if (!extension) {
@@ -332,8 +332,8 @@ export class BrowserActionAPI {
     })
 
     menu.popup({
-      x: anchorRect.x,
-      y: anchorRect.y + anchorRect.height,
+      x: Math.floor(anchorRect.x),
+      y: Math.floor(anchorRect.y + anchorRect.height),
     })
   }
 
