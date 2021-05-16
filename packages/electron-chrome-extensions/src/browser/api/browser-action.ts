@@ -304,10 +304,11 @@ export class BrowserActionAPI {
 
     append({
       label: extension.name,
-      // TODO: either open to extension-defined webpage or Chrome web store?
-      enabled: true,
       click: () => {
-        this.store.createTab({ url: `https://chrome.google.com/webstore/detail/${extension.id}` })
+        const homePageUrl =
+          extension.manifest.homepage_url ||
+          `https://chrome.google.com/webstore/detail/${extension.id}`
+        this.store.createTab({ url: homePageUrl })
       },
     })
 

@@ -64,27 +64,35 @@ export class ContextMenusAPI {
     contextItems.set(props.id!, props)
   }
 
-  buildMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
-    const buildMenuItem = (extension: Electron.Extension, props: ContextItemProps) => {
-      // TODO: try to get the appropriately sized image before resizing
-      let icon = getIconImage(extension)
-      if (icon) {
-        icon = icon.resize({ width: 16, height: 16 })
-      }
+  private buildMenuItem = (opts: {
+    extension: Electron.Extension
+    props: ContextItemProps
+    webContents: Electron.WebContents
+    params?: Electron.ContextMenuParams
+    showIcon?: boolean
+  }) => {
+    const { extension, props, webContents, params } = opts
 
-      const menuItemOptions: MenuItemConstructorOptions = {
-        id: props.id,
-        type: props.type as any,
-        label: formatTitle(props.title || '', params),
-        icon,
-        click: () => {
-          this.onClicked(extension.id, props.id!, params, webContents)
-        },
-      }
-      const menuItem = new MenuItem(menuItemOptions)
-      return menuItem
+    // TODO: try to get the appropriately sized image before resizing
+    let icon = opts.showIcon ? getIconImage(extension) : undefined
+    if (icon) {
+      icon = icon.resize({ width: 16, height: 16 })
     }
 
+    const menuItemOptions: MenuItemConstructorOptions = {
+      id: props.id,
+      type: props.type as any,
+      label: params ? formatTitle(props.title || '', params) : props.title || '',
+      icon,
+      click: () => {
+        this.onClicked(extension.id, props.id!, webContents, params)
+      },
+    }
+    const menuItem = new MenuItem(menuItemOptions)
+    return menuItem
+  }
+
+  buildMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
     const matchesConditions = (props: ContextItemProps) => {
       if (props.enabled === false) return false
 
@@ -118,7 +126,13 @@ export class ContextMenusAPI {
 
       for (const [, props] of propItems) {
         if (matchesConditions(props)) {
-          const menuItem = buildMenuItem(extension, props)
+          const menuItem = this.buildMenuItem({
+            extension,
+            props,
+            webContents,
+            params,
+            showIcon: true,
+          })
           menuItems.push(menuItem)
         }
       }
@@ -133,14 +147,15 @@ export class ContextMenusAPI {
     const extensionItems = this.menus.get(extensionId)
     if (!extensionItems) return menuItems
 
-    console.log(JSON.stringify(Array.from(extensionItems), null, '  '))
+    const extension = this.store.session.getExtension(extensionId)
+    const activeTab = this.store.getActiveTabOfCurrentWindow()
 
-    for (const [, props] of extensionItems) {
-      if (props.contexts?.includes(menuType) || props.contexts?.includes('all')) {
-        const menuItem = new MenuItem({
-          label: props.title,
-        })
-        menuItems.push(menuItem)
+    if (extension && activeTab) {
+      for (const [, props] of extensionItems) {
+        if (props.contexts?.includes(menuType) || props.contexts?.includes('all')) {
+          const menuItem = this.buildMenuItem({ extension, props, webContents: activeTab })
+          menuItems.push(menuItem)
+        }
       }
     }
 
@@ -184,8 +199,8 @@ export class ContextMenusAPI {
   private onClicked(
     extensionId: string,
     menuItemId: string,
-    params: Electron.ContextMenuParams,
-    webContents: Electron.WebContents
+    webContents: Electron.WebContents,
+    params?: Electron.ContextMenuParams
   ) {
     if (webContents.isDestroyed()) return
 
@@ -195,18 +210,18 @@ export class ContextMenusAPI {
     }
 
     const data: chrome.contextMenus.OnClickData = {
-      selectionText: params.selectionText,
+      selectionText: params?.selectionText,
       checked: false, // TODO
       menuItemId,
       frameId: -1, // TODO: match frameURL with webFrameMain in Electron 12
-      frameUrl: params.frameURL,
-      editable: params.isEditable,
-      mediaType: params.mediaType,
+      frameUrl: params?.frameURL,
+      editable: params?.isEditable || false,
+      mediaType: params?.mediaType,
       wasChecked: false, // TODO
-      pageUrl: params.pageURL,
-      linkUrl: params.linkURL,
+      pageUrl: params?.pageURL as any, // types are inaccurate
+      linkUrl: params?.linkURL,
       parentMenuItemId: -1, // TODO
-      srcUrl: params.srcURL,
+      srcUrl: params?.srcURL,
     }
 
     this.store.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
