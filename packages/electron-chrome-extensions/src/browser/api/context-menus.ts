@@ -50,7 +50,7 @@ const matchesConditions = (
     documentUrl?: string
   }
 ) => {
-  if (props.enabled === false) return false
+  if (props.visible === false) return false
 
   const { contextTypes, targetUrl, documentUrl } = conditions
 
@@ -117,6 +117,7 @@ export class ContextMenusAPI {
       type: props.type as any,
       label: params ? formatTitle(props.title || '', params) : props.title || '',
       icon,
+      enabled: props.enabled,
       click: () => {
         this.onClicked(extension.id, props.id, webContents, params)
       },
