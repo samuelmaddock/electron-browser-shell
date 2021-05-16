@@ -258,6 +258,11 @@ Although certain APIs may not be implemented, some methods and properties are st
 - [ ] chrome.browserAction.disable
 - [x] chrome.browserAction.onClicked
 
+### [`chrome.commands`](https://developer.chrome.com/extensions/commands)
+
+- [ ] chrome.commands.getAll
+- [ ] chrome.commands.onCommand
+
 ### [`chrome.cookies`](https://developer.chrome.com/extensions/cookies)
 
 - [x] chrome.cookies.get
