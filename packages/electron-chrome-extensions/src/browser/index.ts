@@ -128,7 +128,7 @@ export class Extensions extends EventEmitter {
    * @see https://developer.chrome.com/extensions/contextMenus
    */
   getContextMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
-    return this.contextMenus.buildMenuItems(webContents, params)
+    return this.contextMenus.buildMenuItemsForParams(webContents, params)
   }
 
   /**
