@@ -47,7 +47,7 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     customSession = session.fromPartition(partition)
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 
-    extensions = new Extensions({ session: customSession })
+    extensions = Extensions.fromSession(customSession) || new Extensions({ session: customSession })
 
     // TODO: Remove in Electron 12 when we have extension lifecycle events
     extensions.addExtension(extension)

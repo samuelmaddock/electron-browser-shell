@@ -25,10 +25,17 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   modulePath?: string
 }
 
+const sessionMap = new WeakMap<Electron.Session, Extensions>()
+
 /**
  * Provides an implementation of various Chrome extension APIs to a session.
  */
 export class Extensions extends EventEmitter {
+  /** Retrieve an instance of this class associated with the given session. */
+  static fromSession(session: Electron.Session) {
+    return sessionMap.get(session)
+  }
+
   private modulePath: string
   private store: ExtensionStore
 
@@ -46,6 +53,12 @@ export class Extensions extends EventEmitter {
     super()
 
     const { session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
+
+    if (sessionMap.has(session)) {
+      throw new Error(`Extensions instance already exists for the given session`)
+    }
+
+    sessionMap.set(session, this)
 
     this.modulePath = modulePath || path.join(__dirname, '..')
     this.store = new ExtensionStore(this, session, impl)
