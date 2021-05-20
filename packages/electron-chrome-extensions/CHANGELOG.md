@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [3.6.0] - 2021-05-20
+
+### Added
+
+- Initial `chrome.contextMenu` support when right-clicking browser actions.
+- Support `chrome.contextMenu` entries with `parentId` set.
+- Added `ElectronChromeExtensions.fromSession()` to get an existing instance.
+
+### Changed
+
+- Renamed `Extensions` class to `ElectronChromeExtensions`.
+
+### Fixed
+
+- Disabled `chrome.contextMenu` items now appear disabled instead of being hidden.
+
 ## [3.5.0] - 2021-05-09
 
 ### Added
@@ -87,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.6.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.5.0...electron-chrome-extensions@3.6.0
 [3.5.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.4.0...electron-chrome-extensions@3.5.0
 [3.4.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.3.0...electron-chrome-extensions@3.4.0
 [3.3.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.2.0...electron-chrome-extensions@3.3.0

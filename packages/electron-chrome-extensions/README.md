@@ -196,6 +196,8 @@ Emitted when a popup is created by the `chrome.browserAction` API.
 
 ### Element: `<browser-action-list>`
 
+<img src="https://raw.githubusercontent.com/samuelmaddock/electron-browser-shell/master/packages/electron-chrome-extensions/screenshot-browser-action.png" width="438">
+
 The `<browser-action-list>` element provides a row of [browser actions](https://developer.chrome.com/extensions/browserAction) which may be pressed to activate the `chrome.browserAction.onClicked` event or display the extension popup.
 
 To enable the element on a webpage, you must define a preload script which injects the API on specific pages.
