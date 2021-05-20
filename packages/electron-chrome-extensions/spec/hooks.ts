@@ -36,21 +36,20 @@ export const useServer = () => {
 const fixtures = path.join(__dirname, 'fixtures')
 
 export const useExtensionBrowser = (opts: { url: () => string; extensionName: string }) => {
-  const partition = `persist:${uuid()}`
-
   let w: Electron.BrowserWindow
   let extensions: Extensions
   let extension: Extension
+  let partitionName: string
+  let partition: string
   let customSession: Electron.Session
 
   beforeEach(async () => {
+    partitionName = `crx-${uuid()}`
+    partition = `persist:${partitionName}`
     customSession = session.fromPartition(partition)
+    extensions = new Extensions({ session: customSession })
+
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
-
-    extensions = Extensions.fromSession(customSession) || new Extensions({ session: customSession })
-
-    // TODO: Remove in Electron 12 when we have extension lifecycle events
-    extensions.addExtension(extension)
 
     w = new BrowserWindow({
       show: false,
@@ -60,6 +59,12 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     extensions.addTab(w.webContents, w)
 
     await w.loadURL(opts.url())
+  })
+
+  afterEach(() => {
+    if (!w.isDestroyed()) {
+      w.destroy()
+    }
   })
 
   return {
@@ -75,7 +80,9 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     get session() {
       return customSession
     },
-    partition,
+    get partition() {
+      return partition
+    },
 
     async exec(method: string, ...args: any[]) {
       const p = emittedOnce(ipcMain, 'success')

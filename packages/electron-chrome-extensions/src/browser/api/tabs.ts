@@ -74,7 +74,8 @@ export class TabsAPI {
   private createTabDetails(tab: TabContents) {
     const tabId = tab.id
     const activeTab = this.store.getActiveTabFromWebContents(tab)
-    const win = this.store.tabToWindow.get(tab)
+    let win = this.store.tabToWindow.get(tab)
+    if (win?.isDestroyed()) win = undefined
     const [width = 0, height = 0] = win ? win.getSize() : []
 
     const details: chrome.tabs.Tab = {

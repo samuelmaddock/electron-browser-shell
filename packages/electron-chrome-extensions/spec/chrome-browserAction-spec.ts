@@ -21,11 +21,18 @@ describe('chrome.browserAction', () => {
     extension: Extension,
     tabId: number = -1
   ) => {
+    const details = {
+      eventType: 'click',
+      extensionId: extension.id,
+      tabId,
+      anchorRect: defaultAnchorRect,
+    }
+
     // TODO: use preload script with `injectBrowserAction()`
     await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', '${
-        extension.id
-      }', ${tabId}, ${JSON.stringify(defaultAnchorRect)})`
+      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', ${JSON.stringify(
+        details
+      )})`
     )
   }
 
@@ -36,7 +43,7 @@ describe('chrome.browserAction', () => {
     })
 
     it('supports cross-session communication', async () => {
-      const otherSession = session.fromPartition(`persist:${uuid()}`)
+      const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
       const view = new BrowserView({
         webPreferences: { session: otherSession, nodeIntegration: true, contextIsolation: false },
       })
