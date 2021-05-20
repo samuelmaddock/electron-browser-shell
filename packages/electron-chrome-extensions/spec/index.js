@@ -68,7 +68,14 @@ protocol.registerSchemesAsPrivileged([
 const cleanupTestSessions = async () => {
   const sessionsPath = path.join(app.getPath('userData'), 'Partitions')
 
-  let sessions = await fs.readdir(sessionsPath)
+  let sessions
+
+  try {
+    sessions = await fs.readdir(sessionsPath)
+  } catch (e) {
+    return // dir doesn't exist
+  }
+
   sessions = sessions.filter((session) => session.startsWith('crx-'))
   if (sessions.length === 0) return
 
