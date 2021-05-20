@@ -2,7 +2,7 @@ import { ipcMain, session, BrowserWindow, app, Extension } from 'electron'
 import * as http from 'http'
 import * as path from 'path'
 import { AddressInfo } from 'net'
-import { Extensions } from '../dist'
+import { ElectronChromeExtensions } from '../dist'
 import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
 
@@ -37,7 +37,7 @@ const fixtures = path.join(__dirname, 'fixtures')
 
 export const useExtensionBrowser = (opts: { url: () => string; extensionName: string }) => {
   let w: Electron.BrowserWindow
-  let extensions: Extensions
+  let extensions: ElectronChromeExtensions
   let extension: Extension
   let partitionName: string
   let partition: string
@@ -47,7 +47,7 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     partitionName = `crx-${uuid()}`
     partition = `persist:${partitionName}`
     customSession = session.fromPartition(partition)
-    extensions = new Extensions({ session: customSession })
+    extensions = new ElectronChromeExtensions({ session: customSession })
 
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 

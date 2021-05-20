@@ -25,12 +25,12 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   modulePath?: string
 }
 
-const sessionMap = new WeakMap<Electron.Session, Extensions>()
+const sessionMap = new WeakMap<Electron.Session, ElectronChromeExtensions>()
 
 /**
  * Provides an implementation of various Chrome extension APIs to a session.
  */
-export class Extensions extends EventEmitter {
+export class ElectronChromeExtensions extends EventEmitter {
   /** Retrieve an instance of this class associated with the given session. */
   static fromSession(session: Electron.Session) {
     return sessionMap.get(session)
@@ -162,3 +162,8 @@ export class Extensions extends EventEmitter {
     this.browserAction.removeActions(this.store.session, extension.id)
   }
 }
+
+/**
+ * @deprecated Use `ElectronChromeExtensions` instead.
+ */
+export const Extensions = ElectronChromeExtensions

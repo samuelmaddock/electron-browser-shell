@@ -26,12 +26,12 @@ Simple browser using Electron's [default session](https://www.electronjs.org/doc
 
 ```js
 const { app, BrowserWindow } = require('electron')
-const { Extensions } = require('electron-chrome-extensions')
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
 (async function main() {
   await app.whenReady()
 
-  const extensions = new Extensions()
+  const extensions = new ElectronChromeExtensions()
   const browserWindow = new BrowserWindow()
 
   // Adds the active tab of the browser
@@ -50,14 +50,14 @@ Multi-tab browser with full support for Chrome extension APIs.
 
 ```js
 const { app, session, BrowserWindow } = require('electron')
-const { Extensions } = require('electron-chrome-extensions')
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
 (async function main() {
   await app.whenReady()
 
   const browserSession = session.fromPartition('persist:custom')
 
-  const extensions = new Extensions({
+  const extensions = new ElectronChromeExtensions({
     session: browserSession,
     createTab(details) {
       // Optionally implemented for chrome.tabs.create support
@@ -93,11 +93,11 @@ const { Extensions } = require('electron-chrome-extensions')
 
 ## API
 
-### Class: Extensions
+### Class: ElectronChromeExtensions
 
 > Create browser APIs for handling Chrome extension requests.
 
-#### `new Extensions([options])`
+#### `new ElectronChromeExtensions([options])`
 
 * `options` Object (optional)
   * `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
@@ -124,7 +124,7 @@ const { Extensions } = require('electron-chrome-extensions')
     * `browserWindow` Electron.BrowserWindow
 
 ```ts
-new Extensions({
+new ElectronChromeExtensions({
   createTab(details) {
     const tab = myTabApi.createTab()
     if (details.url) {

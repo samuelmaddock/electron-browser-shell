@@ -3,7 +3,7 @@ const { promises: fs } = require('fs')
 const { app, session, BrowserWindow } = require('electron')
 
 const { Tabs } = require('./tabs')
-const { Extensions } = require('electron-chrome-extensions')
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 
@@ -185,7 +185,7 @@ class Browser {
     const browserPreload = path.join(__dirname, '../preload.js')
     this.session.setPreloads([browserPreload])
 
-    this.extensions = new Extensions({
+    this.extensions = new ElectronChromeExtensions({
       session: this.session,
 
       createTab: (details) => {

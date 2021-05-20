@@ -1,18 +1,18 @@
 import { expect } from 'chai'
 import { session } from 'electron'
-import { Extensions } from '../dist'
+import { ElectronChromeExtensions } from '../dist'
 
 describe('Extensions', () => {
   const testSession = session.fromPartition('test-extensions')
-  const extensions = new Extensions({ session: testSession })
+  const extensions = new ElectronChromeExtensions({ session: testSession })
 
   it('retrieves the instance with fromSession()', () => {
-    expect(Extensions.fromSession(testSession)).to.equal(extensions)
+    expect(ElectronChromeExtensions.fromSession(testSession)).to.equal(extensions)
   })
 
   it('throws when two instances are created for session', () => {
     expect(() => {
-      new Extensions({ session: testSession })
+      new ElectronChromeExtensions({ session: testSession })
     }).to.throw()
   })
 })
