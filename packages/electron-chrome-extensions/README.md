@@ -360,7 +360,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 - [x] chrome.webNavigation.getAllFrames (Electron 12+)
 - [x] chrome.webNavigation.onBeforeNavigate
 - [x] chrome.webNavigation.onCommitted
-- [x] chrome.webNavigation.onDOMContentLoaded
+- [x] chrome.webNavigation.onDOMContentLoaded (Electron 13+ for iframes)
 - [x] chrome.webNavigation.onCompleted
 - [ ] chrome.webNavigation.onErrorOccurred
 - [x] chrome.webNavigation.onCreateNavigationTarget
@@ -392,7 +392,6 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 ### electron
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
 - Chrome extensions are not supported in non-persistent/incognito sessions.
-- `chrome.webNavigation.onDOMContentLoaded` is only emitted for the top frame until [support for iframes](https://github.com/electron/electron/issues/27344) is added.
 
 ## License
 

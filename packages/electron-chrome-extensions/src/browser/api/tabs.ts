@@ -155,8 +155,9 @@ export class TabsAPI {
     if (!tab) return
 
     // TODO: move to webFrame in renderer?
+    // TODO: need to support details.frameId
     if (details.code) {
-      tab.insertCSS(details.code)
+      tab.insertCSS(details.code, {})
     }
   }
 
