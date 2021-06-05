@@ -71,6 +71,9 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     get window() {
       return w
     },
+    get webContents() {
+      return w.webContents
+    },
     get extensions() {
       return extensions
     },
