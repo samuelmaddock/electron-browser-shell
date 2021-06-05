@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-extensions",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
@@ -15,7 +15,7 @@
   ],
   "repository": "https://github.com/samuelmaddock/electron-browser-shell",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
-  "license": "GPL-3.0",
+  "license": "SEE LICENSE IN LICENSE.md",
   "dependencies": {
     "debug": "^4.3.1"
   },
