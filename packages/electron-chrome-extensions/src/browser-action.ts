@@ -115,45 +115,6 @@ export const injectBrowserAction = () => {
         // TODO: event delegation
         this.addEventListener('click', this.onClick.bind(this))
         this.addEventListener('contextmenu', this.onContextMenu.bind(this))
-
-        const style = document.createElement('style')
-        style.textContent = `
-button {
-  width: 28px;
-  height: 28px;
-  background-color: transparent;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 70%;
-  border: none;
-  border-radius: 4px;
-  padding: 0;
-  position: relative;
-  outline: none;
-}
-
-button:hover {
-  background-color: var(--browser-action-hover-bg, rgba(255, 255, 255, 0.3));
-}
-
-.badge {
-  box-shadow: 0px 0px 1px 1px var(--browser-action-badge-outline, #444);
-  box-sizing: border-box;
-  max-width: 100%;
-  height: 12px;
-  padding: 0 2px;
-  border-radius: 2px;
-  position: absolute;
-  bottom: 1px;
-  right: 0;
-  pointer-events: none;
-  line-height: 1.5;
-  font-size: 9px;
-  font-weight: 400;
-  overflow: hidden;
-  white-space: nowrap;
-}`
-        this.appendChild(style)
       }
 
       connectedCallback() {
@@ -207,6 +168,7 @@ button:hover {
         if (!badge) {
           this.badge = badge = document.createElement('div')
           badge.className = 'badge'
+          ;(badge as any).part = 'badge'
           this.appendChild(badge)
         }
         return badge
@@ -291,6 +253,42 @@ button:hover {
   display: flex;
   flex-direction: row;
   gap: 5px;
+}
+
+.action {
+  width: 28px;
+  height: 28px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 70%;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  position: relative;
+  outline: none;
+}
+
+.action:hover {
+  background-color: var(--browser-action-hover-bg, rgba(255, 255, 255, 0.3));
+}
+
+.badge {
+  box-shadow: 0px 0px 1px 1px var(--browser-action-badge-outline, #444);
+  box-sizing: border-box;
+  max-width: 100%;
+  height: 12px;
+  padding: 0 2px;
+  border-radius: 2px;
+  position: absolute;
+  bottom: 1px;
+  right: 0;
+  pointer-events: none;
+  line-height: 1.5;
+  font-size: 9px;
+  font-weight: 400;
+  overflow: hidden;
+  white-space: nowrap;
 }`
         shadowRoot.appendChild(style)
       }
@@ -352,6 +350,8 @@ button:hover {
               is: 'browser-action',
             }) as BrowserActionElement
             node.id = action.id
+            node.className = 'action'
+            ;(node as any).part = 'action'
             browserActionNode = node
             this.shadowRoot?.appendChild(browserActionNode)
           }

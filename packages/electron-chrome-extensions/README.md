@@ -236,6 +236,31 @@ Add the `<browser-action-list>` element with attributes appropriate for your app
 <browser-action-list partition="persist:custom" tab="1"></browser-action-list>
 ```
 
+##### Custom CSS
+
+The `<browser-action-list>` element is a [Web Component](https://developer.mozilla.org/en-US/docs/Web/Web_Components). Its styles are encapsulated within a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM). However, it's still possible to customize its appearance using the [CSS shadow parts](https://developer.mozilla.org/en-US/docs/Web/CSS/::part) selector `::part(name)`.
+
+Accessible parts include `action` and `badge`.
+
+```css
+/* Layout action buttons vertically. */
+browser-action-list {
+  flex-direction: column;
+}
+
+/* Modify size of action buttons. */
+browser-action-list::part(action) {
+  width: 16px;
+  height: 16px;
+}
+
+/* Modify hover styles of action buttons. */
+browser-action-list::part(action):hover {
+  background-color: red;
+  border-radius: 0;
+}
+```
+
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)
