@@ -6,11 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [3.7.0] - 2021-06-05
+
+### Added
+
+- Exposed `action` and `badge` CSS shadow parts for customizing `<browser-action-list>` element.
+
+### Fixed
+
+- Calling `ElectronChromeExtensions.getContextMenuItems()` threw an error when no `browser_action` was defined in an extension's manifest file.
+
 ## [3.6.1] - 2021-06-05
 
 ### Added
 
-- Include license files in NPM package.
+- Included license files in NPM package.
 
 ## [3.6.0] - 2021-05-20
 
@@ -109,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.7.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.6.1...electron-chrome-extensions@3.7.0
 [3.6.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.6.0...electron-chrome-extensions@3.6.1
 [3.6.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.5.0...electron-chrome-extensions@3.6.0
 [3.5.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.4.0...electron-chrome-extensions@3.5.0
