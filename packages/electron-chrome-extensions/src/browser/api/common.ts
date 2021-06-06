@@ -21,6 +21,15 @@ export type ContextMenuType =
   | 'page_action'
   | 'action'
 
+/**
+ * Get the extension's properly typed Manifest.
+ *
+ * I can't seem to get TS's merged type declarations working so I'm using this
+ * instead for now.
+ */
+export const getExtensionManifest = (extension: Electron.Extension): chrome.runtime.Manifest =>
+  extension.manifest
+
 export const getExtensionUrl = (extension: Electron.Extension, uri: string) => {
   try {
     return new URL(uri, extension.url).href
@@ -50,8 +59,8 @@ export const validateExtensionResource = async (extension: Electron.Extension, u
 }
 
 export const getIconPath = (extension: Electron.Extension) => {
-  const { browser_action, icons } = extension.manifest
-  const { default_icon } = browser_action
+  const { browser_action, icons } = getExtensionManifest(extension)
+  const { default_icon } = browser_action || {}
 
   if (typeof default_icon === 'string') {
     const iconPath = path.join(extension.path, default_icon)

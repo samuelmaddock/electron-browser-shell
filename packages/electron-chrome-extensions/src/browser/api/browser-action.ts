@@ -2,7 +2,7 @@ import { Menu, MenuItem, session } from 'electron'
 import { PopupView } from '../popup'
 import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
-import { getIconImage, getExtensionUrl } from './common'
+import { getIconImage, getExtensionUrl, getExtensionManifest } from './common'
 
 const debug = require('debug')('electron-chrome-extensions:browserAction')
 
@@ -28,7 +28,7 @@ interface ActivateDetails {
 }
 
 const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionAction | undefined => {
-  const manifest = extension.manifest as chrome.runtime.Manifest
+  const manifest = getExtensionManifest(extension)
   const { browser_action } = manifest
   if (typeof browser_action === 'object') {
     const action: ExtensionAction = {}
@@ -298,6 +298,7 @@ export class BrowserActionAPI {
       throw new Error(`Unregistered extension '${extensionId}'`)
     }
 
+    const manifest = getExtensionManifest(extension)
     const menu = new Menu()
     const append = (opts: Electron.MenuItemConstructorOptions) => menu.append(new MenuItem(opts))
     const appendSeparator = () => menu.append(new MenuItem({ type: 'separator' }))
@@ -306,8 +307,7 @@ export class BrowserActionAPI {
       label: extension.name,
       click: () => {
         const homePageUrl =
-          extension.manifest.homepage_url ||
-          `https://chrome.google.com/webstore/detail/${extension.id}`
+          manifest.homepage_url || `https://chrome.google.com/webstore/detail/${extension.id}`
         this.store.createTab({ url: homePageUrl })
       },
     })
@@ -320,7 +320,7 @@ export class BrowserActionAPI {
       appendSeparator()
     }
 
-    const optionsPage = extension.manifest.options_page || extension.manifest.options_ui?.page
+    const optionsPage = manifest.options_page || manifest.options_ui?.page
     const optionsPageUrl = optionsPage ? getExtensionUrl(extension, optionsPage) : undefined
 
     append({

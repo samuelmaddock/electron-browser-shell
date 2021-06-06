@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { EventEmitter } from 'events'
 import { ExtensionEvent } from '../router'
 import { ExtensionStore } from '../store'
+import { getExtensionManifest } from './common'
 
 export class RuntimeAPI extends EventEmitter {
   constructor(private store: ExtensionStore) {
@@ -13,7 +14,7 @@ export class RuntimeAPI extends EventEmitter {
     // TODO: options page shouldn't appear in Tabs API
     // https://developer.chrome.com/extensions/options#tabs-api
 
-    const manifest = extension.manifest as chrome.runtime.Manifest
+    const manifest = getExtensionManifest(extension)
 
     if (manifest.options_ui) {
       // Embedded option not support (!options_ui.open_in_new_tab)
