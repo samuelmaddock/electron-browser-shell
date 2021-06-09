@@ -2,7 +2,7 @@
 
 > Chrome extension API support for Electron.
 
-Electron provides [basic support](https://www.electronjs.org/docs/api/extensions) for Chrome extensions out of the box. However, it only supports a subset of APIs with a focus on DevTools. Concepts like tabs, popups, and extension actions aren't known to Electron.
+Electron provides [basic support for Chrome extensions](https://www.electronjs.org/docs/api/extensions)  out of the box. However, it only supports a subset of APIs with a focus on DevTools. Concepts like tabs, popups, and extension actions aren't known to Electron.
 
 This library aims to bring extension support in Electron up to the level you'd come to expect from a browser like Google Chrome. API behavior is customizable so you can define how to handle things like tab or window creation specific to your application's needs.
 
@@ -95,7 +95,7 @@ const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
 ### Class: ElectronChromeExtensions
 
-> Create browser APIs for handling Chrome extension requests.
+> Create main process handler for Chrome extension APIs.
 
 #### `new ElectronChromeExtensions([options])`
 
@@ -166,23 +166,6 @@ Notify the extension system that a tab has been selected as the active tab.
 
 Returns [`Electron.MenuItem[]`](https://www.electronjs.org/docs/api/menu-item#class-menuitem) -
 An array of all extension context menu items given the context.
-
-##### `extensions.addExtension(extension)`
-
-- `extension` Electron.Extension
-
-Adds an extension to be tracked by the `chrome.browserAction` API. This allows
-the extension to appear as a button in the browser top bar.
-
-_Calling this method is not required in Electron >=12._
-
-##### `extensions.removeExtension(extension)`
-
-- `extension` Electron.Extension
-
-Remove an extension tracked by the `chrome.browserAction` API.
-
-_Calling this method is not required in Electron >=12._
 
 #### Instance Events
 
@@ -264,8 +247,6 @@ browser-action-list::part(action):hover {
 ## Supported `chrome.*` APIs
 
 The following APIs are supported, in addition to [those already built-in to Electron.](https://www.electronjs.org/docs/api/extensions)
-
-Although certain APIs may not be implemented, some methods and properties are still defined as noops.
 
 <details>
 <summary>Click to reveal supported APIs</summary>
@@ -411,7 +392,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 ## Limitations
 
 ### electron-chrome-extensions
-- Electron v12 is recommended. Minimum support requires Electron v9.
+- The latest version of Electron is recommended. Minimum support requires Electron v9.
 - Chrome's Manifest V3 extensions are not yet supported.
 
 ### electron
