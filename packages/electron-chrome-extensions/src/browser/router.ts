@@ -155,4 +155,9 @@ export class ExtensionRouter {
       this.handle(ctx.session, name, callback, opts)
     }
   }
+
+  sendEvent(host: Electron.WebContents, eventName: string, ...args: any[]) {
+    const ipcName = `CRX_${eventName}`
+    host.send(ipcName, ...args)
+  }
 }

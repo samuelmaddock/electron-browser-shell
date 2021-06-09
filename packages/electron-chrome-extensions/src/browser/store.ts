@@ -41,7 +41,7 @@ export class ExtensionStore extends EventEmitter {
         console.error(`Unable to send '${eventName}' to extension host`)
         return
       }
-      host.send(eventName, ...args)
+      this.router.sendEvent(host, eventName, ...args)
     })
   }
 
@@ -51,7 +51,7 @@ export class ExtensionStore extends EventEmitter {
       (host) => !host.isDestroyed() && host.getURL().startsWith(extensionPath)
     )
     if (extensionHost) {
-      extensionHost.send(eventName, ...args)
+      this.router.sendEvent(extensionHost, eventName, ...args)
     } else {
       // TODO: need to wake up terminated lazy background hosts
       throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)

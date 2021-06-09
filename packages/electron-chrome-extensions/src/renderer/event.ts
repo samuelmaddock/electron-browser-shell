@@ -1,7 +1,9 @@
 import { ipcRenderer } from 'electron'
 
+const formatIpcName = (name: string) => `CRX_${name}`
+
 export const addExtensionListener = (name: string, callback: Function) => {
-  ipcRenderer.addListener(name, function (event, ...args) {
+  ipcRenderer.addListener(formatIpcName(name), function (event, ...args) {
     if (process.env.NODE_ENV === 'development') {
       console.log(name, '(result)', ...args)
     }
@@ -10,5 +12,5 @@ export const addExtensionListener = (name: string, callback: Function) => {
 }
 
 export const removeExtensionListener = (name: string, callback: any) => {
-  ipcRenderer.removeListener(name, callback)
+  ipcRenderer.removeListener(formatIpcName(name), callback)
 }
