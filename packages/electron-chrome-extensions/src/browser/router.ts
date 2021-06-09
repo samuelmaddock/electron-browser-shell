@@ -1,4 +1,5 @@
 import { Extension, ipcMain, session, Session, WebContents } from 'electron'
+import { ExtensionContext } from './context'
 
 const createDebug = require('debug')
 
@@ -133,7 +134,12 @@ export class ExtensionRouter {
     return this.sessionMap.get(session)!
   }
 
-  handle(session: Session, name: string, callback: HandlerCallback, opts?: HandlerOptions): void {
+  private handle(
+    session: Session,
+    name: string,
+    callback: HandlerCallback,
+    opts?: HandlerOptions
+  ): void {
     const handlers = this.getSessionHandlers(session)
 
     handlers.set(name, {
@@ -141,5 +147,12 @@ export class ExtensionRouter {
       extensionContext: typeof opts?.extensionContext === 'boolean' ? opts.extensionContext : true,
       allowRemote: typeof opts?.allowRemote === 'boolean' ? opts.allowRemote : false,
     })
+  }
+
+  /** Returns a callback to register API handlers for the given context. */
+  apiHandler(ctx: ExtensionContext) {
+    return (name: string, callback: HandlerCallback, opts?: HandlerOptions) => {
+      this.handle(ctx.session, name, callback, opts)
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { app, Extension, Notification } from 'electron'
+import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 import { validateExtensionResource } from './common'
 
 enum TemplateType {
@@ -48,15 +48,16 @@ const stripScopeFromIdentifier = (id: string) => {
 export class NotificationsAPI {
   private registry = new Map<string, Notification>()
 
-  constructor(private store: ExtensionStore) {
-    store.handle('notifications.clear', this.clear)
-    store.handle('notifications.create', this.create)
-    store.handle('notifications.getAll', this.getAll)
-    store.handle('notifications.getPermissionLevel', this.getPermissionLevel)
-    store.handle('notifications.update', this.update)
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+    handle('notifications.clear', this.clear)
+    handle('notifications.create', this.create)
+    handle('notifications.getAll', this.getAll)
+    handle('notifications.getPermissionLevel', this.getPermissionLevel)
+    handle('notifications.update', this.update)
 
     // TODO: remove 'any' when project is upgraded to Electron 12
-    this.store.session.on('extension-unloaded' as any, (event, extension: any) => {
+    this.ctx.session.on('extension-unloaded' as any, (event, extension: any) => {
       for (const [key, notification] of this.registry) {
         if (key.startsWith(extension.id)) {
           notification.close()
@@ -130,12 +131,12 @@ export class NotificationsAPI {
     this.registry.set(notificationId, notification)
 
     notification.on('click', () => {
-      this.store.sendToExtensionHost(extension.id, 'notifications.onClicked', id)
+      this.ctx.store.sendToExtensionHost(extension.id, 'notifications.onClicked', id)
     })
 
     notification.once('close', () => {
       const byUser = true // TODO
-      this.store.sendToExtensionHost(extension.id, 'notifications.onClosed', id, byUser)
+      this.ctx.store.sendToExtensionHost(extension.id, 'notifications.onClosed', id, byUser)
       this.registry.delete(notificationId)
     })
 

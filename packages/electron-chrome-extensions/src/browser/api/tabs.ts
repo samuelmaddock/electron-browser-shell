@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
+import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 import { TabContents } from './common'
 import { WindowsAPI } from './windows'
 
@@ -11,20 +11,21 @@ export class TabsAPI {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
-  constructor(private store: ExtensionStore) {
-    store.handle('tabs.get', this.get.bind(this))
-    store.handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
-    store.handle('tabs.getCurrent', this.getCurrent.bind(this))
-    store.handle('tabs.create', this.create.bind(this))
-    store.handle('tabs.insertCSS', this.insertCSS.bind(this))
-    store.handle('tabs.query', this.query.bind(this))
-    store.handle('tabs.reload', this.reload.bind(this))
-    store.handle('tabs.update', this.update.bind(this))
-    store.handle('tabs.remove', this.remove.bind(this))
-    store.handle('tabs.goForward', this.goForward.bind(this))
-    store.handle('tabs.goBack', this.goBack.bind(this))
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+    handle('tabs.get', this.get.bind(this))
+    handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
+    handle('tabs.getCurrent', this.getCurrent.bind(this))
+    handle('tabs.create', this.create.bind(this))
+    handle('tabs.insertCSS', this.insertCSS.bind(this))
+    handle('tabs.query', this.query.bind(this))
+    handle('tabs.reload', this.reload.bind(this))
+    handle('tabs.update', this.update.bind(this))
+    handle('tabs.remove', this.remove.bind(this))
+    handle('tabs.goForward', this.goForward.bind(this))
+    handle('tabs.goBack', this.goBack.bind(this))
 
-    store.on('tab-added', this.observeTab.bind(this))
+    this.ctx.store.on('tab-added', this.observeTab.bind(this))
   }
 
   private observeTab(tab: TabContents) {
@@ -61,7 +62,7 @@ export class TabsAPI {
       })
       tab.off('page-favicon-updated', faviconHandler)
 
-      this.store.removeTab(tab)
+      this.ctx.store.removeTab(tab)
       this.onRemoved(tabId)
     })
 
@@ -73,8 +74,8 @@ export class TabsAPI {
 
   private createTabDetails(tab: TabContents) {
     const tabId = tab.id
-    const activeTab = this.store.getActiveTabFromWebContents(tab)
-    let win = this.store.tabToWindow.get(tab)
+    const activeTab = this.ctx.store.getActiveTabFromWebContents(tab)
+    let win = this.ctx.store.tabToWindow.get(tab)
     if (win?.isDestroyed()) win = undefined
     const [width = 0, height = 0] = win ? win.getSize() : []
 
@@ -99,35 +100,35 @@ export class TabsAPI {
       windowId: win ? win.id : -1,
     }
 
-    if (typeof this.store.impl.assignTabDetails === 'function') {
-      this.store.impl.assignTabDetails(details, tab)
+    if (typeof this.ctx.store.impl.assignTabDetails === 'function') {
+      this.ctx.store.impl.assignTabDetails(details, tab)
     }
 
-    this.store.tabDetailsCache.set(tab.id, details)
+    this.ctx.store.tabDetailsCache.set(tab.id, details)
     return details
   }
 
   private getTabDetails(tab: TabContents) {
-    if (this.store.tabDetailsCache.has(tab.id)) {
-      return this.store.tabDetailsCache.get(tab.id)
+    if (this.ctx.store.tabDetailsCache.has(tab.id)) {
+      return this.ctx.store.tabDetailsCache.get(tab.id)
     }
     const details = this.createTabDetails(tab)
     return details
   }
 
   private get(event: ExtensionEvent, tabId: number) {
-    const tab = this.store.getTabById(tabId)
+    const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
     return this.getTabDetails(tab)
   }
 
   private getAllInWindow(event: ExtensionEvent, windowId: number = TabsAPI.WINDOW_ID_CURRENT) {
-    if (windowId === TabsAPI.WINDOW_ID_CURRENT) windowId = this.store.lastFocusedWindowId!
+    if (windowId === TabsAPI.WINDOW_ID_CURRENT) windowId = this.ctx.store.lastFocusedWindowId!
 
-    const tabs = Array.from(this.store.tabs).filter((tab) => {
+    const tabs = Array.from(this.ctx.store.tabs).filter((tab) => {
       if (tab.isDestroyed()) return false
 
-      const browserWindow = this.store.tabToWindow.get(tab)
+      const browserWindow = this.ctx.store.tabToWindow.get(tab)
       if (!browserWindow || browserWindow.isDestroyed()) return
 
       return browserWindow.id === windowId
@@ -137,12 +138,12 @@ export class TabsAPI {
   }
 
   private getCurrent(event: ExtensionEvent) {
-    const tab = this.store.getActiveTabFromWebContents(event.sender)
+    const tab = this.ctx.store.getActiveTabFromWebContents(event.sender)
     return tab ? this.getTabDetails(tab) : undefined
   }
 
   private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
-    const tab = await this.store.createTab(details)
+    const tab = await this.ctx.store.createTab(details)
     const tabDetails = this.getTabDetails(tab)
     if (details.active) {
       queueMicrotask(() => this.onActivated(tab.id))
@@ -151,7 +152,7 @@ export class TabsAPI {
   }
 
   private insertCSS(event: ExtensionEvent, tabId: number, details: chrome.tabs.InjectDetails) {
-    const tab = this.store.getTabById(tabId)
+    const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return
 
     // TODO: move to webFrame in renderer?
@@ -163,7 +164,7 @@ export class TabsAPI {
   private query(event: ExtensionEvent, info: chrome.tabs.QueryInfo = {}) {
     const isSet = (value: any) => typeof value !== 'undefined'
 
-    const filteredTabs = Array.from(this.store.tabs)
+    const filteredTabs = Array.from(this.ctx.store.tabs)
       .map(this.getTabDetails.bind(this))
       .filter((tab) => {
         if (!tab) return false
@@ -182,7 +183,7 @@ export class TabsAPI {
         if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
         if (isSet(info.windowId)) {
           if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
-            if (this.store.lastFocusedWindowId !== tab.windowId) return false
+            if (this.ctx.store.lastFocusedWindowId !== tab.windowId) return false
           } else if (info.windowId !== tab.windowId) {
             return false
           }
@@ -206,8 +207,8 @@ export class TabsAPI {
       typeof arg1 === 'object' ? arg1 : typeof arg2 === 'object' ? arg2 : {}
 
     const tab = tabId
-      ? this.store.getTabById(tabId)
-      : this.store.getActiveTabFromWebContents(event.sender)
+      ? this.ctx.store.getTabById(tabId)
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
 
     if (!tab) return
 
@@ -224,8 +225,8 @@ export class TabsAPI {
       (typeof arg1 === 'object' ? (arg1 as any) : (arg2 as any)) || {}
 
     const tab = tabId
-      ? this.store.getTabById(tabId)
-      : this.store.getActiveTabFromWebContents(event.sender)
+      ? this.ctx.store.getTabById(tabId)
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
 
     tabId = tab.id
@@ -248,8 +249,8 @@ export class TabsAPI {
     const ids = Array.isArray(id) ? id : [id]
 
     ids.forEach((tabId) => {
-      const tab = this.store.getTabById(tabId)
-      if (tab) this.store.removeTab(tab)
+      const tab = this.ctx.store.getTabById(tabId)
+      if (tab) this.ctx.store.removeTab(tab)
       this.onRemoved(tabId)
     })
   }
@@ -257,8 +258,8 @@ export class TabsAPI {
   private goForward(event: ExtensionEvent, arg1?: unknown) {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
-      ? this.store.getTabById(tabId)
-      : this.store.getActiveTabFromWebContents(event.sender)
+      ? this.ctx.store.getTabById(tabId)
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goForward()
   }
@@ -266,26 +267,26 @@ export class TabsAPI {
   private goBack(event: ExtensionEvent, arg1?: unknown) {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
-      ? this.store.getTabById(tabId)
-      : this.store.getActiveTabFromWebContents(event.sender)
+      ? this.ctx.store.getTabById(tabId)
+      : this.ctx.store.getActiveTabFromWebContents(event.sender)
     if (!tab) return
     tab.goBack()
   }
 
   onCreated(tabId: number) {
-    const tab = this.store.getTabById(tabId)
+    const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return
     const tabDetails = this.getTabDetails(tab)
-    this.store.sendToHosts('tabs.onCreated', tabDetails)
+    this.ctx.store.sendToHosts('tabs.onCreated', tabDetails)
   }
 
   onUpdated(tabId: number) {
-    const tab = this.store.getTabById(tabId)
+    const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return
 
     let prevDetails
-    if (this.store.tabDetailsCache.has(tab.id)) {
-      prevDetails = this.store.tabDetailsCache.get(tab.id)
+    if (this.ctx.store.tabDetailsCache.has(tab.id)) {
+      prevDetails = this.ctx.store.tabDetailsCache.get(tab.id)
     }
     if (!prevDetails) return
 
@@ -315,14 +316,14 @@ export class TabsAPI {
 
     if (!didUpdate) return
 
-    this.store.sendToHosts('tabs.onUpdated', tab.id, changeInfo, details)
+    this.ctx.store.sendToHosts('tabs.onUpdated', tab.id, changeInfo, details)
   }
 
   onRemoved(tabId: number) {
-    const details = this.store.tabDetailsCache.has(tabId)
-      ? this.store.tabDetailsCache.get(tabId)
+    const details = this.ctx.store.tabDetailsCache.has(tabId)
+      ? this.ctx.store.tabDetailsCache.get(tabId)
       : null
-    this.store.tabDetailsCache.delete(tabId)
+    this.ctx.store.tabDetailsCache.delete(tabId)
 
     const windowId = details ? details.windowId : WindowsAPI.WINDOW_ID_NONE
     const win =
@@ -330,30 +331,30 @@ export class TabsAPI {
         ? BrowserWindow.getAllWindows().find((win) => win.id === windowId)
         : null
 
-    this.store.sendToHosts('tabs.onRemoved', tabId, {
+    this.ctx.store.sendToHosts('tabs.onRemoved', tabId, {
       windowId,
       isWindowClosing: win ? win.isDestroyed() : false,
     })
   }
 
   onActivated(tabId: number) {
-    const tab = this.store.getTabById(tabId)
+    const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return
 
-    const activeTab = this.store.getActiveTabFromWebContents(tab)
+    const activeTab = this.ctx.store.getActiveTabFromWebContents(tab)
     const activeChanged = activeTab?.id !== tabId
     if (!activeChanged) return
 
-    const win = this.store.tabToWindow.get(tab)
+    const win = this.ctx.store.tabToWindow.get(tab)
 
-    this.store.setActiveTab(tab)
+    this.ctx.store.setActiveTab(tab)
 
     // invalidate cache since 'active' has changed
-    this.store.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
+    this.ctx.store.tabDetailsCache.forEach((tabInfo, cacheTabId) => {
       tabInfo.active = tabId === cacheTabId
     })
 
-    this.store.sendToHosts('tabs.onActivated', {
+    this.ctx.store.sendToHosts('tabs.onActivated', {
       tabId,
       windowId: win?.id,
     })

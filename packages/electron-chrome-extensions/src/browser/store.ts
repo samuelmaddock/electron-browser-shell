@@ -2,13 +2,11 @@ import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
 import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
-import { ExtensionEvent, ExtensionRouter, HandlerCallback, HandlerOptions } from './router'
+import { ExtensionEvent } from './router'
 
 const debug = require('debug')('electron-chrome-extensions:store')
 
 export class ExtensionStore extends EventEmitter {
-  private router = ExtensionRouter.get()
-
   /** Tabs observed by the extensions system. */
   tabs = new Set<Electron.WebContents>()
 
@@ -33,17 +31,8 @@ export class ExtensionStore extends EventEmitter {
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
 
-  constructor(
-    private emitter: EventEmitter,
-    public session: Electron.Session,
-    public impl: ChromeExtensionImpl
-  ) {
+  constructor(public impl: ChromeExtensionImpl) {
     super()
-  }
-
-  /** Emit an event to the public API. */
-  emitPublic(eventName: string, ...args: any[]) {
-    this.emitter.emit(eventName, ...args)
   }
 
   sendToHosts(eventName: string, ...args: any[]) {
@@ -67,10 +56,6 @@ export class ExtensionStore extends EventEmitter {
       // TODO: need to wake up terminated lazy background hosts
       throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
     }
-  }
-
-  handle(name: string, callback: HandlerCallback, opts?: HandlerOptions) {
-    this.router.handle(this.session, name, callback, opts)
   }
 
   getWindowById(windowId: number) {
@@ -231,7 +216,6 @@ export class ExtensionStore extends EventEmitter {
 
     if (tab.id !== prevActiveTab?.id) {
       this.emit('active-tab-changed', tab, win)
-      this.emitPublic('active-tab-changed', tab, win)
     }
   }
 

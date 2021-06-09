@@ -1,6 +1,6 @@
 import * as electron from 'electron'
+import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 
 const debug = require('debug')('electron-chrome-extensions:webNavigation')
 
@@ -30,11 +30,12 @@ const getFrameDetails = (frame: any) => ({
 })
 
 export class WebNavigationAPI {
-  constructor(private store: ExtensionStore) {
-    store.handle('webNavigation.getFrame', this.getFrame.bind(this))
-    store.handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+    handle('webNavigation.getFrame', this.getFrame.bind(this))
+    handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
 
-    store.on('tab-added', this.observeTab.bind(this))
+    this.ctx.store.on('tab-added', this.observeTab.bind(this))
   }
 
   private observeTab(tab: Electron.WebContents) {
@@ -50,7 +51,7 @@ export class WebNavigationAPI {
     event: ExtensionEvent,
     details: chrome.webNavigation.GetFrameDetails
   ): chrome.webNavigation.GetFrameResultDetails | null {
-    const tab = this.store.getTabById(details.tabId)
+    const tab = this.ctx.store.getTabById(details.tabId)
     if (!tab) return null
 
     let targetFrame: any
@@ -73,14 +74,14 @@ export class WebNavigationAPI {
     event: ExtensionEvent,
     details: chrome.webNavigation.GetFrameDetails
   ): chrome.webNavigation.GetAllFrameResultDetails[] | null {
-    const tab = this.store.getTabById(details.tabId)
+    const tab = this.ctx.store.getTabById(details.tabId)
     if (!tab || !('mainFrame' in tab)) return []
     return (tab as any).mainFrame.framesInSubtree.map(getFrameDetails)
   }
 
   private sendNavigationEvent = (eventName: string, details: { url: string }) => {
     debug(`${eventName} [url: ${details.url}]`)
-    this.store.sendToHosts(`webNavigation.${eventName}`, details)
+    this.ctx.store.sendToHosts(`webNavigation.${eventName}`, details)
   }
 
   private onCreatedNavigationTarget = (

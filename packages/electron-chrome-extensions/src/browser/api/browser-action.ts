@@ -1,7 +1,7 @@
 import { Menu, MenuItem, session } from 'electron'
+import { ExtensionContext } from '../context'
 import { PopupView } from '../popup'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 import { getIconImage, getExtensionUrl, getExtensionManifest } from './common'
 
 const debug = require('debug')('electron-chrome-extensions:browserAction')
@@ -57,7 +57,9 @@ export class BrowserActionAPI {
   private observers: Set<Electron.WebContents> = new Set()
   private queuedUpdate: boolean = false
 
-  constructor(private store: ExtensionStore) {
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+
     const getter =
       (propName: ExtensionActionKey) =>
       ({ sender, extension }: ExtensionEvent, details: chrome.browserAction.TabDetails = {}) => {
@@ -107,21 +109,21 @@ export class BrowserActionAPI {
       }
 
     const handleProp = (prop: string, key: ExtensionActionKey) => {
-      store.handle(`browserAction.get${prop}`, getter(key))
-      store.handle(`browserAction.set${prop}`, setter(key))
+      handle(`browserAction.get${prop}`, getter(key))
+      handle(`browserAction.set${prop}`, setter(key))
     }
 
     handleProp('BadgeBackgroundColor', 'color')
     handleProp('BadgeText', 'text')
     handleProp('Title', 'title')
     handleProp('Popup', 'popup')
-    store.handle('browserAction.setIcon', setter('icon'))
+    handle('browserAction.setIcon', setter('icon'))
 
     // browserAction preload API
     const preloadOpts = { allowRemote: true, extensionContext: false }
-    store.handle('browserAction.getState', this.getState.bind(this), preloadOpts)
-    store.handle('browserAction.activate', this.activate.bind(this), preloadOpts)
-    store.handle(
+    handle('browserAction.getState', this.getState.bind(this), preloadOpts)
+    handle('browserAction.activate', this.activate.bind(this), preloadOpts)
+    handle(
       'browserAction.addObserver',
       (event) => {
         const { sender: webContents } = event
@@ -132,7 +134,7 @@ export class BrowserActionAPI {
       },
       preloadOpts
     )
-    store.handle(
+    handle(
       'browserAction.removeObserver',
       (event) => {
         const { sender: webContents } = event
@@ -141,11 +143,11 @@ export class BrowserActionAPI {
       preloadOpts
     )
 
-    this.store.on('active-tab-changed', () => {
+    this.ctx.store.on('active-tab-changed', () => {
       this.onUpdate()
     })
 
-    this.setupSession(this.store.session)
+    this.setupSession(this.ctx.session)
   }
 
   private setupSession(session: Electron.Session) {
@@ -157,7 +159,7 @@ export class BrowserActionAPI {
     })
 
     _session.on('extension-unloaded', (event: Electron.Event, extension: Electron.Extension) => {
-      this.removeActions(this.store.session, extension.id)
+      this.removeActions(this.ctx.session, extension.id)
     })
   }
 
@@ -222,7 +224,7 @@ export class BrowserActionAPI {
     const actions = sessionActions
       ? Array.from(sessionActions.entries()).map((val: any) => ({ id: val[0], ...val[1] }))
       : []
-    const activeTab = this.store.getActiveTabOfCurrentWindow()
+    const activeTab = this.ctx.store.getActiveTabOfCurrentWindow()
     return { activeTabId: activeTab?.id, actions }
   }
 
@@ -258,7 +260,8 @@ export class BrowserActionAPI {
       }
     }
 
-    const tab = tabId >= 0 ? this.store.getTabById(tabId) : this.store.getActiveTabOfCurrentWindow()
+    const tab =
+      tabId >= 0 ? this.ctx.store.getTabById(tabId) : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) {
       throw new Error(`Unable to get active tab`)
     }
@@ -266,14 +269,14 @@ export class BrowserActionAPI {
     const popupUrl = this.getPopupUrl(tab.session, extensionId, tab.id)
 
     if (popupUrl) {
-      const win = this.store.tabToWindow.get(tab)
+      const win = this.ctx.store.tabToWindow.get(tab)
       if (!win) {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
 
       this.popup = new PopupView({
         extensionId,
-        session: this.store.session,
+        session: this.ctx.session,
         parent: win,
         url: popupUrl,
         anchorRect,
@@ -281,19 +284,19 @@ export class BrowserActionAPI {
 
       debug(`opened popup: ${popupUrl}`)
 
-      this.store.emitPublic('browser-action-popup-created', this.popup)
+      this.ctx.emit('browser-action-popup-created', this.popup)
     } else {
       debug(`dispatching onClicked for ${extensionId}`)
 
-      const tabDetails = this.store.tabDetailsCache.get(tab.id)
-      this.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', tabDetails)
+      const tabDetails = this.ctx.store.tabDetailsCache.get(tab.id)
+      this.ctx.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', tabDetails)
     }
   }
 
   private activateContextMenu(details: ActivateDetails) {
     const { extensionId, anchorRect } = details
 
-    const extension = this.store.session.getExtension(extensionId)
+    const extension = this.ctx.session.getExtension(extensionId)
     if (!extension) {
       throw new Error(`Unregistered extension '${extensionId}'`)
     }
@@ -308,13 +311,16 @@ export class BrowserActionAPI {
       click: () => {
         const homePageUrl =
           manifest.homepage_url || `https://chrome.google.com/webstore/detail/${extension.id}`
-        this.store.createTab({ url: homePageUrl })
+        this.ctx.store.createTab({ url: homePageUrl })
       },
     })
 
     appendSeparator()
 
-    const contextMenuItems: MenuItem[] = this.store.buildMenuItems(extensionId, 'browser_action')
+    const contextMenuItems: MenuItem[] = this.ctx.store.buildMenuItems(
+      extensionId,
+      'browser_action'
+    )
     if (contextMenuItems.length > 0) {
       contextMenuItems.forEach((item) => menu.append(item))
       appendSeparator()
@@ -327,7 +333,7 @@ export class BrowserActionAPI {
       label: 'Options',
       enabled: typeof optionsPageUrl === 'string',
       click: () => {
-        this.store.createTab({ url: optionsPageUrl })
+        this.ctx.store.createTab({ url: optionsPageUrl })
       },
     })
 

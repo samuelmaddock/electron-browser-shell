@@ -14,6 +14,8 @@ import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
 import { ChromeExtensionImpl } from './impl'
 import { CommandsAPI } from './api/commands'
+import { ExtensionContext } from './context'
+import { ExtensionRouter } from './router'
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   session?: Electron.Session
@@ -36,8 +38,8 @@ export class ElectronChromeExtensions extends EventEmitter {
     return sessionMap.get(session)
   }
 
+  private ctx: ExtensionContext
   private modulePath: string
-  private store: ExtensionStore
 
   private browserAction: BrowserActionAPI
   private contextMenus: ContextMenusAPI
@@ -60,18 +62,26 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     sessionMap.set(session, this)
 
-    this.modulePath = modulePath || path.join(__dirname, '..')
-    this.store = new ExtensionStore(this, session, impl)
+    const store = new ExtensionStore(impl)
 
-    this.browserAction = new BrowserActionAPI(this.store)
-    this.contextMenus = new ContextMenusAPI(this.store)
-    this.commands = new CommandsAPI(this.store)
-    this.cookies = new CookiesAPI(this.store)
-    this.notifications = new NotificationsAPI(this.store)
-    this.runtime = new RuntimeAPI(this.store)
-    this.tabs = new TabsAPI(this.store)
-    this.webNavigation = new WebNavigationAPI(this.store)
-    this.windows = new WindowsAPI(this.store)
+    this.ctx = {
+      emit: this.emit.bind(this),
+      router: ExtensionRouter.get(),
+      session,
+      store,
+    }
+
+    this.modulePath = modulePath || path.join(__dirname, '..')
+
+    this.browserAction = new BrowserActionAPI(this.ctx)
+    this.contextMenus = new ContextMenusAPI(this.ctx)
+    this.commands = new CommandsAPI(this.ctx)
+    this.cookies = new CookiesAPI(this.ctx)
+    this.notifications = new NotificationsAPI(this.ctx)
+    this.runtime = new RuntimeAPI(this.ctx)
+    this.tabs = new TabsAPI(this.ctx)
+    this.webNavigation = new WebNavigationAPI(this.ctx)
+    this.windows = new WindowsAPI(this.ctx)
 
     app.on('web-contents-created', this.onWebContentsCreated)
 
@@ -79,7 +89,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   private async prependPreload() {
-    const { session } = this.store
+    const { session } = this.ctx
     let preloads = session.getPreloads()
 
     const preloadPath = path.join(this.modulePath, 'dist/preload.js')
@@ -106,7 +116,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
-    if (webContents.session !== this.store.session) return
+    if (webContents.session !== this.ctx.session) return
 
     if (webContents.getType() === 'backgroundPage') {
       this.addExtensionHost(webContents)
@@ -115,12 +125,12 @@ export class ElectronChromeExtensions extends EventEmitter {
 
   /** Add webContents to be tracked as a tab. */
   addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
-    this.store.addTab(tab, window)
+    this.ctx.store.addTab(tab, window)
   }
 
   /** Notify extension system that the active tab has changed. */
   selectTab(tab: Electron.WebContents) {
-    if (this.store.tabs.has(tab)) {
+    if (this.ctx.store.tabs.has(tab)) {
       this.tabs.onActivated(tab.id)
     }
   }
@@ -133,7 +143,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * can also be used in other special cases.
    */
   addExtensionHost(host: Electron.WebContents) {
-    this.store.addExtensionHost(host)
+    this.ctx.store.addExtensionHost(host)
   }
 
   /**
@@ -150,7 +160,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @deprecated Not needed in Electron >=12.
    */
   addExtension(extension: Electron.Extension) {
-    this.browserAction.processExtension(this.store.session, extension)
+    this.browserAction.processExtension(this.ctx.session, extension)
   }
 
   /**
@@ -159,7 +169,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @deprecated Not needed in Electron >=12.
    */
   removeExtension(extension: Electron.Extension) {
-    this.browserAction.removeActions(this.store.session, extension.id)
+    this.browserAction.removeActions(this.ctx.session, extension.id)
   }
 }
 

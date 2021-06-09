@@ -1,7 +1,7 @@
 import { Menu, MenuItem } from 'electron'
 import { MenuItemConstructorOptions } from 'electron/main'
+import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 import { ContextMenuType, getIconImage, matchesPattern } from './common'
 
 type ContextItemProps = chrome.contextMenus.CreateProperties & { id: string }
@@ -79,19 +79,20 @@ export class ContextMenusAPI {
     Map</* menuItemId */ string, ContextItemProps>
   >()
 
-  constructor(private store: ExtensionStore) {
-    store.handle('contextMenus.create', this.create)
-    store.handle('contextMenus.remove', this.remove)
-    store.handle('contextMenus.removeAll', this.removeAll)
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+    handle('contextMenus.create', this.create)
+    handle('contextMenus.remove', this.remove)
+    handle('contextMenus.removeAll', this.removeAll)
 
     // TODO: remove 'any' when project is upgraded to Electron 12
-    this.store.session.on('extension-unloaded' as any, (event, extension: any) => {
+    this.ctx.session.on('extension-unloaded' as any, (event, extension: any) => {
       if (this.menus.has(extension.id)) {
         this.menus.delete(extension.id)
       }
     })
 
-    this.store.buildMenuItems = this.buildMenuItemsForExtension.bind(this)
+    this.ctx.store.buildMenuItems = this.buildMenuItemsForExtension.bind(this)
   }
 
   private addContextItem(extensionId: string, props: ContextItemProps) {
@@ -175,7 +176,7 @@ export class ContextMenusAPI {
     webContents: Electron.WebContents,
     params: Electron.ContextMenuParams
   ): Electron.MenuItem[] {
-    if (webContents.session !== this.store.session) return []
+    if (webContents.session !== this.ctx.session) return []
 
     const menuItemOptions = []
 
@@ -186,7 +187,7 @@ export class ContextMenusAPI {
     }
 
     for (const [extensionId, propItems] of this.menus) {
-      const extension = this.store.session.getExtension(extensionId)
+      const extension = this.ctx.session.getExtension(extensionId)
       if (!extension) continue
 
       for (const [, props] of propItems) {
@@ -211,8 +212,8 @@ export class ContextMenusAPI {
     menuType: ContextMenuType
   ): Electron.MenuItem[] {
     const extensionItems = this.menus.get(extensionId)
-    const extension = this.store.session.getExtension(extensionId)
-    const activeTab = this.store.getActiveTabOfCurrentWindow()
+    const extension = this.ctx.session.getExtension(extensionId)
+    const activeTab = this.ctx.store.getActiveTabOfCurrentWindow()
 
     const menuItemOptions = []
 
@@ -270,7 +271,7 @@ export class ContextMenusAPI {
   ) {
     if (webContents.isDestroyed()) return
 
-    const tab = this.store.tabDetailsCache.get(webContents.id)
+    const tab = this.ctx.store.tabDetailsCache.get(webContents.id)
     if (!tab) {
       console.error(`[Extensions] Unable to find tab for id=${webContents.id}`)
       return
@@ -291,6 +292,6 @@ export class ContextMenusAPI {
       srcUrl: params?.srcURL,
     }
 
-    this.store.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
+    this.ctx.store.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
   }
 }

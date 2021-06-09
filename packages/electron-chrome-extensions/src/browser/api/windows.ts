@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
+import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { ExtensionStore } from '../store'
 
 const debug = require('debug')('electron-chrome-extensions:windows')
 
@@ -15,17 +15,18 @@ export class WindowsAPI {
   static WINDOW_ID_NONE = -1
   static WINDOW_ID_CURRENT = -2
 
-  constructor(private store: ExtensionStore) {
-    store.handle('windows.get', this.get.bind(this))
+  constructor(private ctx: ExtensionContext) {
+    const handle = this.ctx.router.apiHandler(this.ctx)
+    handle('windows.get', this.get.bind(this))
     // TODO: how does getCurrent differ from getLastFocused?
-    store.handle('windows.getCurrent', this.getLastFocused.bind(this))
-    store.handle('windows.getLastFocused', this.getLastFocused.bind(this))
-    store.handle('windows.getAll', this.getAll.bind(this))
-    store.handle('windows.create', this.create.bind(this))
-    store.handle('windows.update', this.update.bind(this))
-    store.handle('windows.remove', this.remove.bind(this))
+    handle('windows.getCurrent', this.getLastFocused.bind(this))
+    handle('windows.getLastFocused', this.getLastFocused.bind(this))
+    handle('windows.getAll', this.getAll.bind(this))
+    handle('windows.create', this.create.bind(this))
+    handle('windows.update', this.update.bind(this))
+    handle('windows.remove', this.remove.bind(this))
 
-    store.on('window-added', this.observeWindow.bind(this))
+    this.ctx.store.on('window-added', this.observeWindow.bind(this))
   }
 
   private observeWindow(window: Electron.BrowserWindow) {
@@ -36,8 +37,8 @@ export class WindowsAPI {
     })
 
     window.once('closed', () => {
-      this.store.windowDetailsCache.delete(windowId)
-      this.store.removeWindow(window)
+      this.ctx.store.windowDetailsCache.delete(windowId)
+      this.ctx.store.removeWindow(window)
       this.onRemoved(windowId)
     })
 
@@ -54,12 +55,12 @@ export class WindowsAPI {
       left: win.getPosition()[0],
       width: win.getSize()[0],
       height: win.getSize()[1],
-      tabs: Array.from(this.store.tabs)
+      tabs: Array.from(this.ctx.store.tabs)
         .filter((tab) => {
-          const ownerWindow = this.store.tabToWindow.get(tab)
+          const ownerWindow = this.ctx.store.tabToWindow.get(tab)
           return ownerWindow?.isDestroyed() ? false : ownerWindow?.id === win.id
         })
-        .map((tab) => this.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
+        .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
         .filter(Boolean),
       incognito: !win.webContents.session.isPersistent(),
       type: 'normal', // TODO
@@ -68,13 +69,13 @@ export class WindowsAPI {
       sessionId: 'default', // TODO
     }
 
-    this.store.windowDetailsCache.set(win.id, details)
+    this.ctx.store.windowDetailsCache.set(win.id, details)
     return details
   }
 
   private getWindowDetails(win: BrowserWindow) {
-    if (this.store.windowDetailsCache.has(win.id)) {
-      return this.store.windowDetailsCache.get(win.id)
+    if (this.ctx.store.windowDetailsCache.has(win.id)) {
+      return this.ctx.store.windowDetailsCache.get(win.id)
     }
     const details = this.createWindowDetails(win)
     return details
@@ -82,9 +83,9 @@ export class WindowsAPI {
 
   private getWindowFromId(id: number) {
     if (id === WindowsAPI.WINDOW_ID_CURRENT) {
-      return this.store.getCurrentWindow()
+      return this.ctx.store.getCurrentWindow()
     } else {
-      return this.store.getWindowById(id)
+      return this.ctx.store.getWindowById(id)
     }
   }
 
@@ -95,16 +96,16 @@ export class WindowsAPI {
   }
 
   private getLastFocused(event: ExtensionEvent) {
-    const win = this.store.getLastFocusedWindow()
+    const win = this.ctx.store.getLastFocusedWindow()
     return win ? this.getWindowDetails(win) : null
   }
 
   private getAll(event: ExtensionEvent) {
-    return Array.from(this.store.windows).map(this.getWindowDetails.bind(this))
+    return Array.from(this.ctx.store.windows).map(this.getWindowDetails.bind(this))
   }
 
   private async create(event: ExtensionEvent, details: chrome.windows.CreateData) {
-    const win = await this.store.createWindow(event, details)
+    const win = await this.ctx.store.createWindow(event, details)
     return this.getWindowDetails(win)
   }
 
@@ -142,25 +143,25 @@ export class WindowsAPI {
     const win = this.getWindowFromId(windowId)
     if (!win) return
     const removedWindowId = win.id
-    await this.store.removeWindow(win)
+    await this.ctx.store.removeWindow(win)
     this.onRemoved(removedWindowId)
   }
 
   onCreated(windowId: number) {
-    const window = this.store.getWindowById(windowId)
+    const window = this.ctx.store.getWindowById(windowId)
     if (!window) return
     const windowDetails = this.getWindowDetails(window)
-    this.store.sendToHosts('windows.onCreated', windowDetails)
+    this.ctx.store.sendToHosts('windows.onCreated', windowDetails)
   }
 
   onRemoved(windowId: number) {
-    this.store.sendToHosts('windows.onRemoved', windowId)
+    this.ctx.store.sendToHosts('windows.onRemoved', windowId)
   }
 
   onFocusChanged(windowId: number) {
-    if (this.store.lastFocusedWindowId === windowId) return
+    if (this.ctx.store.lastFocusedWindowId === windowId) return
 
-    this.store.lastFocusedWindowId = windowId
-    this.store.sendToHosts('windows.onFocusChanged', windowId)
+    this.ctx.store.lastFocusedWindowId = windowId
+    this.ctx.store.sendToHosts('windows.onFocusChanged', windowId)
   }
 }
