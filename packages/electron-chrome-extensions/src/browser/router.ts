@@ -153,12 +153,20 @@ export class ExtensionRouter {
     for (const [eventName, listeners] of this.listeners) {
       const filteredListeners = listeners.filter(predicate)
       this.listeners.set(eventName, filteredListeners)
+
+      const delta = listeners.length - filteredListeners.length
+
+      if (delta > 0) {
+        debug(`removed ${delta} listener(s) for '${eventName}'`)
+      }
     }
   }
 
   private observeListenerHost(host: Electron.WebContents) {
+    debug(`observing listener [id:${host.id}, url:'${host.getURL()}']`)
     host.once('destroyed', () => {
-      this.filterListeners((listener) => listener.host === host)
+      debug(`extension host destroyed [id:${host.id}]`)
+      this.filterListeners((listener) => listener.host !== host)
     })
   }
 
