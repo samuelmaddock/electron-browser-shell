@@ -8,6 +8,7 @@ export const injectExtensionAPIs = () => {
   }
 
   const invokeExtension = async function (
+    extensionId: string,
     fnName: string,
     options: ExtensionMessageOptions = {},
     ...args: any[]
@@ -31,7 +32,7 @@ export const injectExtensionAPIs = () => {
     let result
 
     try {
-      result = await ipcRenderer.invoke('CHROME_EXT', fnName, ...args)
+      result = await ipcRenderer.invoke('crx-msg', extensionId, fnName, ...args)
     } catch (e) {
       // TODO: Set chrome.runtime.lastError?
       console.error(e)
@@ -61,10 +62,19 @@ export const injectExtensionAPIs = () => {
     // Use context bridge API or closure variable when context isolation is disabled.
     const electron = ((window as any).electron as typeof electronContext) || electronContext
 
+    const chrome = window.chrome || {}
+    const extensionId = chrome.runtime?.id
+
+    // NOTE: This uses a synchronous IPC to get the extension manifest.
+    // To avoid this, JS bindings for RendererExtensionRegistry would be
+    // required.
+    const manifest: chrome.runtime.Manifest =
+      (extensionId && chrome.runtime.getManifest()) || ({} as any)
+
     const invokeExtension =
       (fnName: string, opts: ExtensionMessageOptions = {}) =>
       (...args: any[]) =>
-        electron.invokeExtension(fnName, opts, ...args)
+        electron.invokeExtension(extensionId, fnName, opts, ...args)
 
     function imageData2base64(imageData: ImageData) {
       const canvas = document.createElement('canvas')
@@ -81,10 +91,10 @@ export const injectExtensionAPIs = () => {
     class ExtensionEvent<T extends Function> implements chrome.events.Event<T> {
       constructor(private name: string) {}
       addListener(callback: T) {
-        electron.addExtensionListener(this.name, callback)
+        electron.addExtensionListener(extensionId, this.name, callback)
       }
       removeListener(callback: T) {
-        electron.removeExtensionListener(this.name, callback)
+        electron.removeExtensionListener(extensionId, this.name, callback)
       }
 
       getRules(callback: (rules: chrome.events.Rule[]) => void): void
@@ -117,15 +127,6 @@ export const injectExtensionAPIs = () => {
       clear() {}
       // onChange: chrome.types.ChromeSettingChangedEvent
     }
-
-    const chrome = window.chrome || {}
-    const extensionId = chrome.runtime?.id
-
-    // NOTE: This uses a synchronous IPC to get the extension manifest.
-    // To avoid this, JS bindings for RendererExtensionRegistry would be
-    // required.
-    const manifest: chrome.runtime.Manifest =
-      (extensionId && chrome.runtime.getManifest()) || ({} as any)
 
     type DeepPartial<T> = {
       [P in keyof T]?: DeepPartial<T[P]>

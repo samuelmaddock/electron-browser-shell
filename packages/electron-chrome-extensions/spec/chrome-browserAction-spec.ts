@@ -30,7 +30,7 @@ describe('chrome.browserAction', () => {
 
     // TODO: use preload script with `injectBrowserAction()`
     await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('CHROME_EXT_REMOTE', '${partition}', 'browserAction.activate', ${JSON.stringify(
+      `require('electron').ipcRenderer.invoke('crx-msg-remote', '${partition}', 'browserAction.activate', ${JSON.stringify(
         details
       )})`
     )

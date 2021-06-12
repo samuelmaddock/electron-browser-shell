@@ -92,12 +92,6 @@ class TabbedBrowserWindow {
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
 
-    this.webContents.once('dom-ready', () => {
-      // The browser web ui interacts with extension APIs which means it needs
-      // to be treated as an extension host.
-      this.extensions.addExtensionHost(this.webContents)
-    })
-
     this.tabs = new Tabs(this.window)
 
     const self = this
@@ -292,7 +286,7 @@ class Browser {
   async onWebContentsCreated(event, webContents) {
     const type = webContents.getType()
     const url = webContents.getURL()
-    console.log(`webContents type=${type}, url=${url}`)
+    console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
 
     if (process.env.SHELL_DEBUG && webContents.getType() === 'backgroundPage') {
       webContents.openDevTools({ mode: 'detach', activate: true })

@@ -143,10 +143,11 @@ export class ElectronChromeExtensions extends EventEmitter {
    *
    * This is usually reserved for extension background pages and popups, but
    * can also be used in other special cases.
+   *
+   * @deprecated Extension hosts are now tracked lazily when they send
+   * extension IPCs to the main process.
    */
-  addExtensionHost(host: Electron.WebContents) {
-    this.ctx.store.addExtensionHost(host)
-  }
+  addExtensionHost(host: Electron.WebContents) {}
 
   /**
    * Get collection of menu items managed by the `chrome.contextMenus` API.

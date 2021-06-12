@@ -1,6 +1,6 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
-import { ContextMenuType, getExtensionIdFromWebContents } from './api/common'
+import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent } from './router'
 
@@ -22,9 +22,6 @@ export class ExtensionStore extends EventEmitter {
    * this ourselves.
    */
   tabToWindow = new WeakMap<Electron.WebContents, Electron.BrowserWindow>()
-
-  /** Map of extension IDs to its corresponding background host. */
-  extensionIdToHost = new Map</* extensionId */ string, /* host */ Electron.WebContents>()
 
   /** Map of windows to their active tab. */
   private windowToActiveTab = new WeakMap<Electron.BrowserWindow, Electron.WebContents>()
@@ -153,24 +150,6 @@ export class ExtensionStore extends EventEmitter {
     this.addTab(tab, window)
 
     return tab
-  }
-
-  addExtensionHost(host: Electron.WebContents) {
-    // TODO: this is not reliable and we shouldn't check for this
-    const extensionId = getExtensionIdFromWebContents(host)
-    if (!extensionId) {
-      throw new Error(
-        `WebContents is not a valid extension background host [id:${host.id}, url:${host.getURL()}]`
-      )
-    }
-
-    this.extensionIdToHost.set(extensionId, host)
-
-    host.once('destroyed', () => {
-      this.extensionIdToHost.delete(extensionId)
-    })
-
-    debug(`Observing extension host [id:${host.id}, type:${host.getType()}, url:${host.getURL()}]`)
   }
 
   getActiveTabFromWindow(win: Electron.BrowserWindow) {

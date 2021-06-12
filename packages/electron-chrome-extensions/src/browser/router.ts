@@ -1,5 +1,4 @@
 import { Extension, ipcMain, session, Session, WebContents } from 'electron'
-import { getExtensionIdFromWebContents } from './api/common'
 import { ExtensionContext } from './context'
 
 const createDebug = require('debug')
@@ -34,13 +33,23 @@ interface Handler extends HandlerOptions {
   callback: HandlerCallback
 }
 
-type HandlerMap = Map<string, Handler>
+/** e.g. 'tabs.query' */
+type EventName = string
+
+type HandlerMap = Map<EventName, Handler>
+
+interface EventListener {
+  host: Electron.WebContents
+  extensionId: string
+}
 
 interface SessionRoutingDetails {
   handlers: HandlerMap
-  // TODO: need to wakeup extension hosts
-  listeners: Map</* extensionId */ string, Set</* eventName */ string>>
+  listeners: Map<EventName, EventListener[]>
 }
+
+const eventListenerEquals = (eventListener: EventListener) => (other: EventListener) =>
+  other.host === eventListener.host && other.extensionId === eventListener.extensionId
 
 let gRouter: ExtensionRouter | undefined
 
@@ -52,41 +61,69 @@ export class ExtensionRouter {
   }
 
   private constructor() {
-    ipcMain.handle('CHROME_EXT', this.onRouterMessage)
-    ipcMain.handle('CHROME_EXT_REMOTE', this.onRemoteMessage)
-    ipcMain.on('CRX_SET_LISTENER', this.onUpdateEventListener)
+    ipcMain.handle('crx-msg', this.onRouterMessage)
+    ipcMain.handle('crx-msg-remote', this.onRemoteMessage)
+    ipcMain.on('crx-add-listener', this.onAddListener)
+    ipcMain.on('crx-remove-listener', this.onRemoveListener)
   }
 
-  private onUpdateEventListener = (
+  private onAddListener = (
     event: Electron.IpcMainInvokeEvent,
-    eventName: string,
-    enabled: boolean
+    extensionId: string,
+    eventName: string
   ) => {
-    const { listeners } = this.getSessionDetails(event.sender.session)
+    const { session } = event.sender
+    const { listeners } = this.getSessionDetails(session)
 
-    const extensionId = getExtensionIdFromWebContents(event.sender)
-    if (!extensionId) {
-      throw new Error(
-        `no extension id for sender [id:${event.sender.id}, type:${event.sender.getType()}, url:${
-          event.sender.mainFrame.url
-        }]`
-      )
+    const extension = session.getExtension(extensionId)
+    if (!extension) {
+      throw new Error(`extension not registered in session [extensionId:${extensionId}]`)
     }
+
+    const eventListener: EventListener = { host: event.sender, extensionId }
 
     // TODO: clear out extension state on unloaded
 
-    if (!listeners.has(extensionId)) {
-      listeners.set(extensionId, new Set())
+    if (!listeners.has(eventName)) {
+      listeners.set(eventName, [])
     }
 
-    const extensionEvents = listeners.get(extensionId)!
+    const eventListeners = listeners.get(eventName)!
+    const existingEventListener = eventListeners.find(eventListenerEquals(eventListener))
 
-    if (enabled) {
-      debug(`adding '${eventName}' event listener for ${extensionId}`)
-      extensionEvents.add(eventName)
+    if (existingEventListener) {
+      debug(`ignoring existing '${eventName}' event listener for ${extensionId}`)
     } else {
+      debug(`adding '${eventName}' event listener for ${extensionId}`)
+      eventListeners.push(eventListener)
+    }
+  }
+
+  // TODO: need to cleanup listeners ourselves when a webcontents is destroyed
+  private onRemoveListener = (
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
+    eventName: string
+  ) => {
+    const { listeners } = this.getSessionDetails(event.sender.session)
+
+    const eventListeners = listeners.get(eventName)
+    if (!eventListeners) {
+      console.error(`event listener not registered for '${eventName}'`)
+      return
+    }
+
+    const eventListener: EventListener = { host: event.sender, extensionId }
+
+    const index = eventListeners.findIndex(eventListenerEquals(eventListener))
+
+    if (index >= 0) {
       debug(`removing '${eventName}' event listener for ${extensionId}`)
-      extensionEvents.delete(eventName)
+      eventListeners.splice(index, 1)
+    }
+
+    if (eventListeners.length === 0) {
+      listeners.delete(eventName)
     }
   }
 
@@ -111,6 +148,7 @@ export class ExtensionRouter {
   private async invokeHandler(
     event: Electron.IpcMainInvokeEvent,
     session: Electron.Session,
+    extensionId: string | undefined,
     handlerName: string,
     args: any[]
   ) {
@@ -121,8 +159,8 @@ export class ExtensionRouter {
       throw new Error(`${handlerName} does not support calling from a remote session`)
     }
 
-    const extensionId = getExtensionIdFromWebContents(sender)
-    if (!extensionId && handler.extensionContext) {
+    const extension = extensionId ? sender.session.getExtension(extensionId) : undefined
+    if (!extension && handler.extensionContext) {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
 
@@ -142,11 +180,12 @@ export class ExtensionRouter {
 
   private onRouterMessage = (
     event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
     handlerName: string,
     ...args: any[]
   ) => {
     debug(`received '${handlerName}'`, args)
-    return this.invokeHandler(event, event.sender.session, handlerName, args)
+    return this.invokeHandler(event, event.sender.session, extensionId, handlerName, args)
   }
 
   private onRemoteMessage = (
@@ -160,7 +199,7 @@ export class ExtensionRouter {
       sessionPartition === DEFAULT_SESSION
         ? event.sender.session
         : session.fromPartition(sessionPartition)
-    return this.invokeHandler(event, ses, handlerName, args)
+    return this.invokeHandler(event, ses, undefined, handlerName, args)
   }
 
   private getSessionDetails(session: Session) {
@@ -198,43 +237,41 @@ export class ExtensionRouter {
    * Sends extension event to the host for the given extension ID if it
    * registered a listener for it.
    */
-  sendEvent(ctx: ExtensionContext, extensionId: string, eventName: string, ...args: any[]) {
-    // TODO: don't store listeners by extension ID. Instead need to store context to lookup each like
-    // process host or service worker url
+  sendEvent(
+    ctx: ExtensionContext,
+    extensionId: string | undefined,
+    eventName: string,
+    ...args: any[]
+  ) {
     const { listeners } = this.getSessionDetails(ctx.session)
 
+    let eventListeners = listeners.get(eventName)
+
     if (extensionId) {
-      // TODO: ignore if listener isn't present
-      const hasListener = listeners.get(extensionId)?.has(eventName)
+      // TODO: extension permissions check
 
-      if (!hasListener) {
-        debug(`ignoring '${eventName}' event with no listeners for ${extensionId}`)
-        return
+      eventListeners = eventListeners?.filter((el) => el.extensionId === extensionId)
+    }
+
+    if (!eventListeners || eventListeners.length === 0) {
+      debug(`ignoring '${eventName}' event with no listeners`)
+      return
+    }
+
+    for (const { host } of eventListeners) {
+      // TODO: may need to wake lazy extension context
+      if (host.isDestroyed()) {
+        // TODO: cleanup this listener?
+        throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
       }
+
+      const ipcName = `crx-${eventName}`
+      host.send(ipcName, ...args)
     }
-
-    // TODO: extension permissions check
-
-    const host = ctx.store.extensionIdToHost.get(extensionId)
-
-    // TODO: may need to wake lazy extension context
-    if (!host) {
-      throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
-    }
-
-    const ipcName = `CRX_${eventName}`
-    host.send(ipcName, ...args)
   }
 
   /** Broadcasts extension event to all extension hosts listening for it. */
   broadcastEvent(ctx: ExtensionContext, eventName: string, ...args: any[]) {
-    for (const [extensionId, host] of ctx.store.extensionIdToHost) {
-      if (host.isDestroyed()) {
-        console.error(`Unable to send '${eventName}' to extension host`)
-        return
-      }
-
-      this.sendEvent(ctx, extensionId, eventName, ...args)
-    }
+    this.sendEvent(ctx, undefined, eventName, ...args)
   }
 }

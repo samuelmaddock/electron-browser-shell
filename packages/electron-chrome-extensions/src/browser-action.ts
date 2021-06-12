@@ -7,7 +7,7 @@ export const injectBrowserAction = () => {
   const observerCounts = new Map<string, number>()
 
   const invoke = <T>(name: string, partition: string, ...args: any[]): Promise<T> => {
-    return ipcRenderer.invoke('CHROME_EXT_REMOTE', partition, name, ...args)
+    return ipcRenderer.invoke('crx-msg-remote', partition, name, ...args)
   }
 
   interface ActivateDetails {
