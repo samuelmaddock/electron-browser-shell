@@ -91,3 +91,23 @@ export const matchesPattern = (pattern: string, url: string) => {
   const regexp = new RegExp(`^${pattern.split('*').map(escapePattern).join('.*')}$`)
   return url.match(regexp)
 }
+
+const extensionIdMemo = new WeakMap<Electron.WebContents, string>()
+
+export const getExtensionIdFromWebContents = (webContents: Electron.WebContents) => {
+  if (extensionIdMemo.has(webContents)) {
+    return extensionIdMemo.get(webContents)!
+  }
+
+  let extensionId
+  try {
+    const url = new URL(webContents.getURL())
+    extensionId = url.hostname
+  } catch {
+    return
+  }
+
+  extensionIdMemo.set(webContents, extensionId)
+
+  return extensionId
+}

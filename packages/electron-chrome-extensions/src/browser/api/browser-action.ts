@@ -203,7 +203,6 @@ export class BrowserActionAPI {
 
   private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
     const action = this.getAction(session, extensionId)
-    console.log(`getPopupUrl ${extensionId}`, action)
     const popupPath = action.tabs[tabId]?.popup || action.popup || undefined
     return popupPath && `chrome-extension://${extensionId}/${popupPath}`
   }
@@ -289,7 +288,7 @@ export class BrowserActionAPI {
       debug(`dispatching onClicked for ${extensionId}`)
 
       const tabDetails = this.ctx.store.tabDetailsCache.get(tab.id)
-      this.ctx.store.sendToExtensionHost(extensionId, 'browserAction.onClicked', tabDetails)
+      this.ctx.router.sendEvent(this.ctx, extensionId, 'browserAction.onClicked', tabDetails)
     }
   }
 

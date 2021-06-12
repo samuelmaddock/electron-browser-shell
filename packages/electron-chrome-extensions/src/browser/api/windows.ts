@@ -151,17 +151,17 @@ export class WindowsAPI {
     const window = this.ctx.store.getWindowById(windowId)
     if (!window) return
     const windowDetails = this.getWindowDetails(window)
-    this.ctx.store.sendToHosts('windows.onCreated', windowDetails)
+    this.ctx.router.broadcastEvent(this.ctx, 'windows.onCreated', windowDetails)
   }
 
   onRemoved(windowId: number) {
-    this.ctx.store.sendToHosts('windows.onRemoved', windowId)
+    this.ctx.router.broadcastEvent(this.ctx, 'windows.onRemoved', windowId)
   }
 
   onFocusChanged(windowId: number) {
     if (this.ctx.store.lastFocusedWindowId === windowId) return
 
     this.ctx.store.lastFocusedWindowId = windowId
-    this.ctx.store.sendToHosts('windows.onFocusChanged', windowId)
+    this.ctx.router.broadcastEvent(this.ctx, 'windows.onFocusChanged', windowId)
   }
 }

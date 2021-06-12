@@ -1,6 +1,6 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
-import { ContextMenuType } from './api/common'
+import { ContextMenuType, getExtensionIdFromWebContents } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent } from './router'
 
@@ -23,7 +23,8 @@ export class ExtensionStore extends EventEmitter {
    */
   tabToWindow = new WeakMap<Electron.WebContents, Electron.BrowserWindow>()
 
-  extensionHosts = new Set<Electron.WebContents>()
+  /** Map of extension IDs to its corresponding background host. */
+  extensionIdToHost = new Map</* extensionId */ string, /* host */ Electron.WebContents>()
 
   /** Map of windows to their active tab. */
   private windowToActiveTab = new WeakMap<Electron.BrowserWindow, Electron.WebContents>()
@@ -33,29 +34,6 @@ export class ExtensionStore extends EventEmitter {
 
   constructor(public impl: ChromeExtensionImpl) {
     super()
-  }
-
-  sendToHosts(eventName: string, ...args: any[]) {
-    this.extensionHosts.forEach((host) => {
-      if (host.isDestroyed()) {
-        console.error(`Unable to send '${eventName}' to extension host`)
-        return
-      }
-      this.router.sendEvent(host, eventName, ...args)
-    })
-  }
-
-  sendToExtensionHost(extensionId: string, eventName: string, ...args: any[]) {
-    const extensionPath = `chrome-extension://${extensionId}/`
-    const extensionHost = Array.from(this.extensionHosts).find(
-      (host) => !host.isDestroyed() && host.getURL().startsWith(extensionPath)
-    )
-    if (extensionHost) {
-      this.router.sendEvent(extensionHost, eventName, ...args)
-    } else {
-      // TODO: need to wake up terminated lazy background hosts
-      throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
-    }
   }
 
   getWindowById(windowId: number) {
@@ -178,15 +156,21 @@ export class ExtensionStore extends EventEmitter {
   }
 
   addExtensionHost(host: Electron.WebContents) {
-    if (this.extensionHosts.has(host)) return
+    // TODO: this is not reliable and we shouldn't check for this
+    const extensionId = getExtensionIdFromWebContents(host)
+    if (!extensionId) {
+      throw new Error(
+        `WebContents is not a valid extension background host [id:${host.id}, url:${host.getURL()}]`
+      )
+    }
 
-    this.extensionHosts.add(host)
+    this.extensionIdToHost.set(extensionId, host)
 
     host.once('destroyed', () => {
-      this.extensionHosts.delete(host)
+      this.extensionIdToHost.delete(extensionId)
     })
 
-    debug(`Observing extension host[${host.id}][${host.getType()}] ${host.getURL()}`)
+    debug(`Observing extension host [id:${host.id}, type:${host.getType()}, url:${host.getURL()}]`)
   }
 
   getActiveTabFromWindow(win: Electron.BrowserWindow) {

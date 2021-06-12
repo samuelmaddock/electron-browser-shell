@@ -131,12 +131,12 @@ export class NotificationsAPI {
     this.registry.set(notificationId, notification)
 
     notification.on('click', () => {
-      this.ctx.store.sendToExtensionHost(extension.id, 'notifications.onClicked', id)
+      this.ctx.router.sendEvent(this.ctx, extension.id, 'notifications.onClicked', id)
     })
 
     notification.once('close', () => {
       const byUser = true // TODO
-      this.ctx.store.sendToExtensionHost(extension.id, 'notifications.onClosed', id, byUser)
+      this.ctx.router.sendEvent(this.ctx, extension.id, 'notifications.onClosed', id, byUser)
       this.registry.delete(notificationId)
     })
 

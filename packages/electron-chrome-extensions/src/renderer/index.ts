@@ -61,9 +61,10 @@ export const injectExtensionAPIs = () => {
     // Use context bridge API or closure variable when context isolation is disabled.
     const electron = ((window as any).electron as typeof electronContext) || electronContext
 
-    const invokeExtension = (fnName: string, opts: ExtensionMessageOptions = {}) => (
-      ...args: any[]
-    ) => electron.invokeExtension(fnName, opts, ...args)
+    const invokeExtension =
+      (fnName: string, opts: ExtensionMessageOptions = {}) =>
+      (...args: any[]) =>
+        electron.invokeExtension(fnName, opts, ...args)
 
     function imageData2base64(imageData: ImageData) {
       const canvas = document.createElement('canvas')
@@ -119,6 +120,10 @@ export const injectExtensionAPIs = () => {
 
     const chrome = window.chrome || {}
     const extensionId = chrome.runtime?.id
+
+    // NOTE: This uses a synchronous IPC to get the extension manifest.
+    // To avoid this, JS bindings for RendererExtensionRegistry would be
+    // required.
     const manifest: chrome.runtime.Manifest =
       (extensionId && chrome.runtime.getManifest()) || ({} as any)
 

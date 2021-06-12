@@ -1,4 +1,5 @@
 import { Extension, ipcMain, session, Session, WebContents } from 'electron'
+import { getExtensionIdFromWebContents } from './api/common'
 import { ExtensionContext } from './context'
 
 const createDebug = require('debug')
@@ -14,17 +15,6 @@ createDebug.formatters.r = (value: any) => {
 const debug = createDebug('electron-chrome-extensions:router')
 
 const DEFAULT_SESSION = '_self'
-
-const getExtensionFromWebContents = (webContents: WebContents) => {
-  let extensionId
-  try {
-    const url = new URL(webContents.getURL())
-    extensionId = url.hostname
-  } catch {
-    return
-  }
-  return webContents.session.getExtension(extensionId)
-}
 
 export interface ExtensionEvent {
   sender: WebContents
@@ -46,10 +36,16 @@ interface Handler extends HandlerOptions {
 
 type HandlerMap = Map<string, Handler>
 
+interface SessionRoutingDetails {
+  handlers: HandlerMap
+  // TODO: need to wakeup extension hosts
+  listeners: Map</* extensionId */ string, Set</* eventName */ string>>
+}
+
 let gRouter: ExtensionRouter | undefined
 
 export class ExtensionRouter {
-  private sessionMap: WeakMap<Session, HandlerMap> = new WeakMap()
+  private sessionMap: WeakMap<Session, SessionRoutingDetails> = new WeakMap()
 
   static get() {
     return gRouter || (gRouter = new ExtensionRouter())
@@ -58,6 +54,40 @@ export class ExtensionRouter {
   private constructor() {
     ipcMain.handle('CHROME_EXT', this.onRouterMessage)
     ipcMain.handle('CHROME_EXT_REMOTE', this.onRemoteMessage)
+    ipcMain.on('CRX_SET_LISTENER', this.onUpdateEventListener)
+  }
+
+  private onUpdateEventListener = (
+    event: Electron.IpcMainInvokeEvent,
+    eventName: string,
+    enabled: boolean
+  ) => {
+    const { listeners } = this.getSessionDetails(event.sender.session)
+
+    const extensionId = getExtensionIdFromWebContents(event.sender)
+    if (!extensionId) {
+      throw new Error(
+        `no extension id for sender [id:${event.sender.id}, type:${event.sender.getType()}, url:${
+          event.sender.mainFrame.url
+        }]`
+      )
+    }
+
+    // TODO: clear out extension state on unloaded
+
+    if (!listeners.has(extensionId)) {
+      listeners.set(extensionId, new Set())
+    }
+
+    const extensionEvents = listeners.get(extensionId)!
+
+    if (enabled) {
+      debug(`adding '${eventName}' event listener for ${extensionId}`)
+      extensionEvents.add(eventName)
+    } else {
+      debug(`removing '${eventName}' event listener for ${extensionId}`)
+      extensionEvents.delete(eventName)
+    }
   }
 
   private getHandler(session: Electron.Session, handlerName: string) {
@@ -65,12 +95,12 @@ export class ExtensionRouter {
       throw new Error('handlerName must be of type string')
     }
 
-    const sessionMap = this.sessionMap.get(session)
-    if (!sessionMap) {
+    const sessionDetails = this.sessionMap.get(session)
+    if (!sessionDetails) {
       throw new Error("Chrome extensions are not supported in the sender's session")
     }
 
-    const handler = sessionMap.get(handlerName)
+    const handler = sessionDetails.handlers.get(handlerName)
     if (!handler) {
       throw new Error(`${handlerName} is not a registered handler`)
     }
@@ -91,12 +121,18 @@ export class ExtensionRouter {
       throw new Error(`${handlerName} does not support calling from a remote session`)
     }
 
-    const extension = getExtensionFromWebContents(sender)
-    if (!extension && handler.extensionContext) {
+    const extensionId = getExtensionIdFromWebContents(sender)
+    if (!extensionId && handler.extensionContext) {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
 
-    const extEvent = { sender, extension: extension! }
+    const extEvent = {
+      sender,
+      get extension() {
+        return session.getExtension(extensionId!)
+      },
+    }
+
     const result = await handler.callback(extEvent, ...args)
 
     debug(`${handlerName} result: %r`, result)
@@ -127,9 +163,11 @@ export class ExtensionRouter {
     return this.invokeHandler(event, ses, handlerName, args)
   }
 
-  private getSessionHandlers(session: Session) {
+  private getSessionDetails(session: Session) {
+    // TODO: we should only create session details if ElectronChromeExtensions has been created
+    // for the given session.
     if (!this.sessionMap.has(session)) {
-      this.sessionMap.set(session, new Map())
+      this.sessionMap.set(session, { handlers: new Map(), listeners: new Map() })
     }
     return this.sessionMap.get(session)!
   }
@@ -140,7 +178,7 @@ export class ExtensionRouter {
     callback: HandlerCallback,
     opts?: HandlerOptions
   ): void {
-    const handlers = this.getSessionHandlers(session)
+    const { handlers } = this.getSessionDetails(session)
 
     handlers.set(name, {
       callback,
@@ -156,8 +194,47 @@ export class ExtensionRouter {
     }
   }
 
-  sendEvent(host: Electron.WebContents, eventName: string, ...args: any[]) {
+  /**
+   * Sends extension event to the host for the given extension ID if it
+   * registered a listener for it.
+   */
+  sendEvent(ctx: ExtensionContext, extensionId: string, eventName: string, ...args: any[]) {
+    // TODO: don't store listeners by extension ID. Instead need to store context to lookup each like
+    // process host or service worker url
+    const { listeners } = this.getSessionDetails(ctx.session)
+
+    if (extensionId) {
+      // TODO: ignore if listener isn't present
+      const hasListener = listeners.get(extensionId)?.has(eventName)
+
+      if (!hasListener) {
+        debug(`ignoring '${eventName}' event with no listeners for ${extensionId}`)
+        return
+      }
+    }
+
+    // TODO: extension permissions check
+
+    const host = ctx.store.extensionIdToHost.get(extensionId)
+
+    // TODO: may need to wake lazy extension context
+    if (!host) {
+      throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
+    }
+
     const ipcName = `CRX_${eventName}`
     host.send(ipcName, ...args)
+  }
+
+  /** Broadcasts extension event to all extension hosts listening for it. */
+  broadcastEvent(ctx: ExtensionContext, eventName: string, ...args: any[]) {
+    for (const [extensionId, host] of ctx.store.extensionIdToHost) {
+      if (host.isDestroyed()) {
+        console.error(`Unable to send '${eventName}' to extension host`)
+        return
+      }
+
+      this.sendEvent(ctx, extensionId, eventName, ...args)
+    }
   }
 }

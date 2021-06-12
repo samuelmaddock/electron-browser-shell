@@ -81,7 +81,7 @@ export class WebNavigationAPI {
 
   private sendNavigationEvent = (eventName: string, details: { url: string }) => {
     debug(`${eventName} [url: ${details.url}]`)
-    this.ctx.store.sendToHosts(`webNavigation.${eventName}`, details)
+    this.ctx.router.broadcastEvent(this.ctx, `webNavigation.${eventName}`, details)
   }
 
   private onCreatedNavigationTarget = (

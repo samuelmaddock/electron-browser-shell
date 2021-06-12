@@ -89,10 +89,14 @@ class TabbedBrowserWindow {
     this.id = this.window.id
     this.webContents = this.window.webContents
 
-    this.extensions.addExtensionHost(this.webContents)
-
     const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
     this.webContents.loadURL(webuiUrl)
+
+    this.webContents.once('dom-ready', () => {
+      // The browser web ui interacts with extension APIs which means it needs
+      // to be treated as an extension host.
+      this.extensions.addExtensionHost(this.webContents)
+    })
 
     this.tabs = new Tabs(this.window)
 
@@ -239,6 +243,7 @@ class Browser {
       this.extensions.addExtension(extension)
     })
 
+    // FIXME: this event was removed, need to revisit
     this.extensions.on('active-tab-changed', (tab, browserWindow) => {
       const win = this.getWindowFromBrowserWindow(browserWindow)
       win.tabs.select(tab.id)

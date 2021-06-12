@@ -292,6 +292,6 @@ export class ContextMenusAPI {
       srcUrl: params?.srcURL,
     }
 
-    this.ctx.store.sendToExtensionHost(extensionId, 'contextMenus.onClicked', data, tab)
+    this.ctx.router.sendEvent(this.ctx, extensionId, 'contextMenus.onClicked', data, tab)
   }
 }

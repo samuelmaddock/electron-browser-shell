@@ -118,6 +118,8 @@ export class ElectronChromeExtensions extends EventEmitter {
   private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
     if (webContents.session !== this.ctx.session) return
 
+    // TODO: Need to listen for WebContents that navigate to any extension URL
+
     if (webContents.getType() === 'backgroundPage') {
       this.addExtensionHost(webContents)
     }
