@@ -89,8 +89,14 @@ export const injectExtensionAPIs = () => {
     }
 
     class ExtensionEvent<T extends Function> implements chrome.events.Event<T> {
-      constructor(private name: string) {}
+      constructor(private name: string, private internalListener?: T) {}
+
       addListener(callback: T) {
+        if (this.internalListener) {
+          electron.addExtensionListener(extensionId, this.name, this.internalListener)
+          this.internalListener = undefined
+        }
+
         electron.addExtensionListener(extensionId, this.name, callback)
       }
       removeListener(callback: T) {
@@ -230,13 +236,11 @@ export const injectExtensionAPIs = () => {
             removeAll: invokeExtension('contextMenus.removeAll'),
             onClicked: new ExtensionEvent<
               (info: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab) => void
-            >('contextMenus.onClicked'),
+            >('contextMenus.onClicked', (info, tab) => {
+              const callback = menuCallbacks[info.menuItemId]
+              if (callback && tab) callback(info, tab)
+            }),
           }
-
-          api.onClicked.addListener((info, tab) => {
-            const callback = menuCallbacks[info.menuItemId]
-            if (callback && tab) callback(info, tab)
-          })
 
           return api
         },
