@@ -85,19 +85,6 @@ export class ElectronChromeExtensions extends EventEmitter {
     this.windows = new WindowsAPI(this.ctx)
 
     this.prependPreload()
-    this.addStoreListeners()
-  }
-
-  private addStoreListeners() {
-    const store = this.ctx.store
-
-    // Relay a few internal events.
-    const relayEvents = ['active-tab-changed']
-    relayEvents.forEach((eventName) => {
-      store.on(eventName, (...args) => {
-        this.emit(eventName, ...args)
-      })
-    })
   }
 
   private async prependPreload() {

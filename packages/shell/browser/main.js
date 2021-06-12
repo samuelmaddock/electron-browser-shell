@@ -234,11 +234,6 @@ class Browser {
       path.join(__dirname, '../../../extensions')
     )
 
-    this.extensions.on('active-tab-changed', (tab, browserWindow) => {
-      const win = this.getWindowFromBrowserWindow(browserWindow)
-      win.tabs.select(tab.id)
-    })
-
     this.createWindow({ initialUrl: newTabUrl })
   }
 

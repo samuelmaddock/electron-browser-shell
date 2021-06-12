@@ -179,6 +179,10 @@ export class ExtensionStore extends EventEmitter {
 
     if (tab.id !== prevActiveTab?.id) {
       this.emit('active-tab-changed', tab, win)
+
+      if (typeof this.impl.selectTab === 'function') {
+        this.impl.selectTab(tab, win)
+      }
     }
   }
 
