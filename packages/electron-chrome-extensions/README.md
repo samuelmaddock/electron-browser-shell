@@ -169,6 +169,17 @@ An array of all extension context menu items given the context.
 
 #### Instance Events
 
+##### Event: 'active-tab-changed'
+
+Returns:
+
+* `activeTab` Electron.WebContents
+* `window` Electron.BrowserWindow - The window of the active tab.
+
+Emitted when the extension API sets the active tab.
+
+This can occur when an extension uses the [`chrome.tabs.update()`](https://developer.chrome.com/docs/extensions/reference/tabs/#method-update) API.
+
 ##### Event: 'browser-action-popup-created'
 
 Returns:
