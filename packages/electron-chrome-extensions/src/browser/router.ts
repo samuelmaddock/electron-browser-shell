@@ -152,9 +152,13 @@ export class ExtensionRouter {
   private filterListeners(predicate: (listener: EventListener) => boolean) {
     for (const [eventName, listeners] of this.listeners) {
       const filteredListeners = listeners.filter(predicate)
-      this.listeners.set(eventName, filteredListeners)
-
       const delta = listeners.length - filteredListeners.length
+
+      if (filteredListeners.length > 0) {
+        this.listeners.set(eventName, filteredListeners)
+      } else {
+        this.listeners.delete(eventName)
+      }
 
       if (delta > 0) {
         debug(`removed ${delta} listener(s) for '${eventName}'`)
