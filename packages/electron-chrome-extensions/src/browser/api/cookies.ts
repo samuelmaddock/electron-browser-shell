@@ -6,6 +6,10 @@ enum CookieStoreID {
   Incognito = '1',
 }
 
+const onChangedCauseTranslation: { [key: string]: string } = {
+  'expired-overwrite': 'expired_overwrite',
+}
+
 const createCookieDetails = (cookie: Electron.Cookie): chrome.cookies.Cookie => ({
   ...cookie,
   domain: cookie.domain || '',
@@ -29,6 +33,8 @@ export class CookiesAPI {
     handle('cookies.set', this.set.bind(this))
     handle('cookies.remove', this.remove.bind(this))
     handle('cookies.getAllCookieStores', this.getAllCookieStores.bind(this))
+
+    this.cookies.addListener('changed', this.onChanged)
   }
 
   private async get(
@@ -90,5 +96,15 @@ export class CookiesAPI {
       .map((tab) => (tab.isDestroyed() ? undefined : tab.id))
       .filter(Boolean) as number[]
     return [{ id: CookieStoreID.Default, tabIds }]
+  }
+
+  private onChanged = (event: Event, cookie: Electron.Cookie, cause: string, removed: boolean) => {
+    const changeInfo: chrome.cookies.CookieChangeInfo = {
+      cause: onChangedCauseTranslation[cause] || cause,
+      cookie: createCookieDetails(cookie),
+      removed,
+    }
+
+    this.ctx.router.broadcastEvent('cookies.onChanged', changeInfo)
   }
 }

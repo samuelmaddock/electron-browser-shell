@@ -289,7 +289,7 @@ The following APIs are supported, in addition to [those already built-in to Elec
 - [x] chrome.cookies.set
 - [x] chrome.cookies.remove
 - [x] chrome.cookies.getAllCookieStores
-- [ ] chrome.cookies.onChanged
+- [x] chrome.cookies.onChanged
 
 ### [`chrome.contextMenus`](https://developer.chrome.com/extensions/contextMenus)
 
