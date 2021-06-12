@@ -143,6 +143,17 @@ export class ExtensionRouter {
     private delegate: RoutingDelegate = RoutingDelegate.get()
   ) {
     this.delegate.addObserver(this)
+
+    session.on('extension-unloaded', (event, extension) => {
+      this.filterListeners((listener) => listener.extensionId !== extension.id)
+    })
+  }
+
+  private filterListeners(predicate: (listener: EventListener) => boolean) {
+    for (const [eventName, listeners] of this.listeners) {
+      const filteredListeners = listeners.filter(predicate)
+      this.listeners.set(eventName, filteredListeners)
+    }
   }
 
   addListener(listener: EventListener, extensionId: string, eventName: string) {
@@ -152,8 +163,6 @@ export class ExtensionRouter {
     if (!extension) {
       throw new Error(`extension not registered in session [extensionId:${extensionId}]`)
     }
-
-    // TODO: clear out extension state on unloaded
 
     if (!listeners.has(eventName)) {
       listeners.set(eventName, [])
