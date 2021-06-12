@@ -156,6 +156,12 @@ export class ExtensionRouter {
     }
   }
 
+  private observeListenerHost(host: Electron.WebContents) {
+    host.once('destroyed', () => {
+      this.filterListeners((listener) => listener.host === host)
+    })
+  }
+
   addListener(listener: EventListener, extensionId: string, eventName: string) {
     const { listeners, session } = this
 
@@ -176,10 +182,10 @@ export class ExtensionRouter {
     } else {
       debug(`adding '${eventName}' event listener for ${extensionId}`)
       eventListeners.push(listener)
+      this.observeListenerHost(listener.host)
     }
   }
 
-  // TODO: need to cleanup listeners ourselves when a webcontents is destroyed
   removeListener(listener: EventListener, extensionId: string, eventName: string) {
     const { listeners } = this
 
@@ -188,8 +194,6 @@ export class ExtensionRouter {
       console.error(`event listener not registered for '${eventName}'`)
       return
     }
-
-    // const eventListener: EventListener = { host: sender, extensionId }
 
     const index = eventListeners.findIndex(eventListenerEquals(listener))
 
@@ -283,7 +287,6 @@ export class ExtensionRouter {
     for (const { host } of eventListeners) {
       // TODO: may need to wake lazy extension context
       if (host.isDestroyed()) {
-        // TODO: cleanup this listener?
         console.error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
         continue
       }
