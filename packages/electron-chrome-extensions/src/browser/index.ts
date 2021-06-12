@@ -83,9 +83,20 @@ export class ElectronChromeExtensions extends EventEmitter {
     this.webNavigation = new WebNavigationAPI(this.ctx)
     this.windows = new WindowsAPI(this.ctx)
 
-    app.on('web-contents-created', this.onWebContentsCreated)
-
     this.prependPreload()
+    this.addStoreListeners()
+  }
+
+  private addStoreListeners() {
+    const store = this.ctx.store
+
+    // Relay a few internal events.
+    const relayEvents = ['active-tab-changed']
+    relayEvents.forEach((eventName) => {
+      store.on(eventName, (...args) => {
+        this.emit(eventName, ...args)
+      })
+    })
   }
 
   private async prependPreload() {
@@ -115,16 +126,6 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
   }
 
-  private onWebContentsCreated = (event: Electron.Event, webContents: Electron.WebContents) => {
-    if (webContents.session !== this.ctx.session) return
-
-    // TODO: Need to listen for WebContents that navigate to any extension URL
-
-    if (webContents.getType() === 'backgroundPage') {
-      this.addExtensionHost(webContents)
-    }
-  }
-
   /** Add webContents to be tracked as a tab. */
   addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
     this.ctx.store.addTab(tab, window)
@@ -147,7 +148,9 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @deprecated Extension hosts are now tracked lazily when they send
    * extension IPCs to the main process.
    */
-  addExtensionHost(host: Electron.WebContents) {}
+  addExtensionHost(host: Electron.WebContents) {
+    console.warn('ElectronChromeExtensions.addExtensionHost() is deprecated')
+  }
 
   /**
    * Get collection of menu items managed by the `chrome.contextMenus` API.
@@ -163,6 +166,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @deprecated Not needed in Electron >=12.
    */
   addExtension(extension: Electron.Extension) {
+    console.warn('ElectronChromeExtensions.addExtension() is deprecated')
     this.browserAction.processExtension(this.ctx.session, extension)
   }
 
@@ -172,6 +176,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @deprecated Not needed in Electron >=12.
    */
   removeExtension(extension: Electron.Extension) {
+    console.warn('ElectronChromeExtensions.removeExtension() is deprecated')
     this.browserAction.removeActions(this.ctx.session, extension.id)
   }
 }
