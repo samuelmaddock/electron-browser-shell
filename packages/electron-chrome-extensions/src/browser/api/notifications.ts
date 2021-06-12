@@ -49,7 +49,7 @@ export class NotificationsAPI {
   private registry = new Map<string, Notification>()
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('notifications.clear', this.clear)
     handle('notifications.create', this.create)
     handle('notifications.getAll', this.getAll)
@@ -131,12 +131,12 @@ export class NotificationsAPI {
     this.registry.set(notificationId, notification)
 
     notification.on('click', () => {
-      this.ctx.router.sendEvent(this.ctx, extension.id, 'notifications.onClicked', id)
+      this.ctx.router.sendEvent(extension.id, 'notifications.onClicked', id)
     })
 
     notification.once('close', () => {
       const byUser = true // TODO
-      this.ctx.router.sendEvent(this.ctx, extension.id, 'notifications.onClosed', id, byUser)
+      this.ctx.router.sendEvent(extension.id, 'notifications.onClosed', id, byUser)
       this.registry.delete(notificationId)
     })
 

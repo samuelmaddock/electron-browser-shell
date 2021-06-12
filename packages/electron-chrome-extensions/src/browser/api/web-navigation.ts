@@ -31,7 +31,7 @@ const getFrameDetails = (frame: any) => ({
 
 export class WebNavigationAPI {
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('webNavigation.getFrame', this.getFrame.bind(this))
     handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
 
@@ -81,7 +81,7 @@ export class WebNavigationAPI {
 
   private sendNavigationEvent = (eventName: string, details: { url: string }) => {
     debug(`${eventName} [url: ${details.url}]`)
-    this.ctx.router.broadcastEvent(this.ctx, `webNavigation.${eventName}`, details)
+    this.ctx.router.broadcastEvent(`webNavigation.${eventName}`, details)
   }
 
   private onCreatedNavigationTarget = (

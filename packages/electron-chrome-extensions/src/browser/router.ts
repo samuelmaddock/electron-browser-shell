@@ -15,12 +15,100 @@ const debug = createDebug('electron-chrome-extensions:router')
 
 const DEFAULT_SESSION = '_self'
 
+interface RoutingDelegateObserver {
+  session: Electron.Session
+  onExtensionMessage(
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string | undefined,
+    handlerName: string,
+    ...args: any[]
+  ): Promise<void>
+  addListener(listener: EventListener, extensionId: string, eventName: string): void
+  removeListener(listener: EventListener, extensionId: string, eventName: string): void
+}
+
+let gRoutingDelegate: RoutingDelegate
+
+/**
+ * Handles event routing IPCs and delivers them to the observer with the
+ * associated session.
+ */
+class RoutingDelegate {
+  static get() {
+    return gRoutingDelegate || (gRoutingDelegate = new RoutingDelegate())
+  }
+
+  private sessionMap: WeakMap<Session, RoutingDelegateObserver> = new WeakMap()
+
+  private constructor() {
+    ipcMain.handle('crx-msg', this.onRouterMessage)
+    ipcMain.handle('crx-msg-remote', this.onRemoteMessage)
+    ipcMain.on('crx-add-listener', this.onAddListener)
+    ipcMain.on('crx-remove-listener', this.onRemoveListener)
+  }
+
+  addObserver(observer: RoutingDelegateObserver) {
+    this.sessionMap.set(observer.session, observer)
+  }
+
+  private onRouterMessage = async (
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
+    handlerName: string,
+    ...args: any[]
+  ) => {
+    debug(`received '${handlerName}'`, args)
+
+    const observer = this.sessionMap.get(event.sender.session)
+
+    return observer?.onExtensionMessage(event, extensionId, handlerName, ...args)
+  }
+
+  private onRemoteMessage = async (
+    event: Electron.IpcMainInvokeEvent,
+    sessionPartition: string,
+    handlerName: string,
+    ...args: any[]
+  ) => {
+    debug(`received remote '${handlerName}' for '${sessionPartition}'`, args)
+
+    const ses =
+      sessionPartition === DEFAULT_SESSION
+        ? event.sender.session
+        : session.fromPartition(sessionPartition)
+
+    const observer = this.sessionMap.get(ses)
+
+    return observer?.onExtensionMessage(event, undefined, handlerName, ...args)
+  }
+
+  private onAddListener = (
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
+    eventName: string
+  ) => {
+    const observer = this.sessionMap.get(event.sender.session)
+    const listener: EventListener = { host: event.sender, extensionId }
+    return observer?.addListener(listener, extensionId, eventName)
+  }
+
+  private onRemoveListener = (
+    event: Electron.IpcMainInvokeEvent,
+    extensionId: string,
+    eventName: string
+  ) => {
+    const observer = this.sessionMap.get(event.sender.session)
+    const listener: EventListener = { host: event.sender, extensionId }
+    return observer?.removeListener(listener, extensionId, eventName)
+  }
+}
+
 export interface ExtensionEvent {
   sender: WebContents
   extension: Extension
 }
 
-export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => void
+export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => any
 
 export interface HandlerOptions {
   /** Whether the handler can be invoked on behalf of a different session. */
@@ -43,44 +131,27 @@ interface EventListener {
   extensionId: string
 }
 
-interface SessionRoutingDetails {
-  handlers: HandlerMap
-  listeners: Map<EventName, EventListener[]>
-}
-
 const eventListenerEquals = (eventListener: EventListener) => (other: EventListener) =>
   other.host === eventListener.host && other.extensionId === eventListener.extensionId
 
-let gRouter: ExtensionRouter | undefined
-
 export class ExtensionRouter {
-  private sessionMap: WeakMap<Session, SessionRoutingDetails> = new WeakMap()
+  private handlers: HandlerMap = new Map()
+  private listeners: Map<EventName, EventListener[]> = new Map()
 
-  static get() {
-    return gRouter || (gRouter = new ExtensionRouter())
+  constructor(
+    public session: Electron.Session,
+    private delegate: RoutingDelegate = RoutingDelegate.get()
+  ) {
+    this.delegate.addObserver(this)
   }
 
-  private constructor() {
-    ipcMain.handle('crx-msg', this.onRouterMessage)
-    ipcMain.handle('crx-msg-remote', this.onRemoteMessage)
-    ipcMain.on('crx-add-listener', this.onAddListener)
-    ipcMain.on('crx-remove-listener', this.onRemoveListener)
-  }
-
-  private onAddListener = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    eventName: string
-  ) => {
-    const { session } = event.sender
-    const { listeners } = this.getSessionDetails(session)
+  addListener(listener: EventListener, extensionId: string, eventName: string) {
+    const { listeners, session } = this
 
     const extension = session.getExtension(extensionId)
     if (!extension) {
       throw new Error(`extension not registered in session [extensionId:${extensionId}]`)
     }
-
-    const eventListener: EventListener = { host: event.sender, extensionId }
 
     // TODO: clear out extension state on unloaded
 
@@ -89,23 +160,19 @@ export class ExtensionRouter {
     }
 
     const eventListeners = listeners.get(eventName)!
-    const existingEventListener = eventListeners.find(eventListenerEquals(eventListener))
+    const existingEventListener = eventListeners.find(eventListenerEquals(listener))
 
     if (existingEventListener) {
       debug(`ignoring existing '${eventName}' event listener for ${extensionId}`)
     } else {
       debug(`adding '${eventName}' event listener for ${extensionId}`)
-      eventListeners.push(eventListener)
+      eventListeners.push(listener)
     }
   }
 
   // TODO: need to cleanup listeners ourselves when a webcontents is destroyed
-  private onRemoveListener = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    eventName: string
-  ) => {
-    const { listeners } = this.getSessionDetails(event.sender.session)
+  removeListener(listener: EventListener, extensionId: string, eventName: string) {
+    const { listeners } = this
 
     const eventListeners = listeners.get(eventName)
     if (!eventListeners) {
@@ -113,9 +180,9 @@ export class ExtensionRouter {
       return
     }
 
-    const eventListener: EventListener = { host: event.sender, extensionId }
+    // const eventListener: EventListener = { host: sender, extensionId }
 
-    const index = eventListeners.findIndex(eventListenerEquals(eventListener))
+    const index = eventListeners.findIndex(eventListenerEquals(listener))
 
     if (index >= 0) {
       debug(`removing '${eventName}' event listener for ${extensionId}`)
@@ -127,17 +194,8 @@ export class ExtensionRouter {
     }
   }
 
-  private getHandler(session: Electron.Session, handlerName: string) {
-    if (typeof handlerName !== 'string') {
-      throw new Error('handlerName must be of type string')
-    }
-
-    const sessionDetails = this.sessionMap.get(session)
-    if (!sessionDetails) {
-      throw new Error("Chrome extensions are not supported in the sender's session")
-    }
-
-    const handler = sessionDetails.handlers.get(handlerName)
+  private getHandler(handlerName: string) {
+    const handler = this.handlers.get(handlerName)
     if (!handler) {
       throw new Error(`${handlerName} is not a registered handler`)
     }
@@ -145,15 +203,15 @@ export class ExtensionRouter {
     return handler
   }
 
-  private async invokeHandler(
+  async onExtensionMessage(
     event: Electron.IpcMainInvokeEvent,
-    session: Electron.Session,
     extensionId: string | undefined,
     handlerName: string,
-    args: any[]
+    ...args: any[]
   ) {
+    const { session } = this
     const { sender } = event
-    const handler = this.getHandler(session, handlerName)
+    const handler = this.getHandler(handlerName)
 
     if (sender.session !== session && !handler.allowRemote) {
       throw new Error(`${handlerName} does not support calling from a remote session`)
@@ -178,48 +236,8 @@ export class ExtensionRouter {
     return result
   }
 
-  private onRouterMessage = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    handlerName: string,
-    ...args: any[]
-  ) => {
-    debug(`received '${handlerName}'`, args)
-    return this.invokeHandler(event, event.sender.session, extensionId, handlerName, args)
-  }
-
-  private onRemoteMessage = (
-    event: Electron.IpcMainInvokeEvent,
-    sessionPartition: string,
-    handlerName: string,
-    ...args: any[]
-  ) => {
-    debug(`received remote '${handlerName}' for '${sessionPartition}'`, args)
-    const ses =
-      sessionPartition === DEFAULT_SESSION
-        ? event.sender.session
-        : session.fromPartition(sessionPartition)
-    return this.invokeHandler(event, ses, undefined, handlerName, args)
-  }
-
-  private getSessionDetails(session: Session) {
-    // TODO: we should only create session details if ElectronChromeExtensions has been created
-    // for the given session.
-    if (!this.sessionMap.has(session)) {
-      this.sessionMap.set(session, { handlers: new Map(), listeners: new Map() })
-    }
-    return this.sessionMap.get(session)!
-  }
-
-  private handle(
-    session: Session,
-    name: string,
-    callback: HandlerCallback,
-    opts?: HandlerOptions
-  ): void {
-    const { handlers } = this.getSessionDetails(session)
-
-    handlers.set(name, {
+  private handle(name: string, callback: HandlerCallback, opts?: HandlerOptions): void {
+    this.handlers.set(name, {
       callback,
       extensionContext: typeof opts?.extensionContext === 'boolean' ? opts.extensionContext : true,
       allowRemote: typeof opts?.allowRemote === 'boolean' ? opts.allowRemote : false,
@@ -227,9 +245,9 @@ export class ExtensionRouter {
   }
 
   /** Returns a callback to register API handlers for the given context. */
-  apiHandler(ctx: ExtensionContext) {
+  apiHandler() {
     return (name: string, callback: HandlerCallback, opts?: HandlerOptions) => {
-      this.handle(ctx.session, name, callback, opts)
+      this.handle(name, callback, opts)
     }
   }
 
@@ -237,13 +255,8 @@ export class ExtensionRouter {
    * Sends extension event to the host for the given extension ID if it
    * registered a listener for it.
    */
-  sendEvent(
-    ctx: ExtensionContext,
-    extensionId: string | undefined,
-    eventName: string,
-    ...args: any[]
-  ) {
-    const { listeners } = this.getSessionDetails(ctx.session)
+  sendEvent(extensionId: string | undefined, eventName: string, ...args: any[]) {
+    const { listeners } = this
 
     let eventListeners = listeners.get(eventName)
 
@@ -262,7 +275,8 @@ export class ExtensionRouter {
       // TODO: may need to wake lazy extension context
       if (host.isDestroyed()) {
         // TODO: cleanup this listener?
-        throw new Error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
+        console.error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
+        continue
       }
 
       const ipcName = `crx-${eventName}`
@@ -271,7 +285,7 @@ export class ExtensionRouter {
   }
 
   /** Broadcasts extension event to all extension hosts listening for it. */
-  broadcastEvent(ctx: ExtensionContext, eventName: string, ...args: any[]) {
-    this.sendEvent(ctx, undefined, eventName, ...args)
+  broadcastEvent(eventName: string, ...args: any[]) {
+    this.sendEvent(undefined, eventName, ...args)
   }
 }

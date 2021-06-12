@@ -7,7 +7,7 @@ export class RuntimeAPI extends EventEmitter {
   constructor(private ctx: ExtensionContext) {
     super()
 
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('runtime.openOptionsPage', this.openOptionsPage)
   }
 

@@ -16,7 +16,7 @@ export class WindowsAPI {
   static WINDOW_ID_CURRENT = -2
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('windows.get', this.get.bind(this))
     // TODO: how does getCurrent differ from getLastFocused?
     handle('windows.getCurrent', this.getLastFocused.bind(this))
@@ -151,17 +151,17 @@ export class WindowsAPI {
     const window = this.ctx.store.getWindowById(windowId)
     if (!window) return
     const windowDetails = this.getWindowDetails(window)
-    this.ctx.router.broadcastEvent(this.ctx, 'windows.onCreated', windowDetails)
+    this.ctx.router.broadcastEvent('windows.onCreated', windowDetails)
   }
 
   onRemoved(windowId: number) {
-    this.ctx.router.broadcastEvent(this.ctx, 'windows.onRemoved', windowId)
+    this.ctx.router.broadcastEvent('windows.onRemoved', windowId)
   }
 
   onFocusChanged(windowId: number) {
     if (this.ctx.store.lastFocusedWindowId === windowId) return
 
     this.ctx.store.lastFocusedWindowId = windowId
-    this.ctx.router.broadcastEvent(this.ctx, 'windows.onFocusChanged', windowId)
+    this.ctx.router.broadcastEvent('windows.onFocusChanged', windowId)
   }
 }

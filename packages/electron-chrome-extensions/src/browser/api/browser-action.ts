@@ -58,7 +58,7 @@ export class BrowserActionAPI {
   private queuedUpdate: boolean = false
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
 
     const getter =
       (propName: ExtensionActionKey) =>
@@ -288,7 +288,7 @@ export class BrowserActionAPI {
       debug(`dispatching onClicked for ${extensionId}`)
 
       const tabDetails = this.ctx.store.tabDetailsCache.get(tab.id)
-      this.ctx.router.sendEvent(this.ctx, extensionId, 'browserAction.onClicked', tabDetails)
+      this.ctx.router.sendEvent(extensionId, 'browserAction.onClicked', tabDetails)
     }
   }
 

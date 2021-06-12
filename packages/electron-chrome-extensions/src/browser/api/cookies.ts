@@ -23,7 +23,7 @@ export class CookiesAPI {
   }
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('cookies.get', this.get.bind(this))
     handle('cookies.getAll', this.getAll.bind(this))
     handle('cookies.set', this.set.bind(this))

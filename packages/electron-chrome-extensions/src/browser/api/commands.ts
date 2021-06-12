@@ -5,7 +5,7 @@ import { ExtensionContext } from '../context'
  */
 export class CommandsAPI {
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('commands.getAll', this.getAll)
   }
 

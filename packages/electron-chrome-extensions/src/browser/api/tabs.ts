@@ -12,7 +12,7 @@ export class TabsAPI {
   static WINDOW_ID_CURRENT = -2
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('tabs.get', this.get.bind(this))
     handle('tabs.getAllInWindow', this.getAllInWindow.bind(this))
     handle('tabs.getCurrent', this.getCurrent.bind(this))
@@ -277,7 +277,7 @@ export class TabsAPI {
     const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return
     const tabDetails = this.getTabDetails(tab)
-    this.ctx.router.broadcastEvent(this.ctx, 'tabs.onCreated', tabDetails)
+    this.ctx.router.broadcastEvent('tabs.onCreated', tabDetails)
   }
 
   onUpdated(tabId: number) {
@@ -316,7 +316,7 @@ export class TabsAPI {
 
     if (!didUpdate) return
 
-    this.ctx.router.broadcastEvent(this.ctx, 'tabs.onUpdated', tab.id, changeInfo, details)
+    this.ctx.router.broadcastEvent('tabs.onUpdated', tab.id, changeInfo, details)
   }
 
   onRemoved(tabId: number) {
@@ -331,7 +331,7 @@ export class TabsAPI {
         ? BrowserWindow.getAllWindows().find((win) => win.id === windowId)
         : null
 
-    this.ctx.router.broadcastEvent(this.ctx, 'tabs.onRemoved', tabId, {
+    this.ctx.router.broadcastEvent('tabs.onRemoved', tabId, {
       windowId,
       isWindowClosing: win ? win.isDestroyed() : false,
     })
@@ -354,7 +354,7 @@ export class TabsAPI {
       tabInfo.active = tabId === cacheTabId
     })
 
-    this.ctx.router.broadcastEvent(this.ctx, 'tabs.onActivated', {
+    this.ctx.router.broadcastEvent('tabs.onActivated', {
       tabId,
       windowId: win?.id,
     })

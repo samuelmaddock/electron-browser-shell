@@ -233,11 +233,7 @@ class Browser {
       this.session,
       path.join(__dirname, '../../../extensions')
     )
-    installedExtensions.forEach((extension) => {
-      this.extensions.addExtension(extension)
-    })
 
-    // FIXME: this event was removed, need to revisit
     this.extensions.on('active-tab-changed', (tab, browserWindow) => {
       const win = this.getWindowFromBrowserWindow(browserWindow)
       win.tabs.select(tab.id)

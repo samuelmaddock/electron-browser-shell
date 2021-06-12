@@ -80,7 +80,7 @@ export class ContextMenusAPI {
   >()
 
   constructor(private ctx: ExtensionContext) {
-    const handle = this.ctx.router.apiHandler(this.ctx)
+    const handle = this.ctx.router.apiHandler()
     handle('contextMenus.create', this.create)
     handle('contextMenus.remove', this.remove)
     handle('contextMenus.removeAll', this.removeAll)
@@ -292,6 +292,6 @@ export class ContextMenusAPI {
       srcUrl: params?.srcURL,
     }
 
-    this.ctx.router.sendEvent(this.ctx, extensionId, 'contextMenus.onClicked', data, tab)
+    this.ctx.router.sendEvent(extensionId, 'contextMenus.onClicked', data, tab)
   }
 }
