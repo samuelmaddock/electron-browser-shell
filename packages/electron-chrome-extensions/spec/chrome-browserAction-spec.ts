@@ -133,17 +133,17 @@ describe('chrome.browserAction', () => {
     for (const { method, detail, value } of props) {
       it(`sets and gets '${detail}'`, async () => {
         const newValue = value || uuid()
-        await browser.exec(`browserAction.set${method}`, { [detail]: newValue })
-        const result = await browser.exec(`browserAction.get${method}`)
+        await browser.crx.exec(`browserAction.set${method}`, { [detail]: newValue })
+        const result = await browser.crx.exec(`browserAction.get${method}`)
         expect(result).to.equal(newValue)
       })
 
       it(`restores initial values for '${detail}'`, async () => {
         const newValue = value || uuid()
-        const initial = await browser.exec(`browserAction.get${method}`)
-        await browser.exec(`browserAction.set${method}`, { [detail]: newValue })
-        await browser.exec(`browserAction.set${method}`, { [detail]: null })
-        const result = await browser.exec(`browserAction.get${method}`)
+        const initial = await browser.crx.exec(`browserAction.get${method}`)
+        await browser.crx.exec(`browserAction.set${method}`, { [detail]: newValue })
+        await browser.crx.exec(`browserAction.set${method}`, { [detail]: null })
+        const result = await browser.crx.exec(`browserAction.get${method}`)
         expect(result).to.equal(initial)
       })
     }
@@ -151,7 +151,7 @@ describe('chrome.browserAction', () => {
     it('uses custom popup when opening browser action', async () => {
       const popupUuid = uuid()
       const popupPath = `popup.html?${popupUuid}`
-      await browser.exec('browserAction.setPopup', { popup: popupPath })
+      await browser.crx.exec('browserAction.setPopup', { popup: popupPath })
       const popupPromise = emittedOnce(browser.extensions, 'browser-action-popup-created')
       await activateExtension(browser.partition, browser.window.webContents, browser.extension)
       const [popup] = await popupPromise

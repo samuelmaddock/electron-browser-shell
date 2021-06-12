@@ -27,7 +27,7 @@ describe('chrome.contextMenus', () => {
     it('creates item with label', async () => {
       const id = uuid()
       const title = 'ヤッホー'
-      await browser.exec('contextMenus.create', { id, title })
+      await browser.crx.exec('contextMenus.create', { id, title })
       const items = await getContextMenuItems()
       expect(items).to.have.lengthOf(1)
       expect(items[0].id).to.equal(id)
@@ -37,8 +37,8 @@ describe('chrome.contextMenus', () => {
     it('creates a child item', async () => {
       const parentId = uuid()
       const id = uuid()
-      await browser.exec('contextMenus.create', { id: parentId, title: 'parent' })
-      await browser.exec('contextMenus.create', { id, parentId, title: 'child' })
+      await browser.crx.exec('contextMenus.create', { id: parentId, title: 'parent' })
+      await browser.crx.exec('contextMenus.create', { id, parentId, title: 'child' })
       const items = await getContextMenuItems()
       expect(items).to.have.lengthOf(1)
       expect(items[0].label).to.equal('parent')
@@ -51,8 +51,8 @@ describe('chrome.contextMenus', () => {
   describe('remove()', () => {
     it('removes item', async () => {
       const id = uuid()
-      await browser.exec('contextMenus.create', { id })
-      await browser.exec('contextMenus.remove', id)
+      await browser.crx.exec('contextMenus.create', { id })
+      await browser.crx.exec('contextMenus.remove', id)
       const items = await getContextMenuItems()
       expect(items).to.be.empty
     })
@@ -60,9 +60,9 @@ describe('chrome.contextMenus', () => {
 
   describe('removeAll()', () => {
     it('removes all items', async () => {
-      await browser.exec('contextMenus.create', {})
-      await browser.exec('contextMenus.create', {})
-      await browser.exec('contextMenus.removeAll')
+      await browser.crx.exec('contextMenus.create', {})
+      await browser.crx.exec('contextMenus.create', {})
+      await browser.crx.exec('contextMenus.removeAll')
       const items = await getContextMenuItems()
       expect(items).to.be.empty
     })

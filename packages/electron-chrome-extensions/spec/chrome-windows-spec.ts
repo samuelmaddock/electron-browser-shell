@@ -11,7 +11,7 @@ describe('chrome.windows', () => {
   describe('get()', () => {
     it('gets details on the window', async () => {
       const windowId = browser.window.id
-      const result = await browser.exec('windows.get', windowId)
+      const result = await browser.crx.exec('windows.get', windowId)
       expect(result).to.be.an('object')
       expect(result.id).to.equal(windowId)
     })
@@ -22,7 +22,7 @@ describe('chrome.windows', () => {
       // HACK: focus() doesn't actually emit this in tests
       browser.window.emit('focus')
       const windowId = browser.window.id
-      const result = await browser.exec('windows.getLastFocused')
+      const result = await browser.crx.exec('windows.getLastFocused')
       expect(result).to.be.an('object')
       expect(result.id).to.equal(windowId)
     })
@@ -32,13 +32,13 @@ describe('chrome.windows', () => {
     it('removes the window', async () => {
       const windowId = browser.window.id
       const closedPromise = emittedOnce(browser.window, 'closed')
-      browser.exec('windows.remove', windowId)
+      browser.crx.exec('windows.remove', windowId)
       await closedPromise
     })
 
     it('removes the current window', async () => {
       const closedPromise = emittedOnce(browser.window, 'closed')
-      browser.exec('windows.remove')
+      browser.crx.exec('windows.remove')
       await closedPromise
     })
   })

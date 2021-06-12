@@ -90,11 +90,29 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
       return partition
     },
 
-    async exec(method: string, ...args: any[]) {
-      const p = emittedOnce(ipcMain, 'success')
-      await w.webContents.executeJavaScript(`exec('${JSON.stringify({ method, args })}')`)
-      const [, result] = await p
-      return result
+    crx: {
+      async exec(method: string, ...args: any[]) {
+        const p = emittedOnce(ipcMain, 'success')
+        await w.webContents.executeJavaScript(
+          `exec('${JSON.stringify({ type: 'api', method, args })}')`
+        )
+        const [, result] = await p
+        return result
+      },
+
+      async eventOnce(eventName: string) {
+        const p = emittedOnce(ipcMain, 'success')
+        await w.webContents.executeJavaScript(
+          `exec('${JSON.stringify({ type: 'event-once', name: eventName })}')`
+        )
+        const [, results] = await p
+
+        if (typeof results === 'string') {
+          throw new Error(results)
+        }
+
+        return results
+      },
     },
   }
 }
