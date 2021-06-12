@@ -3,7 +3,7 @@ import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
 
 import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
-import { useExtensionBrowser, useServer } from './hooks'
+import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -29,11 +29,10 @@ describe('chrome.browserAction', () => {
     }
 
     // TODO: use preload script with `injectBrowserAction()`
-    await webContents.executeJavaScript(
-      `require('electron').ipcRenderer.invoke('crx-msg-remote', '${partition}', 'browserAction.activate', ${JSON.stringify(
-        details
-      )})`
-    )
+    const js = `electronTest.invokeIpc('crx-msg-remote', '${partition}', 'browserAction.activate', ${JSON.stringify(
+      details
+    )})`
+    await webContents.executeJavaScript(js)
   }
 
   describe('messaging', () => {
@@ -44,8 +43,10 @@ describe('chrome.browserAction', () => {
 
     it('supports cross-session communication', async () => {
       const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
+      otherSession.setPreloads(browser.session.getPreloads())
+
       const view = new BrowserView({
-        webPreferences: { session: otherSession, nodeIntegration: true, contextIsolation: false },
+        webPreferences: { session: otherSession, nodeIntegration: false, contextIsolation: true },
       })
       await view.webContents.loadURL(server.getUrl())
       browser.window.addBrowserView(view)
@@ -98,7 +99,11 @@ describe('chrome.browserAction', () => {
 
     it('opens when BrowserView is the active tab', async () => {
       const view = new BrowserView({
-        webPreferences: { session: browser.session, contextIsolation: false },
+        webPreferences: {
+          session: browser.session,
+          nodeIntegration: false,
+          contextIsolation: true,
+        },
       })
       await view.webContents.loadURL(server.getUrl())
       browser.window.addBrowserView(view)

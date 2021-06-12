@@ -50,8 +50,8 @@ describe('chrome.tabs', () => {
         show: false,
         webPreferences: {
           session: browser.session,
-          nodeIntegration: true,
-          contextIsolation: false,
+          nodeIntegration: false,
+          contextIsolation: true,
         },
       })
 

@@ -47,13 +47,16 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     partitionName = `crx-${uuid()}`
     partition = `persist:${partitionName}`
     customSession = session.fromPartition(partition)
+
+    customSession.setPreloads([path.join(fixtures, 'test-preload.js')])
+
     extensions = new ElectronChromeExtensions({ session: customSession })
 
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
 
     w = new BrowserWindow({
       show: false,
-      webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false },
+      webPreferences: { session: customSession, nodeIntegration: false, contextIsolation: true },
     })
 
     extensions.addTab(w.webContents, w)

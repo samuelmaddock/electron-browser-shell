@@ -7,6 +7,6 @@ function evalInMainWorld(fn) {
 }
 
 chrome.runtime.onMessage.addListener(({ name, args }) => {
-  const funcStr = `() => { require('electron').ipcRenderer.send(${JSON.stringify(name)}, ${JSON.stringify(args)}) }`
+  const funcStr = `() => { electronTest.sendIpc(${JSON.stringify(name)}, ${JSON.stringify(args)}) }`
   evalInMainWorld(funcStr)
 })
