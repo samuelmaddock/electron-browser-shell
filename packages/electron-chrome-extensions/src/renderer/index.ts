@@ -260,6 +260,15 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      extension: {
+        factory: (base) => {
+          return {
+            ...base,
+            isAllowedIncognitoAccess: () => false,
+          }
+        },
+      },
+
       notifications: {
         factory: (base) => {
           return {
