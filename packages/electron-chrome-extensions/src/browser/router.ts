@@ -1,4 +1,4 @@
-import { Extension, ipcMain, session, Session, WebContents } from 'electron'
+import { app, Extension, ipcMain, session, Session, WebContents } from 'electron'
 import { ExtensionContext } from './context'
 
 const createDebug = require('debug')
@@ -138,6 +138,15 @@ export class ExtensionRouter {
   private handlers: HandlerMap = new Map()
   private listeners: Map<EventName, EventListener[]> = new Map()
 
+  /**
+   * Collection of all extension hosts in the session.
+   *
+   * Currently the router has no ability to wake up non-persistent background
+   * scripts to deliver events. For now we just hold a reference to them to
+   * prevent them from being terminated.
+   */
+  private extensionHosts: Set<Electron.WebContents> = new Set()
+
   constructor(
     public session: Electron.Session,
     private delegate: RoutingDelegate = RoutingDelegate.get()
@@ -146,6 +155,13 @@ export class ExtensionRouter {
 
     session.on('extension-unloaded', (event, extension) => {
       this.filterListeners((listener) => listener.extensionId !== extension.id)
+    })
+
+    app.on('web-contents-created', (event, webContents) => {
+      if (webContents.session === this.session && webContents.getType() === 'backgroundPage') {
+        debug(`storing reference to background host [url:'${webContents.getURL()}']`)
+        this.extensionHosts.add(webContents)
+      }
     })
   }
 
@@ -249,9 +265,7 @@ export class ExtensionRouter {
 
     const extEvent = {
       sender,
-      get extension() {
-        return session.getExtension(extensionId!)
-      },
+      extension: extension!,
     }
 
     const result = await handler.callback(extEvent, ...args)

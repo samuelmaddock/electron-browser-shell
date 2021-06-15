@@ -394,6 +394,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 ### electron-chrome-extensions
 - The latest version of Electron is recommended. Minimum support requires Electron v9.
 - Chrome's Manifest V3 extensions are not yet supported.
+- All background scripts are persistent.
 
 ### electron
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.

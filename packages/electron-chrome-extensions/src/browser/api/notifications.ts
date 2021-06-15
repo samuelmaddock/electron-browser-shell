@@ -56,8 +56,7 @@ export class NotificationsAPI {
     handle('notifications.getPermissionLevel', this.getPermissionLevel)
     handle('notifications.update', this.update)
 
-    // TODO: remove 'any' when project is upgraded to Electron 12
-    this.ctx.session.on('extension-unloaded' as any, (event, extension: any) => {
+    this.ctx.session.on('extension-unloaded', (event, extension) => {
       for (const [key, notification] of this.registry) {
         if (key.startsWith(extension.id)) {
           notification.close()
