@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [3.8.0] - 2021-06-14
+
+### Added
+
+- `chrome.cookies.onChanged`
+- `chrome.extension.isAllowedIncognitoAccess`
+
+### Changed
+
+- Extension background scripts now subscribe to API events to cut down on IPC traffic.
+- `selectTab()` from the `ElectronChromeExtensions` constructor options is now called when the Chrome extensions API sets the active tab.
+
 ## [3.7.0] - 2021-06-05
 
 ### Added
@@ -119,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.8.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.7.0...electron-chrome-extensions@3.8.0
 [3.7.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.6.1...electron-chrome-extensions@3.7.0
 [3.6.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.6.0...electron-chrome-extensions@3.6.1
 [3.6.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.5.0...electron-chrome-extensions@3.6.0
