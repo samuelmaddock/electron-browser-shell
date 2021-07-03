@@ -3,3 +3,4 @@ extensions/*
 !extensions/README.md
 
 disabled/
+node_modules
