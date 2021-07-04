@@ -48,7 +48,7 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
     partition = `persist:${partitionName}`
     customSession = session.fromPartition(partition)
 
-    customSession.setPreloads([path.join(fixtures, 'test-preload.js')])
+    customSession.setPreloads([path.join(fixtures, 'crx-test-preload.js')])
 
     extensions = new ElectronChromeExtensions({ session: customSession })
 
