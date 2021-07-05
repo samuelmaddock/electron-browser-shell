@@ -1,5 +1,4 @@
 import { app, Extension, ipcMain, session, Session, WebContents } from 'electron'
-import { ExtensionContext } from './context'
 
 const createDebug = require('debug')
 

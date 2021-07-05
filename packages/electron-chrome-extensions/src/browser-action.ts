@@ -38,7 +38,7 @@ export const injectBrowserAction = () => {
     },
 
     activate: (partition: string, details: ActivateDetails) => {
-      invoke('browserAction.activate', partition, details)
+      return invoke('browserAction.activate', partition, details)
     },
 
     addObserver(partition: string) {

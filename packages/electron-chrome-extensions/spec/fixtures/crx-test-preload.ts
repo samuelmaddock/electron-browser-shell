@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { injectBrowserAction } from '../../dist/browser-action'
+import { injectBrowserAction } from '../../src/browser-action'
 
 // This should go without saying, but you should never do this in a production
 // app. These bindings are purely for testing convenience.

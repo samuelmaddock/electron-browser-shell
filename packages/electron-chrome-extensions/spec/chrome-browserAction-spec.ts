@@ -3,7 +3,7 @@ import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
 
 import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
-import { useBackgroundPageLogging, useExtensionBrowser, useServer } from './hooks'
+import { useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -28,10 +28,7 @@ describe('chrome.browserAction', () => {
       anchorRect: defaultAnchorRect,
     }
 
-    // TODO: use preload script with `injectBrowserAction()`
-    const js = `electronTest.invokeIpc('crx-msg-remote', '${partition}', 'browserAction.activate', ${JSON.stringify(
-      details
-    )})`
+    const js = `browserAction.activate('${partition}', ${JSON.stringify(details)})`
     await webContents.executeJavaScript(js)
   }
 
@@ -59,13 +56,15 @@ describe('chrome.browserAction', () => {
     })
 
     it('throws for unknown tab', async () => {
-      const p = activateExtension(
-        browser.partition,
-        browser.window.webContents,
-        browser.extension,
-        99999
-      )
-      await expect(p).rejectedWith(/^Error invoking remote method/)
+      const tab = browser.window.webContents
+      const unknownTabId = 99999
+      let caught = false
+      try {
+        await activateExtension(browser.partition, tab, browser.extension, unknownTabId)
+      } catch {
+        caught = true
+      }
+      expect(caught).to.be.true
     })
   })
 
