@@ -75,6 +75,7 @@ export const injectBrowserAction = () => {
     class BrowserActionElement extends HTMLButtonElement {
       private updateId?: number
       private badge?: HTMLDivElement
+      private pendingIcon?: HTMLImageElement
 
       get id(): string {
         return this.getAttribute('id') || ''
@@ -128,6 +129,9 @@ export const injectBrowserAction = () => {
           cancelAnimationFrame(this.updateId)
           this.updateId = undefined
         }
+        if (this.pendingIcon) {
+          this.pendingIcon = undefined
+        }
       }
 
       attributeChangedCallback() {
@@ -179,6 +183,28 @@ export const injectBrowserAction = () => {
         this.updateId = requestAnimationFrame(this.updateCallback.bind(this))
       }
 
+      private updateIcon(info: any) {
+        const iconSize = 32
+        const resizeType = 2
+        const timeParam = info.iconModified ? `&t=${info.iconModified}` : ''
+        const iconUrl = `crx://extension-icon/${this.id}/${iconSize}/${resizeType}?tabId=${this.tab}${timeParam}`
+        const bgImage = `url(${iconUrl})`
+
+        if (this.pendingIcon) {
+          this.pendingIcon = undefined
+        }
+
+        // Preload icon to prevent it from blinking
+        const img = (this.pendingIcon = new Image())
+        img.onload = () => {
+          if (this.isConnected) {
+            this.style.backgroundImage = bgImage
+            this.pendingIcon = undefined
+          }
+        }
+        img.src = iconUrl
+      }
+
       private updateCallback() {
         this.updateId = undefined
 
@@ -190,10 +216,7 @@ export const injectBrowserAction = () => {
 
         this.title = typeof info.title === 'string' ? info.title : ''
 
-        const iconSize = 32
-        const resizeType = 2
-        const iconUrl = `crx://extension-icon/${this.id}/${iconSize}/${resizeType}?tabId=${activeTabId}`
-        this.style.backgroundImage = `url(${iconUrl})`
+        this.updateIcon(info)
 
         if (info.text) {
           const badge = this.getBadge()

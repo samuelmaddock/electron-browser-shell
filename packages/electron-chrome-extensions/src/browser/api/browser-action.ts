@@ -23,6 +23,8 @@ interface ExtensionAction {
   title?: string
   icon?: chrome.browserAction.TabIconDetails
   popup?: string
+  /** Last modified date for icon. */
+  iconModified?: number
 }
 
 type ExtensionActionKey = keyof ExtensionAction
@@ -88,29 +90,36 @@ export class BrowserActionAPI {
         return result
       }
 
+    const setDetails = (
+      { extension }: ExtensionEvent,
+      details: any,
+      propName: ExtensionActionKey
+    ) => {
+      const { tabId } = details
+      let value = (details as any)[propName] || undefined
+
+      if (typeof value === 'undefined') {
+        const defaults = getBrowserActionDefaults(extension)
+        value = defaults ? defaults[propName] : value
+      }
+
+      const valueObj = { [propName]: value }
+      const action = this.getAction(extension.id)
+
+      if (tabId) {
+        const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
+        Object.assign(tabAction, valueObj)
+      } else {
+        Object.assign(action, valueObj)
+      }
+
+      this.onUpdate()
+    }
+
     const setter =
       (propName: ExtensionActionKey) =>
-      ({ extension }: ExtensionEvent, details: chrome.browserAction.TabDetails) => {
-        const { tabId } = details
-        let value = (details as any)[propName] || undefined
-
-        if (typeof value === 'undefined') {
-          const defaults = getBrowserActionDefaults(extension)
-          value = defaults ? defaults[propName] : value
-        }
-
-        const valueObj = { [propName]: value }
-        const action = this.getAction(extension.id)
-
-        if (tabId) {
-          const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
-          Object.assign(tabAction, valueObj)
-        } else {
-          Object.assign(action, valueObj)
-        }
-
-        this.onUpdate()
-      }
+      (event: ExtensionEvent, details: chrome.browserAction.TabDetails) =>
+        setDetails(event, details, propName)
 
     const handleProp = (prop: string, key: ExtensionActionKey) => {
       handle(`browserAction.get${prop}`, getter(key))
@@ -122,15 +131,13 @@ export class BrowserActionAPI {
     handleProp('Title', 'title')
     handleProp('Popup', 'popup')
 
-    const iconSetter = setter('icon')
-
     // setIcon is unique in that it can pass in a variety of properties. Here we normalize them
     // to use 'icon'.
     handle(
       'browserAction.setIcon',
       (event, { tabId, ...details }: chrome.browserAction.TabIconDetails) => {
-        const iconDetails = { tabId, icon: details }
-        iconSetter(event, iconDetails)
+        setDetails(event, { tabId, icon: details }, 'icon')
+        setDetails(event, { tabId, iconModified: Date.now() }, 'iconModified')
       }
     )
 
