@@ -1,10 +1,10 @@
-import { ipcMain, session, BrowserWindow, app, Extension } from 'electron'
+import { ipcMain, BrowserWindow, app, Extension } from 'electron'
 import * as http from 'http'
 import * as path from 'path'
 import { AddressInfo } from 'net'
 import { ElectronChromeExtensions } from '../dist'
 import { emittedOnce } from './events-helpers'
-import { uuid } from './spec-helpers'
+import { addCrxPreload, createCrxSession } from './crx-helpers'
 
 export const useServer = () => {
   const emptyPage = '<script>console.log("loaded")</script>'
@@ -35,20 +35,25 @@ export const useServer = () => {
 
 const fixtures = path.join(__dirname, 'fixtures')
 
-export const useExtensionBrowser = (opts: { url: () => string; extensionName: string }) => {
+export const useExtensionBrowser = (opts: {
+  url?: () => string
+  file?: string
+  extensionName: string
+  openDevTools?: boolean
+}) => {
   let w: Electron.BrowserWindow
   let extensions: ElectronChromeExtensions
   let extension: Extension
-  let partitionName: string
   let partition: string
   let customSession: Electron.Session
 
   beforeEach(async () => {
-    partitionName = `crx-${uuid()}`
-    partition = `persist:${partitionName}`
-    customSession = session.fromPartition(partition)
+    const sessionDetails = createCrxSession()
 
-    customSession.setPreloads([path.join(fixtures, 'crx-test-preload.js')])
+    partition = sessionDetails.partition
+    customSession = sessionDetails.session
+
+    addCrxPreload(customSession)
 
     extensions = new ElectronChromeExtensions({ session: customSession })
 
@@ -59,13 +64,25 @@ export const useExtensionBrowser = (opts: { url: () => string; extensionName: st
       webPreferences: { session: customSession, nodeIntegration: false, contextIsolation: true },
     })
 
+    if (opts.openDevTools) {
+      w.webContents.openDevTools({ mode: 'detach' })
+    }
+
     extensions.addTab(w.webContents, w)
 
-    await w.loadURL(opts.url())
+    if (opts.file) {
+      await w.loadFile(opts.file)
+    } else if (opts.url) {
+      await w.loadURL(opts.url())
+    }
   })
 
   afterEach(() => {
     if (!w.isDestroyed()) {
+      if (w.webContents.isDevToolsOpened()) {
+        w.webContents.closeDevTools()
+      }
+
       w.destroy()
     }
   })

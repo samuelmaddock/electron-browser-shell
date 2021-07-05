@@ -1,9 +1,11 @@
+import * as path from 'path'
 import { expect } from 'chai'
 import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
 
 import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
 import { useExtensionBrowser, useServer } from './hooks'
+import { createCrxRemoteWindow } from './crx-helpers'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -158,6 +160,57 @@ describe('chrome.browserAction', () => {
       expect(popup.browserWindow.webContents.getURL()).to.equal(
         `chrome-extension://${browser.extension.id}/${popupPath}`
       )
+    })
+  })
+
+  describe('<browser-action-list> element', () => {
+    const basePath = path.join(__dirname, 'fixtures/browser-action-list')
+
+    const browser = useExtensionBrowser({
+      extensionName: 'chrome-browserAction-popup',
+    })
+
+    it('lists actions', async () => {
+      await browser.webContents.loadFile(path.join(basePath, 'default.html'))
+
+      const extensionIds = await browser.webContents.executeJavaScript(
+        `(${() => {
+          const list = document.querySelector('browser-action-list')!
+          const actions = list.shadowRoot!.querySelectorAll('.action')
+          const ids = Array.from(actions).map((elem) => elem.id)
+          return ids
+        }})();`
+      )
+
+      expect(extensionIds).to.deep.equal([browser.extension.id])
+    })
+
+    // TODO: fix
+    it.skip('lists actions in remote partition', async () => {
+      const remoteWindow = createCrxRemoteWindow()
+      const remoteTab = remoteWindow.webContents
+
+      await remoteTab.loadURL(server.getUrl())
+
+      // Add <browser-action-list> for remote partition.
+      await remoteTab.executeJavaScript(
+        `(${(partition: string) => {
+          const list = document.createElement('browser-action-list')
+          list.setAttribute('partition', partition)
+          document.body.appendChild(list)
+        }})('${browser.partition}');`
+      )
+
+      const extensionIds = await remoteTab.executeJavaScript(
+        `(${() => {
+          const list = document.querySelector('browser-action-list')!
+          const actions = list.shadowRoot!.querySelectorAll('.action')
+          const ids = Array.from(actions).map((elem) => elem.id)
+          return ids
+        }})();`
+      )
+
+      expect(extensionIds).to.deep.equal([browser.extension.id])
     })
   })
 })
