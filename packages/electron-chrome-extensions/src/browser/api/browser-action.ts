@@ -1,4 +1,4 @@
-import { Menu, MenuItem, session } from 'electron'
+import { Menu, MenuItem } from 'electron'
 import { ExtensionContext } from '../context'
 import { PopupView } from '../popup'
 import { ExtensionEvent } from '../router'
@@ -51,7 +51,7 @@ interface ExtensionActionStore extends Partial<ExtensionAction> {
 }
 
 export class BrowserActionAPI {
-  private sessionActionMap = new WeakMap<Electron.Session, Map<string, ExtensionActionStore>>()
+  private actionMap = new Map</* extensionId */ string, ExtensionActionStore>()
   private popup?: PopupView
 
   private observers: Set<Electron.WebContents> = new Set()
@@ -62,10 +62,9 @@ export class BrowserActionAPI {
 
     const getter =
       (propName: ExtensionActionKey) =>
-      ({ sender, extension }: ExtensionEvent, details: chrome.browserAction.TabDetails = {}) => {
+      ({ extension }: ExtensionEvent, details: chrome.browserAction.TabDetails = {}) => {
         const { tabId } = details
-        const senderSession = sender.session
-        const action = this.getAction(senderSession, extension.id)
+        const action = this.getAction(extension.id)
 
         let result
 
@@ -84,7 +83,7 @@ export class BrowserActionAPI {
 
     const setter =
       (propName: ExtensionActionKey) =>
-      ({ sender, extension }: ExtensionEvent, details: chrome.browserAction.TabDetails) => {
+      ({ extension }: ExtensionEvent, details: chrome.browserAction.TabDetails) => {
         const { tabId } = details
         let value = (details as any)[propName] || undefined
 
@@ -94,9 +93,7 @@ export class BrowserActionAPI {
         }
 
         const valueObj = { [propName]: value }
-
-        const senderSession = sender.session
-        const action = this.getAction(senderSession, extension.id)
+        const action = this.getAction(extension.id)
 
         if (tabId) {
           const tabAction = action.tabs[tabId] || (action.tabs[tabId] = {})
@@ -151,78 +148,55 @@ export class BrowserActionAPI {
   }
 
   private setupSession(session: Electron.Session) {
-    // TODO: Extension events need to be backported from Electron v12
-    const _session = session as any
-
-    _session.on('extension-loaded', (event: Electron.Event, extension: Electron.Extension) => {
-      this.processExtension(session, extension)
+    session.on('extension-loaded', (event, extension) => {
+      this.processExtension(extension)
     })
 
-    _session.on('extension-unloaded', (event: Electron.Event, extension: Electron.Extension) => {
-      this.removeActions(this.ctx.session, extension.id)
+    session.on('extension-unloaded', (event, extension) => {
+      this.removeActions(extension.id)
     })
   }
 
-  private getSessionActions(session: Electron.Session) {
-    let sessionActions = this.sessionActionMap.get(session)
-    if (!sessionActions) {
-      sessionActions = new Map()
-      this.sessionActionMap.set(session, sessionActions)
-      this.onUpdate()
-    }
-    return sessionActions
-  }
-
-  private getAction(session: Electron.Session, extensionId: string) {
-    const sessionActions = this.getSessionActions(session)
-
-    let action = sessionActions.get(extensionId)
+  private getAction(extensionId: string) {
+    let action = this.actionMap.get(extensionId)
     if (!action) {
       action = { tabs: {} }
-      sessionActions.set(extensionId, action)
+      this.actionMap.set(extensionId, action)
       this.onUpdate()
     }
 
     return action
   }
 
-  // TODO: Make private after backporting extension registry events
-  removeActions(session: Electron.Session, extensionId: string) {
-    const sessionActions = this.getSessionActions(session)
-
-    if (sessionActions.has(extensionId)) {
-      sessionActions.delete(extensionId)
-    }
-
-    if (sessionActions.size === 0) {
-      this.sessionActionMap.delete(session)
+  // TODO: Make private for v4 major release.
+  removeActions(extensionId: string) {
+    if (this.actionMap.has(extensionId)) {
+      this.actionMap.delete(extensionId)
     }
 
     this.onUpdate()
   }
 
-  private getPopupUrl(session: Electron.Session, extensionId: string, tabId: number) {
-    const action = this.getAction(session, extensionId)
+  private getPopupUrl(extensionId: string, tabId: number) {
+    const action = this.getAction(extensionId)
     const popupPath = action.tabs[tabId]?.popup || action.popup || undefined
     return popupPath && `chrome-extension://${extensionId}/${popupPath}`
   }
 
-  // TODO: Make private after backporting extension registry events
-  processExtension(session: Electron.session, extension: Electron.Extension) {
+  // TODO: Make private for v4 major release.
+  processExtension(extension: Electron.Extension) {
     const defaultAction = getBrowserActionDefaults(extension)
     if (defaultAction) {
-      const action = this.getAction(session, extension.id)
+      const action = this.getAction(extension.id)
       Object.assign(action, defaultAction)
     }
   }
 
-  private getState(event: ExtensionEvent, partition?: string) {
-    const ses =
-      typeof partition === 'string' ? session.fromPartition(partition) : event.sender.session
-    const sessionActions = this.sessionActionMap.get(ses)
-    const actions = sessionActions
-      ? Array.from(sessionActions.entries()).map((val: any) => ({ id: val[0], ...val[1] }))
-      : []
+  private getState(event: ExtensionEvent) {
+    const actions = Array.from(this.actionMap.entries()).map((val: any) => ({
+      id: val[0],
+      ...val[1],
+    }))
     const activeTab = this.ctx.store.getActiveTabOfCurrentWindow()
     return { activeTabId: activeTab?.id, actions }
   }
@@ -265,7 +239,7 @@ export class BrowserActionAPI {
       throw new Error(`Unable to get active tab`)
     }
 
-    const popupUrl = this.getPopupUrl(tab.session, extensionId, tab.id)
+    const popupUrl = this.getPopupUrl(extensionId, tab.id)
 
     if (popupUrl) {
       const win = this.ctx.store.tabToWindow.get(tab)

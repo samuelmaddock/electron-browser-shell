@@ -155,7 +155,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   addExtension(extension: Electron.Extension) {
     console.warn('ElectronChromeExtensions.addExtension() is deprecated')
-    this.browserAction.processExtension(this.ctx.session, extension)
+    this.browserAction.processExtension(extension)
   }
 
   /**
@@ -165,7 +165,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   removeExtension(extension: Electron.Extension) {
     console.warn('ElectronChromeExtensions.removeExtension() is deprecated')
-    this.browserAction.removeActions(this.ctx.session, extension.id)
+    this.browserAction.removeActions(extension.id)
   }
 }
 
