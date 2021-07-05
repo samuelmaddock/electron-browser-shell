@@ -185,8 +185,7 @@ describe('chrome.browserAction', () => {
       expect(extensionIds).to.deep.equal([browser.extension.id])
     })
 
-    // TODO: fix
-    it.skip('lists actions in remote partition', async () => {
+    it('lists actions in remote partition', async () => {
       const remoteWindow = createCrxRemoteWindow()
       const remoteTab = remoteWindow.webContents
 
