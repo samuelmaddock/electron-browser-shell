@@ -144,6 +144,15 @@ export class BrowserActionAPI {
       this.onUpdate()
     })
 
+    // Clear out tab details when removed
+    this.ctx.store.on('tab-removed', (tabId: number) => {
+      for (const [, actionDetails] of this.actionMap) {
+        if (actionDetails.tabs[tabId]) {
+          delete actionDetails.tabs[tabId]
+        }
+      }
+    })
+
     this.setupSession(this.ctx.session)
   }
 

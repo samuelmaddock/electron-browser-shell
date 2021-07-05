@@ -105,6 +105,7 @@ export class ExtensionStore extends EventEmitter {
   removeTab(tab: Electron.WebContents) {
     if (!this.tabs.has(tab)) return
 
+    const tabId = tab.id
     const win = this.tabToWindow.get(tab)!
 
     this.tabs.delete(tab)
@@ -121,6 +122,8 @@ export class ExtensionStore extends EventEmitter {
     if (typeof this.impl.removeTab === 'function') {
       this.impl.removeTab(tab, win)
     }
+
+    this.emit('tab-removed', tabId)
   }
 
   async createTab(details: chrome.tabs.CreateProperties) {
