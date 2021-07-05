@@ -89,14 +89,9 @@ export const injectExtensionAPIs = () => {
     }
 
     class ExtensionEvent<T extends Function> implements chrome.events.Event<T> {
-      constructor(private name: string, private internalListener?: T) {}
+      constructor(private name: string) {}
 
       addListener(callback: T) {
-        if (this.internalListener) {
-          electron.addExtensionListener(extensionId, this.name, this.internalListener)
-          this.internalListener = undefined
-        }
-
         electron.addExtensionListener(extensionId, this.name, callback)
       }
       removeListener(callback: T) {
@@ -215,6 +210,15 @@ export const injectExtensionAPIs = () => {
           } = {}
           const menuCreate = invokeExtension('contextMenus.create')
 
+          let hasInternalListener = false
+          const addInternalListener = () => {
+            api.onClicked.addListener((info, tab) => {
+              const callback = menuCallbacks[info.menuItemId]
+              if (callback && tab) callback(info, tab)
+            })
+            hasInternalListener = true
+          }
+
           const api = {
             ...base,
             create: function (
@@ -225,6 +229,7 @@ export const injectExtensionAPIs = () => {
                 createProperties.id = `${++menuCounter}`
               }
               if (createProperties.onclick) {
+                if (!hasInternalListener) addInternalListener()
                 menuCallbacks[createProperties.id] = createProperties.onclick
                 delete createProperties.onclick
               }
@@ -236,10 +241,7 @@ export const injectExtensionAPIs = () => {
             removeAll: invokeExtension('contextMenus.removeAll'),
             onClicked: new ExtensionEvent<
               (info: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab) => void
-            >('contextMenus.onClicked', (info, tab) => {
-              const callback = menuCallbacks[info.menuItemId]
-              if (callback && tab) callback(info, tab)
-            }),
+            >('contextMenus.onClicked'),
           }
 
           return api
