@@ -36,7 +36,7 @@ export const getExtensionUrl = (extension: Electron.Extension, uri: string) => {
   } catch {}
 }
 
-const resolveExtensionPath = (extension: Electron.Extension, uri: string) => {
+export const resolveExtensionPath = (extension: Electron.Extension, uri: string) => {
   const resPath = path.join(extension.path, uri)
 
   // prevent any parent traversals
@@ -58,27 +58,47 @@ export const validateExtensionResource = async (extension: Electron.Extension, u
   return resPath
 }
 
-export const getIconPath = (extension: Electron.Extension) => {
+export enum ResizeType {
+  Exact,
+  Up,
+  Down,
+}
+
+export const matchSize = (
+  imageSet: { [key: number]: string },
+  size: number,
+  match: ResizeType
+): string | undefined => {
+  // TODO: match based on size
+  const first = parseInt(Object.keys(imageSet).pop()!, 10)
+  return imageSet[first]
+}
+
+/** Gets the relative path to the extension's default icon. */
+export const getIconPath = (
+  extension: Electron.Extension,
+  iconSize: number = 32,
+  resizeType = ResizeType.Up
+) => {
   const { browser_action, icons } = getExtensionManifest(extension)
   const { default_icon } = browser_action || {}
 
   if (typeof default_icon === 'string') {
-    const iconPath = path.join(extension.path, default_icon)
+    const iconPath = default_icon
     return iconPath
   } else if (typeof default_icon === 'object') {
-    const key = Object.keys(default_icon).pop() as any
-    const iconPath = path.join(extension.path, default_icon[key])
+    const iconPath = matchSize(default_icon, iconSize, resizeType)
     return iconPath
   } else if (typeof icons === 'object') {
-    const key = Object.keys(icons).pop() as any
-    const iconPath = path.join(extension.path, icons[key])
+    const iconPath = matchSize(icons, iconSize, resizeType)
     return iconPath
   }
 }
 
 export const getIconImage = (extension: Electron.Extension) => {
   const iconPath = getIconPath(extension)
-  return iconPath ? nativeImage.createFromPath(iconPath) : undefined
+  const iconAbsolutePath = iconPath && resolveExtensionPath(extension, iconPath)
+  return iconAbsolutePath ? nativeImage.createFromPath(iconAbsolutePath) : undefined
 }
 
 const escapePattern = (pattern: string) => pattern.replace(/[\\^$+?.()|[\]{}]/g, '\\$&')

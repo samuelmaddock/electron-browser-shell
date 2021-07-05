@@ -63,6 +63,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'stream', privileges: { standard: true, stream: true } },
   { scheme: 'foo', privileges: { standard: true } },
   { scheme: 'bar', privileges: { standard: true } },
+  { scheme: 'crx', privileges: { bypassCSP: true } },
 ])
 
 const cleanupTestSessions = async () => {

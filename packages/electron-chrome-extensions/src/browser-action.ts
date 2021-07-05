@@ -190,11 +190,10 @@ export const injectBrowserAction = () => {
 
         this.title = typeof info.title === 'string' ? info.title : ''
 
-        if (info.imageData) {
-          this.style.backgroundImage = info.imageData ? `url(${info.imageData['32']})` : ''
-        } else if (info.icon) {
-          this.style.backgroundImage = `url(${info.icon})`
-        }
+        const iconSize = 32
+        const resizeType = 2
+        const iconUrl = `crx://extension-icon/${this.id}/${iconSize}/${resizeType}?tabId=${activeTabId}`
+        this.style.backgroundImage = `url(${iconUrl})`
 
         if (info.text) {
           const badge = this.getBadge()

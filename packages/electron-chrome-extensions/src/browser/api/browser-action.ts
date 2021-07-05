@@ -1,20 +1,27 @@
-import { Menu, MenuItem } from 'electron'
+import { Menu, MenuItem, protocol, nativeImage, app } from 'electron'
 import { ExtensionContext } from '../context'
 import { PopupView } from '../popup'
 import { ExtensionEvent } from '../router'
-import { getIconImage, getExtensionUrl, getExtensionManifest } from './common'
+import {
+  getExtensionUrl,
+  getExtensionManifest,
+  getIconPath,
+  resolveExtensionPath,
+  matchSize,
+  ResizeType,
+} from './common'
 
 const debug = require('debug')('electron-chrome-extensions:browserAction')
+
+if (!app.isReady()) {
+  protocol.registerSchemesAsPrivileged([{ scheme: 'crx', privileges: { bypassCSP: true } }])
+}
 
 interface ExtensionAction {
   color?: string
   text?: string
   title?: string
-  icon?:
-    | string
-    | {
-        path: string
-      }
+  icon?: chrome.browserAction.TabIconDetails
   popup?: string
 }
 
@@ -35,8 +42,8 @@ const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionActio
 
     action.title = browser_action.default_title || manifest.name
 
-    const iconImage = getIconImage(extension)
-    if (iconImage) action.icon = iconImage.toDataURL()
+    const iconPath = getIconPath(extension)
+    if (iconPath) action.icon = { path: iconPath }
 
     if (browser_action.default_popup) {
       action.popup = browser_action.default_popup
@@ -114,7 +121,18 @@ export class BrowserActionAPI {
     handleProp('BadgeText', 'text')
     handleProp('Title', 'title')
     handleProp('Popup', 'popup')
-    handle('browserAction.setIcon', setter('icon'))
+
+    const iconSetter = setter('icon')
+
+    // setIcon is unique in that it can pass in a variety of properties. Here we normalize them
+    // to use 'icon'.
+    handle(
+      'browserAction.setIcon',
+      (event, { tabId, ...details }: chrome.browserAction.TabIconDetails) => {
+        const iconDetails = { tabId, icon: details }
+        iconSetter(event, iconDetails)
+      }
+    )
 
     // browserAction preload API
     const preloadOpts = { allowRemote: true, extensionContext: false }
@@ -151,6 +169,7 @@ export class BrowserActionAPI {
           delete actionDetails.tabs[tabId]
         }
       }
+      this.onUpdate()
     })
 
     this.setupSession(this.ctx.session)
@@ -164,6 +183,83 @@ export class BrowserActionAPI {
     session.on('extension-unloaded', (event, extension) => {
       this.removeActions(extension.id)
     })
+
+    session.protocol.registerBufferProtocol('crx', this.handleCrxRequest)
+  }
+
+  private handleCrxRequest = (
+    request: Electron.ProtocolRequest,
+    callback: (response: Electron.ProtocolResponse) => void
+  ) => {
+    debug('%s', request.url)
+
+    let response: Electron.ProtocolResponse
+
+    try {
+      const url = new URL(request.url)
+      const { hostname: requestType } = url
+
+      switch (requestType) {
+        case 'extension-icon': {
+          const tabId = url.searchParams.get('tabId')
+
+          const fragments = url.pathname.split('/')
+          const extensionId = fragments[1]
+          const imageSize = parseInt(fragments[2], 10)
+          const resizeType = parseInt(fragments[3], 10) || ResizeType.Up
+
+          const extension = this.ctx.session.getExtension(extensionId)
+
+          let iconDetails: chrome.browserAction.TabIconDetails | undefined
+
+          const action = this.actionMap.get(extensionId)
+          if (action) {
+            iconDetails = (tabId && action.tabs[tabId]?.icon) || action.icon
+          }
+
+          let iconImage
+
+          if (extension && iconDetails) {
+            if (typeof iconDetails.path === 'string') {
+              const iconAbsPath = resolveExtensionPath(extension, iconDetails.path)
+              if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
+            } else if (typeof iconDetails.path === 'object') {
+              const imagePath = matchSize(iconDetails.path, imageSize, resizeType)
+              const iconAbsPath = imagePath && resolveExtensionPath(extension, imagePath)
+              if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
+            } else if (typeof iconDetails.imageData === 'string') {
+              iconImage = nativeImage.createFromDataURL(iconDetails.imageData)
+            } else if (typeof iconDetails.imageData === 'object') {
+              const imageData = matchSize(iconDetails.imageData as any, imageSize, resizeType)
+              iconImage = imageData ? nativeImage.createFromDataURL(imageData) : undefined
+            }
+          }
+
+          if (iconImage) {
+            response = {
+              statusCode: 200,
+              mimeType: 'image/png',
+              data: iconImage.toPNG(),
+            }
+          } else {
+            response = { statusCode: 400 }
+          }
+
+          break
+        }
+        default: {
+          response = { statusCode: 400 }
+        }
+      }
+    } catch (e) {
+      console.error(e)
+
+      response = {
+        statusCode: 500,
+      }
+    }
+
+    callback(response)
   }
 
   private getAction(extensionId: string) {
@@ -201,11 +297,25 @@ export class BrowserActionAPI {
     }
   }
 
-  private getState(event: ExtensionEvent) {
-    const actions = Array.from(this.actionMap.entries()).map((val: any) => ({
-      id: val[0],
-      ...val[1],
-    }))
+  private getState() {
+    // Get state without icon data.
+    const actions = Array.from(this.actionMap.entries()).map(([id, details]) => {
+      const { icon, tabs, ...rest } = details
+
+      const tabsInfo: { [key: string]: any } = {}
+
+      for (const tabId of Object.keys(tabs)) {
+        const { icon, ...rest } = tabs[tabId]
+        tabsInfo[tabId] = rest
+      }
+
+      return {
+        id,
+        tabs: tabsInfo,
+        ...rest,
+      }
+    })
+
     const activeTab = this.ctx.store.getActiveTabOfCurrentWindow()
     return { activeTabId: activeTab?.id, actions }
   }
