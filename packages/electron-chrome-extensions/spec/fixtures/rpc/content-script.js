@@ -6,19 +6,34 @@ function evalInMainWorld(fn) {
   document.documentElement.appendChild(script)
 }
 
-async function exec(action) {
-  const result = await new Promise(resolve => {
-    chrome.runtime.sendMessage(action, resolve)
-  })
-
-  const funcStr = `() => { electronTest.sendIpc('success', ${JSON.stringify(result)}) }`
+function sendIpc(name, ...args) {
+  const jsonArgs = [name, ...args].map((arg) => JSON.stringify(arg))
+  const funcStr = `() => { electronTest.sendIpc(${jsonArgs.join(', ')}) }`
   evalInMainWorld(funcStr)
 }
 
-window.addEventListener('message', event => {
+async function exec(action) {
+  const result = await new Promise((resolve) => {
+    chrome.runtime.sendMessage(action, resolve)
+  })
+
+  sendIpc('success', result)
+}
+
+window.addEventListener('message', (event) => {
   exec(event.data)
 })
 
 evalInMainWorld(() => {
-  window.exec = json => window.postMessage(JSON.parse(json))
+  window.exec = (json) => window.postMessage(JSON.parse(json))
+})
+
+chrome.runtime.onMessage.addListener((message) => {
+  switch (message.type) {
+    case 'send-ipc': {
+      const [name] = message.args
+      sendIpc(name)
+      break
+    }
+  }
 })

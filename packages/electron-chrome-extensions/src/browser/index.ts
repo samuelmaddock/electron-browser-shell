@@ -41,15 +41,17 @@ export class ElectronChromeExtensions extends EventEmitter {
   private ctx: ExtensionContext
   private modulePath: string
 
-  private browserAction: BrowserActionAPI
-  private contextMenus: ContextMenusAPI
-  private commands: CommandsAPI
-  private cookies: CookiesAPI
-  private notifications: NotificationsAPI
-  private runtime: RuntimeAPI
-  private tabs: TabsAPI
-  private webNavigation: WebNavigationAPI
-  private windows: WindowsAPI
+  private api: {
+    browserAction: BrowserActionAPI
+    contextMenus: ContextMenusAPI
+    commands: CommandsAPI
+    cookies: CookiesAPI
+    notifications: NotificationsAPI
+    runtime: RuntimeAPI
+    tabs: TabsAPI
+    webNavigation: WebNavigationAPI
+    windows: WindowsAPI
+  }
 
   constructor(opts?: ChromeExtensionOptions) {
     super()
@@ -74,15 +76,17 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     this.modulePath = modulePath || path.join(__dirname, '..')
 
-    this.browserAction = new BrowserActionAPI(this.ctx)
-    this.contextMenus = new ContextMenusAPI(this.ctx)
-    this.commands = new CommandsAPI(this.ctx)
-    this.cookies = new CookiesAPI(this.ctx)
-    this.notifications = new NotificationsAPI(this.ctx)
-    this.runtime = new RuntimeAPI(this.ctx)
-    this.tabs = new TabsAPI(this.ctx)
-    this.webNavigation = new WebNavigationAPI(this.ctx)
-    this.windows = new WindowsAPI(this.ctx)
+    this.api = {
+      browserAction: new BrowserActionAPI(this.ctx),
+      contextMenus: new ContextMenusAPI(this.ctx),
+      commands: new CommandsAPI(this.ctx),
+      cookies: new CookiesAPI(this.ctx),
+      notifications: new NotificationsAPI(this.ctx),
+      runtime: new RuntimeAPI(this.ctx),
+      tabs: new TabsAPI(this.ctx),
+      webNavigation: new WebNavigationAPI(this.ctx),
+      windows: new WindowsAPI(this.ctx),
+    }
 
     this.prependPreload()
   }
@@ -122,7 +126,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   /** Notify extension system that the active tab has changed. */
   selectTab(tab: Electron.WebContents) {
     if (this.ctx.store.tabs.has(tab)) {
-      this.tabs.onActivated(tab.id)
+      this.api.tabs.onActivated(tab.id)
     }
   }
 
@@ -145,7 +149,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @see https://developer.chrome.com/extensions/contextMenus
    */
   getContextMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
-    return this.contextMenus.buildMenuItemsForParams(webContents, params)
+    return this.api.contextMenus.buildMenuItemsForParams(webContents, params)
   }
 
   /**
@@ -155,7 +159,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   addExtension(extension: Electron.Extension) {
     console.warn('ElectronChromeExtensions.addExtension() is deprecated')
-    this.browserAction.processExtension(extension)
+    this.api.browserAction.processExtension(extension)
   }
 
   /**
@@ -165,7 +169,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   removeExtension(extension: Electron.Extension) {
     console.warn('ElectronChromeExtensions.removeExtension() is deprecated')
-    this.browserAction.removeActions(extension.id)
+    this.api.browserAction.removeActions(extension.id)
   }
 }
 
