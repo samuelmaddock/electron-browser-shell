@@ -267,6 +267,8 @@ export const injectExtensionAPIs = () => {
           return {
             ...base,
             isAllowedIncognitoAccess: () => false,
+            // TODO: Add native implementation
+            getViews: () => [],
           }
         },
       },
