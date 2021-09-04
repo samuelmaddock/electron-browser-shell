@@ -44,7 +44,21 @@ export class WebNavigationAPI {
     tab.on('did-frame-finish-load', this.onFinishLoad as any)
     tab.on('did-frame-navigate', this.onCommitted as any)
     tab.on('did-navigate-in-page', this.onHistoryStateUpdated as any)
-    tab.on('dom-ready', this.onDOMContentLoaded as any)
+
+    tab.on('frame-created', (e, { frame }) => {
+      if (frame.top === frame) return
+
+      frame.on('dom-ready', () => {
+        this.onDOMContentLoaded(tab, frame)
+      })
+    })
+
+    // Main frame dom-ready event
+    tab.on('dom-ready', () => {
+      if ('mainFrame' in tab) {
+        this.onDOMContentLoaded(tab, tab.mainFrame)
+      }
+    })
   }
 
   private getFrame(
@@ -175,21 +189,18 @@ export class WebNavigationAPI {
     this.sendNavigationEvent('onHistoryStateUpdated', details)
   }
 
-  private onDOMContentLoaded = (event: Electron.IpcMainEvent) => {
-    const url = event.sender.getURL()
-    // TODO: Add support for iframes
-    // https://github.com/electron/electron/issues/27344
+  private onDOMContentLoaded = (tab: Electron.WebContents, frame: Electron.WebFrameMain) => {
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
-      frameId: 0,
-      parentFrameId: -1,
-      processId: 0,
-      tabId: event.sender.id,
+      frameId: getFrameId(frame),
+      parentFrameId: getParentFrameId(frame),
+      processId: frame.processId,
+      tabId: tab.id,
       timeStamp: Date.now(),
-      url,
+      url: frame.url,
     }
     this.sendNavigationEvent('onDOMContentLoaded', details)
 
-    if (!event.sender.isLoadingMainFrame()) {
+    if (!tab.isLoadingMainFrame()) {
       this.sendNavigationEvent('onCompleted', details)
     }
   }
