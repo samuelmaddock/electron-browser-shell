@@ -362,6 +362,7 @@ export const injectExtensionAPIs = () => {
             onRemoved: new ExtensionEvent('tabs.onRemoved'),
             onUpdated: new ExtensionEvent('tabs.onUpdated'),
             onActivated: new ExtensionEvent('tabs.onActivated'),
+            onReplaced: new ExtensionEvent('tabs.onReplaced'),
           }
           return api
         },
