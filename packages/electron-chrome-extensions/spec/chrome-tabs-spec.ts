@@ -45,6 +45,14 @@ describe('chrome.tabs', () => {
       expect(result[0].windowId).to.be.equal(browser.window.id)
     })
 
+    it('gets the tab using pattern match', async () => {
+      const result = await browser.crx.exec('tabs.query', { url: "http://*.*.*.*" })
+      expect(result).to.be.an('array')
+      expect(result).to.be.length(1)
+      expect(result[0].id).to.be.equal(browser.window.webContents.id)
+      expect(result[0].windowId).to.be.equal(browser.window.id)
+    })
+
     it('gets the active tab of multiple windows', async () => {
       const secondWindow = new BrowserWindow({
         show: false,
