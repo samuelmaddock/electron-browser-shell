@@ -1,3 +1,6 @@
+import {BrowserActionState} from "./api/browser-action"
+import {PopupViewOptions} from "./popup"
+
 /** App-specific implementation details for extensions. */
 export interface ChromeExtensionImpl {
   createTab?(
@@ -14,4 +17,8 @@ export interface ChromeExtensionImpl {
 
   createWindow?(details: chrome.windows.CreateData): Promise<Electron.BrowserWindow>
   removeWindow?(window: Electron.BrowserWindow): void
+
+  createPopup?(details: PopupViewOptions): void
+
+  onBrowserActionUpdate?(details: BrowserActionState): void
 }

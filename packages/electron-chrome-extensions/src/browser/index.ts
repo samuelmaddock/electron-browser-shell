@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import path from 'path'
 import { promises as fs } from 'fs'
 
-import { BrowserActionAPI } from './api/browser-action'
+import {ActivateDetails, BrowserActionAPI} from './api/browser-action'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
@@ -128,6 +128,10 @@ export class ElectronChromeExtensions extends EventEmitter {
     if (this.ctx.store.tabs.has(tab)) {
       this.api.tabs.onActivated(tab.id)
     }
+  }
+
+  activateExtension(tab: Electron.WebContents, details: ActivateDetails) {
+    this.api.browserAction.activate({sender: tab}, details)
   }
 
   /**

@@ -1,14 +1,14 @@
-import { Menu, MenuItem, protocol, nativeImage, app } from 'electron'
-import { ExtensionContext } from '../context'
-import { PopupView } from '../popup'
-import { ExtensionEvent } from '../router'
+import {app, Menu, MenuItem, nativeImage, NativeImage, protocol, WebContents} from 'electron'
+import {ExtensionContext} from '../context'
+import {PopupView} from '../popup'
+import {ExtensionEvent} from '../router'
 import {
-  getExtensionUrl,
   getExtensionManifest,
+  getExtensionUrl,
   getIconPath,
-  resolveExtensionPath,
   matchSize,
   ResizeType,
+  resolveExtensionPath,
 } from './common'
 
 const debug = require('debug')('electron-chrome-extensions:browserAction')
@@ -29,11 +29,25 @@ interface ExtensionAction {
 
 type ExtensionActionKey = keyof ExtensionAction
 
-interface ActivateDetails {
-  eventType: string
+export interface ActivateDetails {
+  eventType: 'click' | 'contextmenu'
   extensionId: string
   tabId: number
   anchorRect: { x: number; y: number; width: number; height: number }
+}
+
+interface BrowserActionItem {
+  id: string,
+  tabs?: { [key: string]: any },
+  title?: string,
+  iconModified?: number,
+  popup?: string
+  iconDataURI?: string
+}
+
+export interface BrowserActionState {
+  activeTabId?: number
+  actions: BrowserActionItem[]
 }
 
 const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionAction | undefined => {
@@ -194,8 +208,39 @@ export class BrowserActionAPI {
     session.protocol.registerBufferProtocol('crx', this.handleCrxRequest)
   }
 
+  private makeIconImage = (extensionId: string, tabId?:string | null, imageSize: number = 32, resizeType: ResizeType = ResizeType.Up) => {
+    const extension = this.ctx.session.getExtension(extensionId)
+    if(!extension){
+      return null
+    }
+    let iconDetails: chrome.browserAction.TabIconDetails | undefined
+    const action = this.actionMap.get(extensionId)
+    if (action) {
+      iconDetails = (tabId && action.tabs[tabId]?.icon) || action.icon
+    }
+    if(!iconDetails){
+      return null
+    }
+
+    let iconImage: NativeImage | null = null
+    if (typeof iconDetails.path === 'string') {
+      const iconAbsPath = resolveExtensionPath(extension, iconDetails.path)
+      if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
+    } else if (typeof iconDetails.path === 'object') {
+      const imagePath = matchSize(iconDetails.path, imageSize, resizeType)
+      const iconAbsPath = imagePath && resolveExtensionPath(extension, imagePath)
+      if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
+    } else if (typeof iconDetails.imageData === 'string') {
+      iconImage = nativeImage.createFromDataURL(iconDetails.imageData)
+    } else if (typeof iconDetails.imageData === 'object') {
+      const imageData = matchSize(iconDetails.imageData as any, imageSize, resizeType)
+      iconImage = imageData ? nativeImage.createFromDataURL(imageData) : null
+    }
+    return iconImage
+  }
+
   private handleCrxRequest = (
-    request: Electron.ProtocolRequest,
+    request: {url: string } | Electron.ProtocolRequest,
     callback: (response: Electron.ProtocolResponse) => void
   ) => {
     debug('%s', request.url)
@@ -215,33 +260,7 @@ export class BrowserActionAPI {
           const imageSize = parseInt(fragments[2], 10)
           const resizeType = parseInt(fragments[3], 10) || ResizeType.Up
 
-          const extension = this.ctx.session.getExtension(extensionId)
-
-          let iconDetails: chrome.browserAction.TabIconDetails | undefined
-
-          const action = this.actionMap.get(extensionId)
-          if (action) {
-            iconDetails = (tabId && action.tabs[tabId]?.icon) || action.icon
-          }
-
-          let iconImage
-
-          if (extension && iconDetails) {
-            if (typeof iconDetails.path === 'string') {
-              const iconAbsPath = resolveExtensionPath(extension, iconDetails.path)
-              if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
-            } else if (typeof iconDetails.path === 'object') {
-              const imagePath = matchSize(iconDetails.path, imageSize, resizeType)
-              const iconAbsPath = imagePath && resolveExtensionPath(extension, imagePath)
-              if (iconAbsPath) iconImage = nativeImage.createFromPath(iconAbsPath)
-            } else if (typeof iconDetails.imageData === 'string') {
-              iconImage = nativeImage.createFromDataURL(iconDetails.imageData)
-            } else if (typeof iconDetails.imageData === 'object') {
-              const imageData = matchSize(iconDetails.imageData as any, imageSize, resizeType)
-              iconImage = imageData ? nativeImage.createFromDataURL(imageData) : undefined
-            }
-          }
-
+          const iconImage = this.makeIconImage(extensionId, tabId, imageSize, resizeType)
           if (iconImage) {
             response = {
               statusCode: 200,
@@ -304,7 +323,7 @@ export class BrowserActionAPI {
     }
   }
 
-  private getState() {
+  private getState(): BrowserActionState {
     // Get state without icon data.
     const actions = Array.from(this.actionMap.entries()).map(([id, details]) => {
       const { icon, tabs, ...rest } = details
@@ -327,7 +346,16 @@ export class BrowserActionAPI {
     return { activeTabId: activeTab?.id, actions }
   }
 
-  private activate({ sender }: ExtensionEvent, details: ActivateDetails) {
+  private getStateWithIcons(): BrowserActionState {
+    const state = this.getState()
+    state.actions = state.actions.map(s => ({
+      ...s,
+      iconDataURI: this.makeIconImage(s.id)?.toDataURL() || "",
+    }))
+    return state
+  }
+
+  public activate({ sender }: {sender: WebContents}, details: ActivateDetails) {
     const { eventType, extensionId, tabId } = details
 
     debug(
@@ -373,17 +401,19 @@ export class BrowserActionAPI {
         throw new Error('Unable to get BrowserWindow from active tab')
       }
 
-      this.popup = new PopupView({
+      this.ctx.store.createPopup({
         extensionId,
-        session: this.ctx.session,
-        parent: win,
-        url: popupUrl,
-        anchorRect,
-      })
+          session: this.ctx.session,
+          parent: win,
+          url: popupUrl,
+          anchorRect,
+          tabId: tab.id,
+    })
 
       debug(`opened popup: ${popupUrl}`)
 
-      this.ctx.emit('browser-action-popup-created', this.popup)
+      // TODO: what are the key parts of this message? Seems to only be used in tests.
+      // this.ctx.emit('browser-action-popup-created', this.popup)
     } else {
       debug(`dispatching onClicked for ${extensionId}`)
 
@@ -448,6 +478,7 @@ export class BrowserActionAPI {
     queueMicrotask(() => {
       this.queuedUpdate = false
       debug(`dispatching update to ${this.observers.size} observer(s)`)
+      this.ctx.store.onBrowserActionUpdate(this.getStateWithIcons())
       Array.from(this.observers).forEach((observer) => {
         if (!observer.isDestroyed()) {
           observer.send('browserAction.update')
