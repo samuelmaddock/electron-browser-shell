@@ -1,8 +1,10 @@
 import { BrowserWindow, webContents } from 'electron'
 import { EventEmitter } from 'events'
+import {BrowserActionState} from "./api/browser-action"
 import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent } from './router'
+import {PopupView, PopupViewOptions} from "./popup"
 
 const debug = require('debug')('electron-chrome-extensions:store')
 
@@ -186,6 +188,23 @@ export class ExtensionStore extends EventEmitter {
       if (typeof this.impl.selectTab === 'function') {
         this.impl.selectTab(tab, win)
       }
+    }
+  }
+
+  // TODO: this probably doesn't belong in store.ts
+  createPopup(opts: PopupViewOptions){
+    if(this.impl.createPopup){
+      return this.impl.createPopup(opts)
+    } else {
+      return new PopupView(opts)
+    }
+
+  }
+
+  // TODO: this probably doesn't belong in store.ts
+  onBrowserActionUpdate(opts: BrowserActionState){
+    if(this.impl.onBrowserActionUpdate){
+      this.impl.onBrowserActionUpdate(opts)
     }
   }
 

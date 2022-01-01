@@ -9,12 +9,13 @@ export interface PopupAnchorRect {
   height: number
 }
 
-interface PopupViewOptions {
+export interface PopupViewOptions {
   extensionId: string
   session: Session
   parent: BrowserWindow
   url: string
   anchorRect: PopupAnchorRect
+  tabId: number
 }
 
 export class PopupView {
