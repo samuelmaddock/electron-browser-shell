@@ -19,6 +19,10 @@ const base = {
     ],
   },
 
+  optimization: {
+    moduleIds: 'named',
+  },
+
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
     modules: ['node_modules'],
@@ -29,7 +33,6 @@ const base = {
     //   NODE_ENV: 'production',
     // }),
 
-    new webpack.NamedModulesPlugin(),
   ],
 }
 
