@@ -143,6 +143,9 @@ export class TabsAPI {
   }
 
   private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
+    // make URL absolute
+    details.url = new URL(details.url, event.sender.getURL()).href;
+    
     const tab = await this.ctx.store.createTab(details)
     const tabDetails = this.getTabDetails(tab)
     if (details.active) {
