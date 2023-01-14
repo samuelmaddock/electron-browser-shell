@@ -111,3 +111,8 @@ export const matchesPattern = (pattern: string, url: string) => {
   const regexp = new RegExp(`^${pattern.split('*').map(escapePattern).join('.*')}$`)
   return url.match(regexp)
 }
+
+export const matchesTitlePattern = (pattern: string, title: string) => {
+  const regexp = new RegExp(`^${pattern.split('*').map(escapePattern).join('.*')}$`)
+  return title.match(regexp)
+}

@@ -64,6 +64,20 @@ describe('chrome.tabs', () => {
       expect(result[1].windowId).to.be.equal(secondWindow.id)
     })
 
+    it('matches exact title', async () => {
+      const results = await browser.crx.exec('tabs.query', { title: 'title' })
+      expect(results).to.be.an('array')
+      expect(results).to.be.length(1)
+      expect(results[0].title).to.be.equal('title')
+    })
+
+    it('matches title pattern', async () => {
+      const results = await browser.crx.exec('tabs.query', { title: '*' })
+      expect(results).to.be.an('array')
+      expect(results).to.be.length(1)
+      expect(results[0].title).to.be.equal('title')
+    })
+
     it('matches exact url', async () => {
       const url = `${server.getUrl()}/`
       const results = await browser.crx.exec('tabs.query', { url })

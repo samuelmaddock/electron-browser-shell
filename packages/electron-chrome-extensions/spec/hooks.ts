@@ -7,7 +7,15 @@ import { emittedOnce } from './events-helpers'
 import { addCrxPreload, createCrxSession, waitForBackgroundScriptEvaluated } from './crx-helpers'
 
 export const useServer = () => {
-  const emptyPage = '<script>console.log("loaded")</script>'
+  const emptyPage = `<!DOCTYPE html>
+<html>
+  <head>
+    <title>title</title>
+  </head>
+  <body>
+  <script>console.log("loaded")</script>
+  </body>
+</html>`
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server
