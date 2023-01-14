@@ -55,7 +55,14 @@ export const useExtensionBrowser = (opts: {
 
     addCrxPreload(customSession)
 
-    extensions = new ElectronChromeExtensions({ session: customSession })
+    extensions = new ElectronChromeExtensions({
+      session: customSession,
+      async createTab(details) {
+        const tab = (webContents as any).create({ sandbox: true })
+        if (details.url) await tab.loadURL(details.url)
+        return [tab, w!]
+      },
+    })
 
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
     await waitForBackgroundScriptEvaluated(extension, customSession)

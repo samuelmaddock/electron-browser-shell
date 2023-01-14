@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { TabContents } from './common'
+import { matchesPattern, TabContents } from './common'
 import { WindowsAPI } from './windows'
 
 const debug = require('debug')('electron-chrome-extensions:tabs')
@@ -180,7 +180,16 @@ export class TabsAPI {
         // if (isSet(info.lastFocusedWindow)) return false
         if (isSet(info.status) && info.status !== tab.status) return false
         if (isSet(info.title) && info.title !== tab.title) return false // TODO: pattern match
-        if (isSet(info.url) && info.url !== tab.url) return false // TODO: match URL pattern
+        if (isSet(info.url) && typeof tab.url === 'string') {
+          if (typeof info.url === 'string' && !matchesPattern(info.url, tab.url!)) {
+            return false
+          } else if (
+            Array.isArray(info.url) &&
+            !info.url.some((pattern) => matchesPattern(pattern, tab.url!))
+          ) {
+            return false
+          }
+        }
         if (isSet(info.windowId)) {
           if (info.windowId === TabsAPI.WINDOW_ID_CURRENT) {
             if (this.ctx.store.lastFocusedWindowId !== tab.windowId) return false

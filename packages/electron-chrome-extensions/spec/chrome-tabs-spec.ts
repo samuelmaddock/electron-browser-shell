@@ -63,6 +63,30 @@ describe('chrome.tabs', () => {
       expect(result[0].windowId).to.be.equal(browser.window.id)
       expect(result[1].windowId).to.be.equal(secondWindow.id)
     })
+
+    it('matches exact url', async () => {
+      const url = `${server.getUrl()}/`
+      const results = await browser.crx.exec('tabs.query', { url })
+      expect(results).to.be.an('array')
+      expect(results).to.be.length(1)
+      expect(results[0].url).to.be.equal(url)
+    })
+
+    it('matches wildcard url pattern', async () => {
+      const url = 'http://*/*'
+      const results = await browser.crx.exec('tabs.query', { url })
+      expect(results).to.be.an('array')
+      expect(results).to.be.length(1)
+      expect(results[0].url).to.be.equal(`${server.getUrl()}/`)
+    })
+
+    it('matches either url pattern', async () => {
+      const patterns = ['http://foo.bar/*', `${server.getUrl()}/*`]
+      const results = await browser.crx.exec('tabs.query', { url: patterns })
+      expect(results).to.be.an('array')
+      expect(results).to.be.length(1)
+      expect(results[0].url).to.be.equal(`${server.getUrl()}/`)
+    })
   })
 
   describe('executeScript()', () => {
