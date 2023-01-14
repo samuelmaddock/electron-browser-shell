@@ -151,29 +151,15 @@ class Browser {
   }
 
   getWindowFromWebContents(webContents) {
-    const window = getParentWindowOfTab(webContents)
-    return window ? this.getWindowFromBrowserWindow(window) : null
-  }
+    let window
 
-  getIpcWindow(event) {
-    let win = null
-
-    if (event.sender) {
-      win = this.getWindowFromWebContents(event.sender)
-
-      // If sent from a popup window, we may need to get the parent window of the popup.
-      if (!win) {
-        const browserWindow = getParentWindowOfTab(event.sender)
-        if (browserWindow && !browserWindow.isDestroyed()) {
-          const parentWindow = browserWindow.getParentWindow()
-          if (parentWindow) {
-            win = this.getWindowFromWebContents(parentWindow.webContents)
-          }
-        }
-      }
+    if (this.popup && webContents === this.popup.browserWindow?.webContents) {
+      window = this.popup.parent
+    } else {
+      window = getParentWindowOfTab(webContents)
     }
 
-    return win
+    return window ? this.getWindowFromBrowserWindow(window) : null
   }
 
   async init() {
@@ -222,6 +208,10 @@ class Browser {
         const win = this.getWindowFromBrowserWindow(browserWindow)
         win?.destroy()
       },
+    })
+
+    this.extensions.on('browser-action-popup-created', (popup) => {
+      this.popup = popup
     })
 
     const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
@@ -283,17 +273,25 @@ class Browser {
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 
-    webContents.on('new-window', (event, url, frameName, disposition, options) => {
-      event.preventDefault()
-
-      switch (disposition) {
+    webContents.setWindowOpenHandler((details) => {
+      switch (details.disposition) {
         case 'foreground-tab':
         case 'background-tab':
-        case 'new-window':
-          const win = this.getIpcWindow(event)
-          const tab = win.tabs.create()
-          tab.loadURL(url)
-          break
+        case 'new-window': {
+          // setWindowOpenHandler doesn't yet support creating BrowserViews
+          // instead of BrowserWindows. For now, we're opting to break
+          // window.open until a fix is available.
+          // https://github.com/electron/electron/issues/33383
+          queueMicrotask(() => {
+            const win = this.getWindowFromWebContents(webContents)
+            const tab = win.tabs.create()
+            tab.loadURL(details.url)
+          })
+
+          return { action: 'deny' }
+        }
+        default:
+          return { action: 'allow' }
       }
     })
 

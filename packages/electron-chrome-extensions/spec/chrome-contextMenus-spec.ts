@@ -20,6 +20,9 @@ describe('chrome.contextMenus', () => {
       })
     })
 
+    // TODO: why is this needed since upgrading to Electron 22?
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     // Simulate right-click to create context-menu event.
     const opts = { x: 0, y: 0, button: 'right' as any }
     browser.webContents.sendInputEvent({ ...opts, type: 'mouseDown' })

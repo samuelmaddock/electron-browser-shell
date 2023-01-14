@@ -59,12 +59,8 @@ export class PopupView {
         sandbox: true,
         nodeIntegration: false,
         nodeIntegrationInWorker: false,
-        nativeWindowOpen: true,
-        worldSafeExecuteJavaScript: true,
         contextIsolation: true,
-        ...({
-          enablePreferredSizeMode: true,
-        } as any),
+        enablePreferredSizeMode: true,
       },
     })
 

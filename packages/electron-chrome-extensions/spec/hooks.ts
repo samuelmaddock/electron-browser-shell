@@ -1,10 +1,10 @@
-import { ipcMain, BrowserWindow, app, Extension } from 'electron'
+import { ipcMain, BrowserWindow, app, Extension, webContents } from 'electron'
 import * as http from 'http'
 import * as path from 'path'
 import { AddressInfo } from 'net'
 import { ElectronChromeExtensions } from '../dist'
 import { emittedOnce } from './events-helpers'
-import { addCrxPreload, createCrxSession } from './crx-helpers'
+import { addCrxPreload, createCrxSession, waitForBackgroundScriptEvaluated } from './crx-helpers'
 
 export const useServer = () => {
   const emptyPage = '<script>console.log("loaded")</script>'
@@ -58,6 +58,7 @@ export const useExtensionBrowser = (opts: {
     extensions = new ElectronChromeExtensions({ session: customSession })
 
     extension = await customSession.loadExtension(path.join(fixtures, opts.extensionName))
+    await waitForBackgroundScriptEvaluated(extension, customSession)
 
     w = new BrowserWindow({
       show: false,
