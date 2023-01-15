@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { emittedOnce } from './events-helpers'
 
 import { useExtensionBrowser, useServer } from './hooks'
@@ -21,7 +21,7 @@ describe('chrome.tabs', () => {
   describe('update()', () => {
     it('navigates the tab', async () => {
       const tabId = browser.window.webContents.id
-      const updateUrl = `${server.getUrl()}/foo`
+      const updateUrl = `${server.getUrl()}foo`
       const navigatePromise = emittedOnce(browser.window.webContents, 'did-navigate')
       browser.crx.exec('tabs.update', tabId, { url: updateUrl })
       await navigatePromise
@@ -33,6 +33,20 @@ describe('chrome.tabs', () => {
     it('fails to get the active tab from a non-tab context', async () => {
       const result = await browser.crx.exec('tabs.getCurrent')
       expect(result).to.not.be.an('object')
+    })
+  })
+
+  describe('create()', () => {
+    it.only('creates a tab', async () => {
+      const wcPromise = emittedOnce(app, 'web-contents-created')
+      const tabInfo = await browser.crx.exec('tabs.create', { url: server.getUrl() })
+      const [, wc] = await wcPromise
+      expect(tabInfo).to.be.an('object')
+      expect(tabInfo.id).to.equal(wc.id)
+      expect(tabInfo.active).to.equal(true)
+      expect(tabInfo.url).to.equal(server.getUrl())
+      expect(tabInfo.windowId).to.equal(browser.window.id)
+      expect(tabInfo.title).to.be.a('string')
     })
   })
 
@@ -79,7 +93,7 @@ describe('chrome.tabs', () => {
     })
 
     it('matches exact url', async () => {
-      const url = `${server.getUrl()}/`
+      const url = server.getUrl()
       const results = await browser.crx.exec('tabs.query', { url })
       expect(results).to.be.an('array')
       expect(results).to.be.length(1)
@@ -91,15 +105,15 @@ describe('chrome.tabs', () => {
       const results = await browser.crx.exec('tabs.query', { url })
       expect(results).to.be.an('array')
       expect(results).to.be.length(1)
-      expect(results[0].url).to.be.equal(`${server.getUrl()}/`)
+      expect(results[0].url).to.be.equal(server.getUrl())
     })
 
     it('matches either url pattern', async () => {
-      const patterns = ['http://foo.bar/*', `${server.getUrl()}/*`]
+      const patterns = ['http://foo.bar/*', `${server.getUrl()}*`]
       const results = await browser.crx.exec('tabs.query', { url: patterns })
       expect(results).to.be.an('array')
       expect(results).to.be.length(1)
-      expect(results[0].url).to.be.equal(`${server.getUrl()}/`)
+      expect(results[0].url).to.be.equal(server.getUrl())
     })
   })
 
@@ -132,7 +146,7 @@ describe('chrome.tabs', () => {
       })
       const secondTab = secondWindow.webContents
 
-      const url = `${server.getUrl()}/foo`
+      const url = `${server.getUrl()}foo`
       await secondWindow.loadURL(url)
 
       browser.extensions.addTab(secondTab, secondWindow)
