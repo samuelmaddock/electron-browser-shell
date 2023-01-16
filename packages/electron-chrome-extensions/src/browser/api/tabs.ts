@@ -143,13 +143,17 @@ export class TabsAPI {
   }
 
   private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
+    const parsedDetails = {
+      ...details,
+    };
     // make URL absolute
     if (details.url) {
-      details.url = new URL(details.url, event.sender.getURL()).href;
+      parsedDetails.url = new URL(details.url, event.extension.url).href;
     }
-    const tab = await this.ctx.store.createTab(details)
+
+    const tab = await this.ctx.store.createTab(parsedDetails)
     const tabDetails = this.getTabDetails(tab)
-    if (details.active) {
+    if (parsedDetails.active) {
       queueMicrotask(() => this.onActivated(tab.id))
     }
     return tabDetails
@@ -237,12 +241,21 @@ export class TabsAPI {
 
     const props = updateProperties
 
+    const parsedProps = {
+      ...props,
+    };
+    // make URL absolute
+    if (props.url) {
+      parsedProps.url = new URL(props.url, event.extension.url).href;
+    }
+
+
     // TODO: validate URL, prevent 'javascript:'
-    if (props.url) await tab.loadURL(props.url)
+    if (parsedProps.url) await tab.loadURL(parsedProps.url)
 
-    if (typeof props.muted === 'boolean') tab.setAudioMuted(props.muted)
+    if (typeof parsedProps.muted === 'boolean') tab.setAudioMuted(parsedProps.muted)
 
-    if (props.active) this.onActivated(tabId)
+    if (parsedProps.active) this.onActivated(tabId)
 
     this.onUpdated(tabId)
 
