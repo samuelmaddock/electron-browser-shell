@@ -145,10 +145,10 @@ export class TabsAPI {
   private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
     const parsedDetails = {
       ...details,
-    };
+    }
     // make URL absolute
     if (details.url) {
-      parsedDetails.url = new URL(details.url, event.extension.url).href;
+      parsedDetails.url = new URL(details.url, event.extension.url).href
     }
 
     const tab = await this.ctx.store.createTab(parsedDetails)
@@ -254,12 +254,11 @@ export class TabsAPI {
 
     const parsedProps = {
       ...props,
-    };
+    }
     // make URL absolute
     if (props.url) {
-      parsedProps.url = new URL(props.url, event.extension.url).href;
+      parsedProps.url = new URL(props.url, event.extension.url).href
     }
-
 
     // TODO: validate URL, prevent 'javascript:'
     if (parsedProps.url) await tab.loadURL(parsedProps.url)

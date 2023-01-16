@@ -37,7 +37,7 @@ describe('chrome.tabs', () => {
   })
 
   describe('create()', () => {
-    it.only('creates a tab', async () => {
+    it('creates a tab', async () => {
       const wcPromise = emittedOnce(app, 'web-contents-created')
       const tabInfo = await browser.crx.exec('tabs.create', { url: server.getUrl() })
       const [, wc] = await wcPromise
@@ -47,6 +47,15 @@ describe('chrome.tabs', () => {
       expect(tabInfo.url).to.equal(server.getUrl())
       expect(tabInfo.windowId).to.equal(browser.window.id)
       expect(tabInfo.title).to.be.a('string')
+    })
+
+    // TODO: Navigating to chrome-extension:// receives ERR_BLOCKED_BY_CLIENT (-20)
+    it.skip('resolves relative URL', async () => {
+      const relativeUrl = './options.html'
+      const tabInfo = await browser.crx.exec('tabs.create', { url: relativeUrl })
+      const url = new URL(relativeUrl, browser.extension.url).href
+      expect(tabInfo).to.be.an('object')
+      expect(tabInfo.url).to.equal(url)
     })
   })
 
