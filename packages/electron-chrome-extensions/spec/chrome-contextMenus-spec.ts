@@ -50,9 +50,21 @@ describe('chrome.contextMenus', () => {
       const items = await getContextMenuItems()
       expect(items).to.have.lengthOf(1)
       expect(items[0].label).to.equal('parent')
-      expect(items[0].submenu).to.exist
+      expect(items[0].submenu).to.be.an('object')
       expect(items[0].submenu!.items).to.have.lengthOf(1)
       expect(items[0].submenu!.items[0].label).to.equal('child')
+    })
+
+    it('groups multiple top-level items', async () => {
+      await browser.crx.exec('contextMenus.create', { id: uuid(), title: 'one' })
+      await browser.crx.exec('contextMenus.create', { id: uuid(), title: 'two' })
+      const items = await getContextMenuItems()
+      expect(items).to.have.lengthOf(1)
+      expect(items[0].label).to.equal(browser.extension.name)
+      expect(items[0].submenu).to.be.an('object')
+      expect(items[0].submenu!.items).to.have.lengthOf(2)
+      expect(items[0].submenu!.items[0].label).to.equal('one')
+      expect(items[0].submenu!.items[1].label).to.equal('two')
     })
 
     it('invokes the create callback', async () => {
