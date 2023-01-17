@@ -6,6 +6,22 @@ import { WindowsAPI } from './windows'
 
 const debug = require('debug')('electron-chrome-extensions:tabs')
 
+const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
+  // Convert relative URLs to absolute if needed
+  try {
+    url = new URL(url, extension.url).href
+  } catch (e) {
+    throw new Error('Invalid URL')
+  }
+
+  // Prevent creating chrome://kill or other debug commands
+  if (url.startsWith('chrome:') || url.startsWith('javascript:')) {
+    throw new Error('Invalid URL')
+  }
+
+  return url
+}
+
 export class TabsAPI {
   static TAB_ID_NONE = -1
   static WINDOW_ID_NONE = -1
@@ -143,17 +159,10 @@ export class TabsAPI {
   }
 
   private async create(event: ExtensionEvent, details: chrome.tabs.CreateProperties = {}) {
-    const parsedDetails = {
-      ...details,
-    }
-    // make URL absolute
-    if (details.url) {
-      parsedDetails.url = new URL(details.url, event.extension.url).href
-    }
-
-    const tab = await this.ctx.store.createTab(parsedDetails)
+    const url = details.url ? validateExtensionUrl(details.url, event.extension) : undefined
+    const tab = await this.ctx.store.createTab({ ...details, url })
     const tabDetails = this.getTabDetails(tab)
-    if (parsedDetails.active) {
+    if (details.active) {
       queueMicrotask(() => this.onActivated(tab.id))
     }
     return tabDetails
@@ -252,20 +261,12 @@ export class TabsAPI {
 
     const props = updateProperties
 
-    const parsedProps = {
-      ...props,
-    }
-    // make URL absolute
-    if (props.url) {
-      parsedProps.url = new URL(props.url, event.extension.url).href
-    }
+    const url = props.url ? validateExtensionUrl(props.url, event.extension) : undefined
+    if (url) await tab.loadURL(url)
 
-    // TODO: validate URL, prevent 'javascript:'
-    if (parsedProps.url) await tab.loadURL(parsedProps.url)
+    if (typeof props.muted === 'boolean') tab.setAudioMuted(props.muted)
 
-    if (typeof parsedProps.muted === 'boolean') tab.setAudioMuted(parsedProps.muted)
-
-    if (parsedProps.active) this.onActivated(tabId)
+    if (props.active) this.onActivated(tabId)
 
     this.onUpdated(tabId)
 

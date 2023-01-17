@@ -126,9 +126,10 @@ export const useExtensionBrowser = (opts: {
     crx: {
       async exec(method: string, ...args: any[]) {
         const p = emittedOnce(ipcMain, 'success')
-        await w.webContents.executeJavaScript(
-          `exec('${JSON.stringify({ type: 'api', method, args })}')`
-        )
+        const rpcStr = JSON.stringify({ type: 'api', method, args })
+        const safeRpcStr = rpcStr.replace(/'/g, "\\'")
+        const js = `exec('${safeRpcStr}')`
+        await w.webContents.executeJavaScript(js)
         const [, result] = await p
         return result
       },

@@ -6,7 +6,10 @@ import { useExtensionBrowser, useServer } from './hooks'
 
 describe('chrome.tabs', () => {
   const server = useServer()
-  const browser = useExtensionBrowser({ url: server.getUrl, extensionName: 'rpc' })
+  const browser = useExtensionBrowser({
+    url: server.getUrl,
+    extensionName: 'rpc',
+  })
 
   describe('get()', () => {
     it('returns tab details', async () => {
@@ -56,6 +59,16 @@ describe('chrome.tabs', () => {
       const url = new URL(relativeUrl, browser.extension.url).href
       expect(tabInfo).to.be.an('object')
       expect(tabInfo.url).to.equal(url)
+    })
+
+    it('fails on chrome:// URLs', async () => {
+      const tabInfo = await browser.crx.exec('tabs.create', { url: 'chrome://kill' })
+      expect(tabInfo).to.be.a('null')
+    })
+
+    it('fails on javascript: URLs', async () => {
+      const tabInfo = browser.crx.exec('tabs.create', { url: "javascript:alert('hacked')" })
+      expect(await tabInfo).to.be.a('null')
     })
   })
 
