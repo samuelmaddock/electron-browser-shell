@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.0] - 2023-01-16
+
+### Added
+
+- Added URL pattern matching to `chrome.tabs.query`.
+- Added title pattern matching to `chrome.tabs.query`.
+- `chrome.tabs.create` and `chrome.tabs.update` now resolve relative URLs.
+
+### Changed
+
+- `ElectronChromeExtensions.getContextMenuItems()` now groups multiple top-level items under an extension submenu.
+- Removed the ability for `tabs.create` and `tabs.update` to set `chrome://` or `javascript:` URLs.
+- Updated vulnerable dependencies.
+
 ## [3.9.0] - 2021-09-04
 
 ### Added
@@ -145,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.10.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.9.0...electron-chrome-extensions@3.10.0
 [3.9.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.8.0...electron-chrome-extensions@3.9.0
 [3.8.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.7.0...electron-chrome-extensions@3.8.0
 [3.7.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.6.1...electron-chrome-extensions@3.7.0
