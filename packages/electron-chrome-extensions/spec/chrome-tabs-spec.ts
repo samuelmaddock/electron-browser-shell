@@ -21,17 +21,6 @@ describe('chrome.tabs', () => {
     })
   })
 
-  describe('update()', () => {
-    it('navigates the tab', async () => {
-      const tabId = browser.window.webContents.id
-      const updateUrl = `${server.getUrl()}foo`
-      const navigatePromise = emittedOnce(browser.window.webContents, 'did-navigate')
-      browser.crx.exec('tabs.update', tabId, { url: updateUrl })
-      await navigatePromise
-      expect(browser.window.webContents.getURL()).to.equal(updateUrl)
-    })
-  })
-
   describe('getCurrent()', () => {
     it('fails to get the active tab from a non-tab context', async () => {
       const result = await browser.crx.exec('tabs.getCurrent')
@@ -136,6 +125,23 @@ describe('chrome.tabs', () => {
       expect(results).to.be.an('array')
       expect(results).to.be.length(1)
       expect(results[0].url).to.be.equal(server.getUrl())
+    })
+  })
+
+  describe('update()', () => {
+    it('navigates the tab', async () => {
+      const tabId = browser.window.webContents.id
+      const updateUrl = `${server.getUrl()}foo`
+      const navigatePromise = emittedOnce(browser.window.webContents, 'did-navigate')
+      browser.crx.exec('tabs.update', tabId, { url: updateUrl })
+      await navigatePromise
+      expect(browser.window.webContents.getURL()).to.equal(updateUrl)
+    })
+
+    it('fails on chrome:// URLs', async () => {
+      const tabId = browser.webContents.id
+      const tabInfo = await browser.crx.exec('tabs.update', tabId, { url: 'chrome://kill' })
+      expect(tabInfo).to.be.a('null')
     })
   })
 
