@@ -436,6 +436,16 @@ export class BrowserActionAPI {
       },
     })
 
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG) {
+      append({
+        label: 'Remove extension',
+        click: () => {
+          debug(`removing extension "${extension.name}" (${extension.id})`)
+          this.ctx.session.removeExtension(extension.id)
+        },
+      })
+    }
+
     menu.popup({
       x: Math.floor(anchorRect.x),
       y: Math.floor(anchorRect.y + anchorRect.height),

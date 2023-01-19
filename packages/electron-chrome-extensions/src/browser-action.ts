@@ -362,6 +362,7 @@ export const injectBrowserAction = () => {
         const tabId =
           typeof this.tab === 'number' && this.tab >= 0 ? this.tab : state.activeTabId || -1
 
+        // Create or update action buttons
         for (const action of state.actions) {
           let browserActionNode = this.shadowRoot?.querySelector(
             `[id=${action.id}]`
@@ -380,6 +381,16 @@ export const injectBrowserAction = () => {
 
           if (this.partition) browserActionNode.partition = this.partition
           browserActionNode.tab = tabId
+        }
+
+        // Remove any actions no longer in use
+        const actionNodes = Array.from(
+          this.shadowRoot?.querySelectorAll('.action') as any
+        ) as BrowserActionElement[]
+        for (const actionNode of actionNodes) {
+          if (!state.actions.some((action: any) => action.id === actionNode.id)) {
+            actionNode.remove()
+          }
         }
       }
     }

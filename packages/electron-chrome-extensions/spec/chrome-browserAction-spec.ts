@@ -170,10 +170,13 @@ describe('chrome.browserAction', () => {
       extensionName: 'chrome-browserAction-popup',
     })
 
-    it('lists actions', async () => {
-      await browser.webContents.loadFile(path.join(basePath, 'default.html'))
+    const getExtensionActionIds = async (
+      webContents: Electron.WebContents = browser.webContents
+    ) => {
+      // Await update propagation to avoid flaky tests
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
-      const extensionIds = await browser.webContents.executeJavaScript(
+      return await webContents.executeJavaScript(
         `(${() => {
           const list = document.querySelector('browser-action-list')!
           const actions = list.shadowRoot!.querySelectorAll('.action')
@@ -181,7 +184,11 @@ describe('chrome.browserAction', () => {
           return ids
         }})();`
       )
+    }
 
+    it('lists actions', async () => {
+      await browser.webContents.loadFile(path.join(basePath, 'default.html'))
+      const extensionIds = await getExtensionActionIds()
       expect(extensionIds).to.deep.equal([browser.extension.id])
     })
 
@@ -200,16 +207,18 @@ describe('chrome.browserAction', () => {
         }})('${browser.partition}');`
       )
 
-      const extensionIds = await remoteTab.executeJavaScript(
-        `(${() => {
-          const list = document.querySelector('browser-action-list')!
-          const actions = list.shadowRoot!.querySelectorAll('.action')
-          const ids = Array.from(actions).map((elem) => elem.id)
-          return ids
-        }})();`
-      )
-
+      const extensionIds = await getExtensionActionIds(remoteTab)
       expect(extensionIds).to.deep.equal([browser.extension.id])
+    })
+
+    it('removes action for unloaded extension', async () => {
+      await browser.webContents.loadFile(path.join(basePath, 'default.html'))
+      expect(browser.session.getExtension(browser.extension.id)).to.be.an('object')
+      browser.session.removeExtension(browser.extension.id)
+      expect(browser.session.getExtension(browser.extension.id)).to.be.an('null')
+
+      const extensionIds = await getExtensionActionIds()
+      expect(extensionIds).to.have.lengthOf(0)
     })
   })
 })
