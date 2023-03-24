@@ -335,7 +335,7 @@ export const injectExtensionAPIs = () => {
               // C++, but it doesn't support implicit execution in the active
               // tab. To handle this, we need to get the active tab ID and
               // pass it into the C++ implementation ourselves.
-              if (typeof arg1 === 'object') {
+              if (typeof arg1 === 'object' || arg1 === null) {
                 api.query(
                   { active: true, windowId: chrome.windows.WINDOW_ID_CURRENT },
                   ([activeTab]: chrome.tabs.Tab[]) => {
