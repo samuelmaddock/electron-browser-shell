@@ -336,10 +336,12 @@ export const injectExtensionAPIs = () => {
               // tab. To handle this, we need to get the active tab ID and
               // pass it into the C++ implementation ourselves.
               if (typeof arg1 === 'object' || arg1 === null) {
+                const passArg1 = arg1 !== null ? arg1 : arg2;
+                const passArg2 = arg1 !== null ? arg2 : arg3;
                 api.query(
                   { active: true, windowId: chrome.windows.WINDOW_ID_CURRENT },
                   ([activeTab]: chrome.tabs.Tab[]) => {
-                    api.executeScript(activeTab.id, arg1, arg2)
+                    api.executeScript(activeTab.id, passArg1, passArg2)
                   }
                 )
               } else {
