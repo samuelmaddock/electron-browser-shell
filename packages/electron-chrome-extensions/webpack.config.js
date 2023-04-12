@@ -25,6 +25,7 @@ const preload = {
   ...webpackBase,
 
   target: 'electron-preload',
+  devtool: false,
 
   entry: {
     preload: './src/preload.ts'
