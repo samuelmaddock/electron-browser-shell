@@ -162,7 +162,8 @@ export class ExtensionStore extends EventEmitter {
 
   getActiveTabFromWebContents(wc: Electron.WebContents): Electron.WebContents | undefined {
     const win = this.tabToWindow.get(wc) || BrowserWindow.fromWebContents(wc)
-    return win ? this.getActiveTabFromWindow(win) : undefined
+    const activeTab = win ? this.getActiveTabFromWindow(win) : undefined
+    return activeTab
   }
 
   getActiveTabOfCurrentWindow() {

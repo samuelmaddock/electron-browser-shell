@@ -154,7 +154,7 @@ export class TabsAPI {
   }
 
   private getCurrent(event: ExtensionEvent) {
-    const tab = this.ctx.store.getActiveTabFromWebContents(event.sender)
+    const tab = this.ctx.store.getActiveTabOfCurrentWindow()
     return tab ? this.getTabDetails(tab) : undefined
   }
 
@@ -236,8 +236,7 @@ export class TabsAPI {
 
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabFromWebContents(event.sender)
-
+      : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
 
     if (reloadProperties?.bypassCache) {
@@ -254,7 +253,7 @@ export class TabsAPI {
 
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabFromWebContents(event.sender)
+      : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
 
     tabId = tab.id
@@ -287,7 +286,7 @@ export class TabsAPI {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabFromWebContents(event.sender)
+      : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
     tab.goForward()
   }
@@ -296,7 +295,7 @@ export class TabsAPI {
     const tabId = typeof arg1 === 'number' ? arg1 : undefined
     const tab = tabId
       ? this.ctx.store.getTabById(tabId)
-      : this.ctx.store.getActiveTabFromWebContents(event.sender)
+      : this.ctx.store.getActiveTabOfCurrentWindow()
     if (!tab) return
     tab.goBack()
   }
