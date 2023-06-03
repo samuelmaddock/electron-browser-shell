@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.1] - 2023-06-02
+
+### Fixed
+
+- `chrome.webNavigation` internals erroring due to electron@25.x.y deprecations.
+- Unloaded extensions are now removed from `<browser-action-list>`.
+
 ## [3.10.0] - 2023-01-16
 
 ### Added
@@ -159,6 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[3.10.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.10.0...electron-chrome-extensions@3.10.1
 [3.10.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.9.0...electron-chrome-extensions@3.10.0
 [3.9.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.8.0...electron-chrome-extensions@3.9.0
 [3.8.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.7.0...electron-chrome-extensions@3.8.0
