@@ -292,7 +292,22 @@ export class BrowserActionAPI {
   private getPopupUrl(extensionId: string, tabId: number) {
     const action = this.getAction(extensionId)
     const popupPath = action.tabs[tabId]?.popup || action.popup || undefined
-    return popupPath && `chrome-extension://${extensionId}/${popupPath}`
+
+    let url: string | undefined
+
+    // Allow absolute URLs
+    try {
+      url = popupPath && new URL(popupPath).href
+    } catch {}
+
+    // Fallback to relative path
+    if (!url) {
+      try {
+        url = popupPath && new URL(popupPath, `chrome-extension://${extensionId}`).href
+      } catch {}
+    }
+
+    return url
   }
 
   // TODO: Make private for v4 major release.
