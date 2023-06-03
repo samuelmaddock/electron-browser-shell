@@ -248,6 +248,7 @@ class Browser {
         frame: false,
         titleBarStyle: 'hidden',
         titleBarOverlay: {
+          height: 31,
           color: '#39375b',
           symbolColor: '#ffffff',
         },
