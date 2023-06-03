@@ -43,18 +43,25 @@
 
       .topbar {
         background: var(--bg-color);
-        height: 2rem;
       }
 
       /*----- TABS -----*/
 
       #tabstrip {
         width: 100%;
-        height: 2rem;
+        height: calc(env(titlebar-area-height) + 1px);
+      }
+
+      .tab-container {
+        position: fixed;
+        left: env(titlebar-area-x);
+        top: env(titlebar-area-y);
+        width: env(titlebar-area-width);
+        height: calc(env(titlebar-area-height) + 1px);
         display: flex;
         flex-direction: row;
       }
-
+      
       .tab-list {
         height: 100%;
         display: flex;
@@ -137,9 +144,13 @@
       }
       
       .window-controls {
-        display: flex;
+        display: none;
         flex-direction: row;
         flex: 0 0 auto;
+      }
+
+      .platform-linux .window-controls {
+        display: flex;
       }
 
       .window-controls .control {
@@ -197,24 +208,26 @@
   <body>
     <div class="topbar">
       <div id="tabstrip">
-        <ul class="tab-list">
-          <template id="tabtemplate">
-            <li class="tab">
-              <img class="favicon" />
-              <span class="title"></span>
-              <div class="controls">
-                <button class="control audio" disabled>🔊</button>
-                <button class="control close">🗙</button>
-              </div>
-            </li>
-          </template>
-        </ul>
-        <button id="createtab">+</button>
-        <div class="app-drag"></div>
-        <div class="window-controls">
-          <button id="minimize" class="control">🗕</button>
-          <button id="maximize" class="control">🗖</button>
-          <button id="close" class="control">🗙</button>
+        <div class="tab-container">
+          <ul class="tab-list">
+            <template id="tabtemplate">
+              <li class="tab">
+                <img class="favicon" />
+                <span class="title"></span>
+                <div class="controls">
+                  <button class="control audio" disabled>🔊</button>
+                  <button class="control close">✕</button>
+                </div>
+              </li>
+            </template>
+          </ul>
+          <button id="createtab">+</button>
+          <div class="app-drag"></div>
+          <div class="window-controls">
+            <button id="minimize" class="control">🗕</button>
+            <button id="maximize" class="control">🗖</button>
+            <button id="close" class="control">🗙</button>
+          </div>
         </div>
       </div>
       <div class="toolbar">

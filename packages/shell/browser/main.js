@@ -246,6 +246,11 @@ class Browser {
         width: 1280,
         height: 720,
         frame: false,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: {
+          color: '#39375b',
+          symbolColor: '#ffffff',
+        },
         webPreferences: {
           sandbox: true,
           nodeIntegration: false,
@@ -269,7 +274,7 @@ class Browser {
     const url = webContents.getURL()
     console.log(`'web-contents-created' event [type:${type}, url:${url}]`)
 
-    if (process.env.SHELL_DEBUG && webContents.getType() === 'backgroundPage') {
+    if (process.env.SHELL_DEBUG && ['backgroundPage', 'remote'].includes(webContents.getType())) {
       webContents.openDevTools({ mode: 'detach', activate: true })
     }
 

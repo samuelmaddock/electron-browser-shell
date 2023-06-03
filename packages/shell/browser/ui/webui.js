@@ -40,6 +40,9 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
+    const platformClass = `platform-${(navigator.userAgentData.platform).toLowerCase()}`
+    document.body.classList.add(platformClass)
+
     this.initTabs()
   }
 
@@ -112,7 +115,7 @@ class WebUI {
 
     for (const tab of this.tabList) {
       if (tab.id === this.activeTabId) {
-        tab.active = true;
+        tab.active = true
         this.renderTab(tab)
         this.renderToolbar(tab)
       } else {
@@ -165,7 +168,7 @@ class WebUI {
   }
 
   renderTabs() {
-    this.tabList.forEach(tab => {
+    this.tabList.forEach((tab) => {
       this.renderTab(tab)
     })
   }
