@@ -12,7 +12,7 @@
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "private": true,
   "dependencies": {
-    "electron": "^22.0.2",
+    "electron": "^25.0.1",
     "electron-chrome-context-menu": "^1.0.1",
     "electron-chrome-extensions": "^3.4.0"
   },

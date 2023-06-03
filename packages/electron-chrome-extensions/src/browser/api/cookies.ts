@@ -98,7 +98,7 @@ export class CookiesAPI {
     return [{ id: CookieStoreID.Default, tabIds }]
   }
 
-  private onChanged = (event: Event, cookie: Electron.Cookie, cause: string, removed: boolean) => {
+  private onChanged = (event: Electron.Event, cookie: Electron.Cookie, cause: string, removed: boolean) => {
     const changeInfo: chrome.cookies.CookieChangeInfo = {
       cause: onChangedCauseTranslation[cause] || cause,
       cookie: createCookieDetails(cookie),

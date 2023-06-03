@@ -39,11 +39,11 @@ export class WebNavigationAPI {
   }
 
   private observeTab(tab: Electron.WebContents) {
-    tab.once('will-navigate', this.onCreatedNavigationTarget as any)
-    tab.on('did-start-navigation', this.onBeforeNavigate as any)
-    tab.on('did-frame-finish-load', this.onFinishLoad as any)
-    tab.on('did-frame-navigate', this.onCommitted as any)
-    tab.on('did-navigate-in-page', this.onHistoryStateUpdated as any)
+    tab.once('will-navigate', this.onCreatedNavigationTarget.bind(this, tab))
+    tab.on('did-start-navigation', this.onBeforeNavigate.bind(this, tab))
+    tab.on('did-frame-finish-load', this.onFinishLoad.bind(this, tab))
+    tab.on('did-frame-navigate', this.onCommitted.bind(this, tab))
+    tab.on('did-navigate-in-page', this.onHistoryStateUpdated.bind(this, tab))
 
     tab.on('frame-created', (e, { frame }) => {
       if (frame.top === frame) return
@@ -99,18 +99,17 @@ export class WebNavigationAPI {
   }
 
   private onCreatedNavigationTarget = (
-    event: Electron.IpcMainEvent,
-    url: string,
-    isInPlace: boolean,
-    isMainFrame: boolean,
-    frameProcessId: number,
-    frameRoutingId: number
+    tab: Electron.WebContents,
+    event: Electron.Event<Electron.WebContentsWillNavigateEventParams>,
+    ...args: any[]
   ) => {
-    const frame = getFrame(frameProcessId, frameRoutingId)
-    const tab = event.sender
+    // Defaults for backwards compat prior to electron@25.0.0
+    const { url = args[0] as string, frame = getFrame(args[3], args[4]) as Electron.WebFrameMain } =
+      event
+
     const details: chrome.webNavigation.WebNavigationSourceCallbackDetails = {
       sourceTabId: tab.id,
-      sourceProcessId: frameProcessId,
+      sourceProcessId: frame ? frame.processId : -1,
       sourceFrameId: getFrameId(frame),
       url,
       tabId: tab.id,
@@ -120,21 +119,23 @@ export class WebNavigationAPI {
   }
 
   private onBeforeNavigate = (
-    event: Electron.IpcMainEvent,
-    url: string,
-    isInPlace: number,
-    isMainFrame: boolean,
-    frameProcessId: number,
-    frameRoutingId: number
+    tab: Electron.WebContents,
+    event: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>,
+    ...args: any[]
   ) => {
-    if (isInPlace) return
+    // Defaults for backwards compat prior to electron@25.0.0
+    const {
+      url = args[0] as string,
+      isSameDocument = args[1] as boolean,
+      frame = getFrame(args[3], args[4]) as Electron.WebFrameMain,
+    } = event
 
-    const frame = getFrame(frameProcessId, frameRoutingId)
-    const tab = event.sender
+    if (isSameDocument) return
+
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
-      processId: frameProcessId,
+      processId: frame ? frame.processId : -1,
       tabId: tab.id,
       timeStamp: Date.now(),
       url,
@@ -144,7 +145,8 @@ export class WebNavigationAPI {
   }
 
   private onCommitted = (
-    event: Electron.IpcMainEvent,
+    tab: Electron.WebContents,
+    event: Electron.Event,
     url: string,
     httpResponseCode: number,
     httpStatusText: string,
@@ -153,7 +155,6 @@ export class WebNavigationAPI {
     frameRoutingId: number
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    const tab = event.sender
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
@@ -166,14 +167,14 @@ export class WebNavigationAPI {
   }
 
   private onHistoryStateUpdated = (
-    event: Electron.IpcMainEvent,
+    tab: Electron.WebContents,
+    event: Electron.Event,
     url: string,
     isMainFrame: boolean,
     frameProcessId: number,
     frameRoutingId: number
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    const tab = event.sender
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
       parentFrameId: number
     } = {
@@ -206,13 +207,13 @@ export class WebNavigationAPI {
   }
 
   private onFinishLoad = (
-    event: Electron.IpcMainEvent,
+    tab: Electron.WebContents,
+    event: Electron.Event,
     isMainFrame: boolean,
     frameProcessId: number,
     frameRoutingId: number
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    const tab = event.sender
     const url = tab.getURL()
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),

@@ -34,7 +34,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "colors": "^1.4.0",
-    "electron": "^22.0.2",
+    "electron": "^25.0.1",
     "esbuild": "^0.12.14",
     "minimist": "^1.2.7",
     "mocha": "^8.2.1",

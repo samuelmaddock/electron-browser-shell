@@ -15,6 +15,7 @@
     "build:shell": "yarn --cwd ./packages/shell build",
     "start": "yarn build && yarn --cwd ./packages/shell start",
     "start:debug": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn start",
+    "start:skip-build": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn --cwd ./packages/shell start",
     "test": "yarn test:extensions && yarn test:shell",
     "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
     "test:shell": "yarn --cwd ./packages/shell test"
