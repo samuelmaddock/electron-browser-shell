@@ -1,14 +1,14 @@
-import { Menu, MenuItem, protocol, nativeImage, app } from 'electron'
-import { ExtensionContext } from '../context'
-import { PopupView } from '../popup'
-import { ExtensionEvent } from '../router'
+import {app, Menu, MenuItem, nativeImage, protocol} from 'electron'
+import {ExtensionContext} from '../context'
+import {PopupView} from '../popup'
+import {ExtensionEvent} from '../router'
 import {
-  getExtensionUrl,
   getExtensionManifest,
+  getExtensionUrl,
   getIconPath,
-  resolveExtensionPath,
   matchSize,
   ResizeType,
+  resolveExtensionPath,
 } from './common'
 
 const debug = require('debug')('electron-chrome-extensions:browserAction')
@@ -192,6 +192,10 @@ export class BrowserActionAPI {
     })
 
     session.protocol.registerBufferProtocol('crx', this.handleCrxRequest)
+  }
+
+  public setupProtocol(session:Electron.Session){
+    return session.protocol.registerBufferProtocol('crx', this.handleCrxRequest)
   }
 
   private handleCrxRequest = (
