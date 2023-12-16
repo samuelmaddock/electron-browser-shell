@@ -22,16 +22,18 @@ class Tab {
     this.window.removeBrowserView(this.view)
     this.window = undefined
 
-    if (this.webContents.isDevToolsOpened()) {
-      this.webContents.closeDevTools()
+    if (!this.webContents.isDestroyed()) {
+      if (this.webContents.isDevToolsOpened()) {
+        this.webContents.closeDevTools()
+      }
+
+      // TODO: why is this no longer called?
+      this.webContents.emit('destroyed')
+
+      this.webContents.destroy()
     }
 
-    // TODO: why is this no longer called?
-    this.webContents.emit('destroyed')
-
-    this.webContents.destroy()
     this.webContents = undefined
-
     this.view = undefined
   }
 
