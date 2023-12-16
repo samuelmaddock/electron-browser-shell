@@ -142,6 +142,12 @@ class Browser {
       }
     })
 
+    app.on('activate', () => {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (BrowserWindow.getAllWindows().length === 0) this.createInitialWindow()
+    })
+
     app.on('web-contents-created', this.onWebContentsCreated.bind(this))
   }
 
@@ -224,11 +230,9 @@ class Browser {
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
-    const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
+    await loadExtensions(this.session, PATHS.EXTENSIONS)
 
-    const installedExtensions = await loadExtensions(this.session, PATHS.EXTENSIONS)
-
-    this.createWindow({ initialUrl: newTabUrl })
+    this.createInitialWindow()
   }
 
   initSession() {
@@ -272,6 +276,11 @@ class Browser {
     }
 
     return win
+  }
+
+  createInitialWindow() {
+    const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
+    this.createWindow({ initialUrl: newTabUrl })
   }
 
   async onWebContentsCreated(event, webContents) {
