@@ -17,7 +17,7 @@ export const injectBrowserAction = () => {
     anchorRect: { x: number; y: number; width: number; height: number }
   }
 
-  const browserAction = {
+  const __browserAction__ = {
     addEventListener(name: string, listener: (...args: any[]) => void) {
       internalEmitter.addListener(name, listener)
     },
@@ -63,7 +63,7 @@ export const injectBrowserAction = () => {
 
   ipcRenderer.on('browserAction.update', () => {
     for (const partition of observerCounts.keys()) {
-      browserAction.getState(partition)
+      __browserAction__.getState(partition)
     }
   })
 
@@ -71,6 +71,9 @@ export const injectBrowserAction = () => {
   // IMPORTANT: This must be self-contained, no closure variables can be used!
   function mainWorldScript() {
     const DEFAULT_PARTITION = '_self'
+
+    // Access from globalThis to prevent accessing incorrect minified variable.
+    const browserAction: typeof __browserAction__ = (globalThis as any).browserAction;
 
     class BrowserActionElement extends HTMLButtonElement {
       private updateId?: number
@@ -399,7 +402,7 @@ export const injectBrowserAction = () => {
   }
 
   try {
-    contextBridge.exposeInMainWorld('browserAction', browserAction)
+    contextBridge.exposeInMainWorld('browserAction', __browserAction__)
 
     // Must execute script in main world to modify custom component registry.
     webFrame.executeJavaScript(`(${mainWorldScript}());`)
