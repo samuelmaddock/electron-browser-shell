@@ -4,7 +4,7 @@
   "description": "Minimum Viable Browser shell built on Electron.",
   "main": ".webpack/main",
   "scripts": {
-    "build": "webpack",
+    "build": "npm run make",
     "start": "electron-forge start",
     "test": "npm run build",
     "package": "electron-forge package",
