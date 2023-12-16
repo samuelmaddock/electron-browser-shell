@@ -7,6 +7,13 @@ const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 
+// https://www.electronforge.io/config/plugins/webpack#main-process-code
+const PATHS = {
+  EXTENSIONS: path.join(__dirname, 'extensions'),
+  WEBUI: path.join(__dirname, 'ui'),
+  PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
+}
+
 let webuiExtensionId
 
 const manifestExists = async (dirPath) => {
@@ -166,11 +173,11 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
-    const browserPreload = path.join(__dirname, '../preload.js')
-    this.session.setPreloads([browserPreload])
+    this.session.setPreloads([PATHS.PRELOAD])
 
     this.extensions = new ElectronChromeExtensions({
       session: this.session,
+      modulePath: path.join(__dirname, 'electron-chrome-extensions'),
 
       createTab: (details) => {
         const win =
@@ -214,15 +221,12 @@ class Browser {
       this.popup = popup
     })
 
-    const webuiExtension = await this.session.loadExtension(path.join(__dirname, 'ui'))
+    const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
     const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
 
-    const installedExtensions = await loadExtensions(
-      this.session,
-      path.join(__dirname, '../../../extensions')
-    )
+    const installedExtensions = await loadExtensions(this.session, PATHS.EXTENSIONS)
 
     this.createWindow({ initialUrl: newTabUrl })
   }

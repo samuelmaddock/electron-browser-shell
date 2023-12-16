@@ -2,21 +2,32 @@
   "name": "shell",
   "version": "1.0.0",
   "description": "Minimum Viable Browser shell built on Electron.",
-  "main": "index.js",
+  "main": ".webpack/main",
   "scripts": {
     "build": "webpack",
-    "start": "electron .",
-    "test": "npm run build"
+    "start": "electron-forge start",
+    "test": "npm run build",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "private": true,
   "dependencies": {
-    "electron": "^25.0.1",
     "electron-chrome-context-menu": "^1.0.1",
-    "electron-chrome-extensions": "^3.10.1"
+    "electron-chrome-extensions": "^3.10.1",
+    "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {
-    "cross-env": "^7.0.2"
+    "@electron-forge/cli": "^7.2.0",
+    "@electron-forge/maker-deb": "^7.2.0",
+    "@electron-forge/maker-rpm": "^7.2.0",
+    "@electron-forge/maker-squirrel": "^7.2.0",
+    "@electron-forge/maker-zip": "^7.2.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.2.0",
+    "@electron-forge/plugin-webpack": "^7.2.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "cross-env": "^7.0.2",
+    "electron": "^25.0.1"
   }
 }

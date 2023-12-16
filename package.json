@@ -24,6 +24,10 @@
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "dependencies": {},
   "repository": "git@github.com:samuelmaddock/electron-browser-shell.git",
+  "engines": {
+    "node": ">= 16.0.0",
+    "yarn": ">= 1.10.0 < 2.0.0"
+  },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
