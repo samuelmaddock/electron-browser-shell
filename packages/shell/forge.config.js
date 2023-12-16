@@ -2,7 +2,9 @@ const path = require('path')
 const { promises: fs } = require('fs')
 
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    name: 'Shell',
+  },
   rebuildConfig: {},
   makers: [
     {
