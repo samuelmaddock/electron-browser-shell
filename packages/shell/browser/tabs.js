@@ -50,7 +50,9 @@ class Tab {
 
   hide() {
     this.view.setAutoResize({ width: false, height: false })
-    this.view.setBounds({ x: -1000, y: 0, width: 0, height: 0 })
+    const bounds = this.view.getBounds()
+    const newBounds = { x: -Math.floor(bounds.width) || 0, y: 0, width: 0, height: 0 }
+    this.view.setBounds(newBounds)
     // TODO: can't remove from window otherwise we lose track of which window it belongs to
     // this.window.removeBrowserView(this.view)
   }
