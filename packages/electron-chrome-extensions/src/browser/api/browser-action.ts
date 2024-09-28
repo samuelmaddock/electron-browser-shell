@@ -63,7 +63,9 @@ export class BrowserActionAPI {
   private actionMap = new Map</* extensionId */ string, ExtensionActionStore>()
   private popup?: PopupView
 
-  private observers: Set<Electron.WebContents> = new Set()
+  // TODO(mv3): support SWs
+  // private observers: Set<Electron.WebContents | Electron.ServiceWorkerMain> = new Set()
+  private observers: Set<any> = new Set()
   private queuedUpdate: boolean = false
 
   constructor(private ctx: ExtensionContext) {
@@ -148,10 +150,11 @@ export class BrowserActionAPI {
     handle(
       'browserAction.addObserver',
       (event) => {
-        const { sender: webContents } = event
-        this.observers.add(webContents)
-        webContents.once('destroyed', () => {
-          this.observers.delete(webContents)
+        const { sender: observer } = event
+        this.observers.add(observer)
+        // TODO(mv3): need a destroyed event on workers
+        observer.once?.('destroyed', () => {
+          this.observers.delete(observer)
         })
       },
       preloadOpts
@@ -159,8 +162,8 @@ export class BrowserActionAPI {
     handle(
       'browserAction.removeObserver',
       (event) => {
-        const { sender: webContents } = event
-        this.observers.delete(webContents)
+        const { sender: observer } = event
+        this.observers.delete(observer)
       },
       preloadOpts
     )
@@ -475,7 +478,8 @@ export class BrowserActionAPI {
       debug(`dispatching update to ${this.observers.size} observer(s)`)
       Array.from(this.observers).forEach((observer) => {
         if (!observer.isDestroyed()) {
-          observer.send('browserAction.update')
+          // TODO(mv3): support sending to SWs
+          observer.send?.('browserAction.update')
         }
       })
     })
