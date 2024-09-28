@@ -179,7 +179,9 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
-    this.session.setPreloads([PATHS.PRELOAD])
+    this.session.setPreloadScripts([
+      { type: 'frame', filePath: PATHS.PRELOAD }
+    ]);
 
     this.extensions = new ElectronChromeExtensions({
       session: this.session,

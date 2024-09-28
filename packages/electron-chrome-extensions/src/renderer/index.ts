@@ -60,9 +60,9 @@ export const injectExtensionAPIs = () => {
   // IMPORTANT: This must be self-contained, no closure variable will be included!
   function mainWorldScript() {
     // Use context bridge API or closure variable when context isolation is disabled.
-    const electron = ((window as any).electron as typeof electronContext) || electronContext
+    const electron = ((globalThis as any).electron as typeof electronContext) || electronContext
 
-    const chrome = window.chrome || {}
+    const chrome = globalThis.chrome || {}
     const extensionId = chrome.runtime?.id
 
     // NOTE: This uses a synchronous IPC to get the extension manifest.
@@ -439,7 +439,7 @@ export const injectExtensionAPIs = () => {
     })
 
     // Remove access to internals
-    delete (window as any).electron
+    delete (globalThis as any).electron
 
     Object.freeze(chrome)
 

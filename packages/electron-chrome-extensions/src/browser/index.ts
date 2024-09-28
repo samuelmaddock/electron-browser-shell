@@ -93,17 +93,16 @@ export class ElectronChromeExtensions extends EventEmitter {
 
   private async prependPreload() {
     const { session } = this.ctx
-    let preloads = session.getPreloads()
 
+    // TODO: allow new preload API to register new script instead of replacing
+    // all of them
+    let preloads = (session as any).getPreloadScripts()
     const preloadPath = path.join(this.modulePath, 'dist/preload.js')
-
-    const preloadIndex = preloads.indexOf(preloadPath)
-    if (preloadIndex > -1) {
-      preloads.splice(preloadIndex, 1)
-    }
-
-    preloads = [preloadPath, ...preloads]
-    session.setPreloads(preloads)
+    preloads = [
+      { type: 'service-worker', filePath: preloadPath },
+      ...preloads
+    ];
+    (session as any).setPreloadScripts(preloads);
 
     let preloadExists = false
     try {
