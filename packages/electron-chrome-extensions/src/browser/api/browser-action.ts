@@ -38,17 +38,23 @@ interface ActivateDetails {
 
 const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionAction | undefined => {
   const manifest = getExtensionManifest(extension)
-  const { browser_action } = manifest
-  if (typeof browser_action === 'object') {
+  const browserAction =
+    manifest.manifest_version === 3
+      ? manifest.action
+      : manifest.manifest_version === 2
+      ? manifest.browser_action
+      : undefined
+  if (typeof browserAction === 'object') {
+    const manifestAction: chrome.runtime.ManifestAction = browserAction
     const action: ExtensionAction = {}
 
-    action.title = browser_action.default_title || manifest.name
+    action.title = manifestAction.default_title || manifest.name
 
     const iconPath = getIconPath(extension)
     if (iconPath) action.icon = { path: iconPath }
 
-    if (browser_action.default_popup) {
-      action.popup = browser_action.default_popup
+    if (manifestAction.default_popup) {
+      action.popup = manifestAction.default_popup
     }
 
     return action
@@ -63,7 +69,9 @@ export class BrowserActionAPI {
   private actionMap = new Map</* extensionId */ string, ExtensionActionStore>()
   private popup?: PopupView
 
-  private observers: Set<Electron.WebContents> = new Set()
+  // TODO(mv3): support SWs
+  // private observers: Set<Electron.WebContents | Electron.ServiceWorkerMain> = new Set()
+  private observers: Set<any> = new Set()
   private queuedUpdate: boolean = false
 
   constructor(private ctx: ExtensionContext) {
@@ -96,7 +104,7 @@ export class BrowserActionAPI {
       propName: ExtensionActionKey,
     ) => {
       const { tabId } = details
-      let value = (details as any)[propName] || undefined
+      let value = details[propName]
 
       if (typeof value === 'undefined') {
         const defaults = getBrowserActionDefaults(extension)
@@ -131,6 +139,11 @@ export class BrowserActionAPI {
     handleProp('Title', 'title')
     handleProp('Popup', 'popup')
 
+    handle('browserAction.getUserSettings', (): chrome.action.UserSettings => {
+      // TODO: allow extension pinning
+      return { isOnToolbar: true }
+    })
+
     // setIcon is unique in that it can pass in a variety of properties. Here we normalize them
     // to use 'icon'.
     handle(
@@ -148,10 +161,11 @@ export class BrowserActionAPI {
     handle(
       'browserAction.addObserver',
       (event) => {
-        const { sender: webContents } = event
-        this.observers.add(webContents)
-        webContents.once('destroyed', () => {
-          this.observers.delete(webContents)
+        const { sender: observer } = event
+        this.observers.add(observer)
+        // TODO(mv3): need a destroyed event on workers
+        observer.once?.('destroyed', () => {
+          this.observers.delete(observer)
         })
       },
       preloadOpts,
@@ -159,8 +173,8 @@ export class BrowserActionAPI {
     handle(
       'browserAction.removeObserver',
       (event) => {
-        const { sender: webContents } = event
-        this.observers.delete(webContents)
+        const { sender: observer } = event
+        this.observers.delete(observer)
       },
       preloadOpts,
     )
@@ -291,7 +305,16 @@ export class BrowserActionAPI {
 
   private getPopupUrl(extensionId: string, tabId: number) {
     const action = this.getAction(extensionId)
-    const popupPath = action.tabs[tabId]?.popup || action.popup || undefined
+    const tabPopupValue = action.tabs[tabId]?.popup
+    const actionPopupValue = action.popup
+
+    let popupPath: string | undefined
+
+    if (typeof tabPopupValue !== 'undefined') {
+      popupPath = tabPopupValue
+    } else if (typeof actionPopupValue !== 'undefined') {
+      popupPath = actionPopupValue
+    }
 
     let url: string | undefined
 
@@ -431,6 +454,7 @@ export class BrowserActionAPI {
 
     appendSeparator()
 
+    // TODO(mv3): need to build 'action' menu items?
     const contextMenuItems: MenuItem[] = this.ctx.store.buildMenuItems(
       extensionId,
       'browser_action',
@@ -475,7 +499,8 @@ export class BrowserActionAPI {
       debug(`dispatching update to ${this.observers.size} observer(s)`)
       Array.from(this.observers).forEach((observer) => {
         if (!observer.isDestroyed()) {
-          observer.send('browserAction.update')
+          // TODO(mv3): support sending to SWs
+          observer.send?.('browserAction.update')
         }
       })
     })

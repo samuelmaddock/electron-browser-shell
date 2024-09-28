@@ -126,7 +126,11 @@ class Browser {
     this.initSession()
     setupMenu(this)
 
-    this.session.setPreloads([PATHS.PRELOAD])
+    this.session.registerPreloadScript({
+      id: 'shell-preload',
+      type: 'frame',
+      filePath: PATHS.PRELOAD,
+    })
 
     this.extensions = new ElectronChromeExtensions({
       license: 'internal-license-do-not-use',

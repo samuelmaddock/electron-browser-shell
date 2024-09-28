@@ -106,6 +106,7 @@ export class TabsAPI {
       id: tabId,
       incognito: false,
       index: -1, // TODO
+      groupId: -1, // TODO(mv3): implement?
       mutedInfo: { muted: tab.audioMuted },
       pinned: false,
       selected: true,

@@ -14,8 +14,12 @@ export const createCrxSession = () => {
 }
 
 export const addCrxPreload = (session: Electron.Session) => {
-  const preload = path.join(__dirname, 'fixtures', 'crx-test-preload.js')
-  session.setPreloads([...session.getPreloads(), preload])
+  // TODO(mv3): remove any
+  (session as any).registerPreloadScript({
+    id: 'crx-test-preload',
+    type: 'frame',
+    filePath: path.join(__dirname, 'fixtures', 'crx-test-preload.js')
+  })
 }
 
 export const createCrxRemoteWindow = () => {
