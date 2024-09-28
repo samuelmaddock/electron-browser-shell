@@ -408,6 +408,7 @@ export const injectExtensionAPIs = () => {
             ...base,
             WINDOW_ID_NONE: -1,
             WINDOW_ID_CURRENT: -2,
+            getCurrent:invokeExtension('windows.getCurrent'),
             get: invokeExtension('windows.get'),
             getLastFocused: invokeExtension('windows.getLastFocused'),
             getAll: invokeExtension('windows.getAll'),
