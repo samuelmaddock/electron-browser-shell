@@ -94,7 +94,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   private async prependPreload() {
     const { session } = this.ctx
 
-    // TODO: allow new preload API to register new script instead of replacing
+    // TODO(mv3): allow new preload API to register new script instead of replacing
     // all of them
     let preloads = (session as any).getPreloadScripts()
     const preloadPath = path.join(this.modulePath, 'dist/preload.js')

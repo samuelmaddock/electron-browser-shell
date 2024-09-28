@@ -10,6 +10,24 @@ createDebug.formatters.r = (value: any) => {
   return value ? JSON.stringify(value, shortenValues, '  ') : value
 }
 
+const getSessionFromEvent = (event: any): Electron.Session => {
+  if (event.type === 'service-worker') {
+    return event.session
+  } else {
+    return event.sender.session;
+  }
+}
+
+// TODO(mv3): add types
+const getHostFromEvent = (event: any) => {
+  if (event.type === 'service-worker') {
+    const worker = event.session.serviceWorkers.fromVersionID(event.versionId);
+    return worker && !worker.isDestroyed() ? worker : null;
+  } else {
+    return event.sender;
+  }
+}
+
 const debug = createDebug('electron-chrome-extensions:router')
 
 const DEFAULT_SESSION = '_self'
@@ -48,6 +66,17 @@ class RoutingDelegate {
 
   addObserver(observer: RoutingDelegateObserver) {
     this.sessionMap.set(observer.session, observer)
+
+    observer.session.serviceWorkers.on('version-activated' as any, ({ versionId }: any) => {
+      const worker = (observer.session as any).serviceWorkers.fromVersionID(versionId);
+      if (worker && worker.scope.startsWith('chrome-extension://')) {
+        debug(`listening to worker [versionId:${versionId}, scope:${worker.scope}]`)
+        worker.ipc.handle('crx-msg', this.onRouterMessage);
+        worker.ipc.handle('crx-msg-remote', this.onRemoteMessage);
+        worker.ipc.on('crx-add-listener', this.onAddListener);
+        worker.ipc.on('crx-remove-listener', this.onRemoveListener);
+      }
+    });
   }
 
   private onRouterMessage = async (
@@ -58,7 +87,7 @@ class RoutingDelegate {
   ) => {
     debug(`received '${handlerName}'`, args)
 
-    const observer = this.sessionMap.get(event.sender.session)
+    const observer = this.sessionMap.get(getSessionFromEvent(event))
 
     return observer?.onExtensionMessage(event, extensionId, handlerName, ...args)
   }
@@ -73,7 +102,7 @@ class RoutingDelegate {
 
     const ses =
       sessionPartition === DEFAULT_SESSION
-        ? event.sender.session
+        ? getSessionFromEvent(event)
         : session.fromPartition(sessionPartition)
 
     const observer = this.sessionMap.get(ses)
@@ -86,8 +115,9 @@ class RoutingDelegate {
     extensionId: string,
     eventName: string
   ) => {
-    const observer = this.sessionMap.get(event.sender.session)
-    const listener: EventListener = { host: event.sender, extensionId }
+    const observer = this.sessionMap.get(getSessionFromEvent(event))
+    const host = getHostFromEvent(event);
+    const listener: EventListener = { host, extensionId }
     return observer?.addListener(listener, extensionId, eventName)
   }
 
@@ -96,14 +126,15 @@ class RoutingDelegate {
     extensionId: string,
     eventName: string
   ) => {
-    const observer = this.sessionMap.get(event.sender.session)
-    const listener: EventListener = { host: event.sender, extensionId }
+    const observer = this.sessionMap.get(getSessionFromEvent(event))
+    const host = getHostFromEvent(event);
+    const listener: EventListener = { host, extensionId }
     return observer?.removeListener(listener, extensionId, eventName)
   }
 }
 
 export interface ExtensionEvent {
-  sender: WebContents
+  sender?: any // TODO(mv3): types
   extension: Extension
 }
 
@@ -126,9 +157,13 @@ type EventName = string
 type HandlerMap = Map<EventName, Handler>
 
 interface EventListener {
-  host: Electron.WebContents
+  // TODO(mv3): host: Electron.WebContents | Electron.ServiceWorkerMain
+  host: any
   extensionId: string
 }
+
+const getHostId = (host: EventListener['host']) => host.id || host.versionId;
+const getHostUrl = (host: EventListener['host']) => host.getURL?.() || host.scope;
 
 const eventListenerEquals = (eventListener: EventListener) => (other: EventListener) =>
   other.host === eventListener.host && other.extensionId === eventListener.extensionId
@@ -146,6 +181,8 @@ export class ExtensionRouter {
    */
   private extensionHosts: Set<Electron.WebContents> = new Set()
 
+  private extensionWorkers: Set<any> = new Set();
+
   constructor(
     public session: Electron.Session,
     private delegate: RoutingDelegate = RoutingDelegate.get()
@@ -161,7 +198,15 @@ export class ExtensionRouter {
         debug(`storing reference to background host [url:'${webContents.getURL()}']`)
         this.extensionHosts.add(webContents)
       }
-    })
+    });
+
+    session.serviceWorkers.on('version-activated' as any, ({ versionId }: any) => {
+      const worker = (session as any).serviceWorkers.fromVersionID(versionId);
+      if (worker) {
+        debug(`storing reference to background worker [url:'${worker.scope}']`)
+        this.extensionWorkers.add(worker);
+      }
+    });
   }
 
   private filterListeners(predicate: (listener: EventListener) => boolean) {
@@ -181,10 +226,11 @@ export class ExtensionRouter {
     }
   }
 
-  private observeListenerHost(host: Electron.WebContents) {
-    debug(`observing listener [id:${host.id}, url:'${host.getURL()}']`)
+  private observeListenerHost(host: EventListener['host']) {
+    const hostId = getHostId(host);
+    debug(`observing listener [id:${hostId}, url:'${getHostUrl(host)}']`)
     host.once('destroyed', () => {
-      debug(`extension host destroyed [id:${host.id}]`)
+      debug(`extension host destroyed [id:${hostId}]`)
       this.filterListeners((listener) => listener.host !== host)
     })
   }
@@ -250,20 +296,21 @@ export class ExtensionRouter {
     ...args: any[]
   ) {
     const { session } = this
-    const { sender } = event
+    const eventSession = getSessionFromEvent(event);
     const handler = this.getHandler(handlerName)
 
-    if (sender.session !== session && !handler.allowRemote) {
+    if (eventSession !== session && !handler.allowRemote) {
       throw new Error(`${handlerName} does not support calling from a remote session`)
     }
 
-    const extension = extensionId ? sender.session.getExtension(extensionId) : undefined
+    const extension = extensionId ? eventSession.getExtension(extensionId) : undefined
     if (!extension && handler.extensionContext) {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
 
-    const extEvent = {
-      sender,
+    const extEvent: ExtensionEvent = {
+      // TODO(mv3): handle types
+      sender: event.sender || (event as any).worker,
       extension: extension!,
     }
 
