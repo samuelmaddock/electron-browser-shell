@@ -1,15 +1,17 @@
 const { EventEmitter } = require('events')
-const { BrowserView } = require('electron')
+const { WebContentsView } = require('electron')
 
 const toolbarHeight = 62
 
 class Tab {
   constructor(parentWindow) {
-    this.view = new BrowserView()
+    this.view = new WebContentsView()
     this.id = this.view.webContents.id
     this.window = parentWindow
     this.webContents = this.view.webContents
-    this.window.addBrowserView(this.view)
+    this.window.contentView.addChildView(this.view)
+
+    this.invalidateLayout = this.invalidateLayout.bind(this);
   }
 
   destroy() {
@@ -19,7 +21,7 @@ class Tab {
 
     this.hide()
 
-    this.window.removeBrowserView(this.view)
+    this.window.contentView.removeChildView(this.view)
     this.window = undefined
 
     if (!this.webContents.isDestroyed()) {
@@ -42,23 +44,38 @@ class Tab {
   }
 
   show() {
-    const [width, height] = this.window.getSize()
-    this.view.setBounds({ x: 0, y: toolbarHeight, width: width, height: height - toolbarHeight })
-    this.view.setAutoResize({ width: true, height: true })
-    // this.window.addBrowserView(this.view)
+    this.invalidateLayout();
+    this.startResizeListener();
+    this.view.setVisible(true);
   }
 
   hide() {
-    this.view.setAutoResize({ width: false, height: false })
-    const bounds = this.view.getBounds()
-    const newBounds = { x: -Math.floor(bounds.width) || 0, y: 0, width: 0, height: 0 }
-    this.view.setBounds(newBounds)
-    // TODO: can't remove from window otherwise we lose track of which window it belongs to
-    // this.window.removeBrowserView(this.view)
+    this.stopResizeListener();
+    this.view.setVisible(false);
   }
 
   reload() {
     this.view.webContents.reload()
+  }
+
+  invalidateLayout() {
+    const [width, height] = this.window.getSize();
+    const padding = 4;
+    this.view.setBounds({
+      x: padding,
+      y: toolbarHeight + padding,
+      width: width - (padding * 2),
+      height: height - toolbarHeight - (padding * 2)
+    });
+    this.view.setBorderRadius(8);
+  }
+
+  // Replacement for BrowserView.setAutoResize. This could probably be better...
+  startResizeListener() {
+    this.window.on('resize', this.invalidateLayout);
+  }
+  stopResizeListener() {
+    this.window.off('resize', this.invalidateLayout);
   }
 }
 
