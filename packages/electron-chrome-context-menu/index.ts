@@ -134,7 +134,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
     } else {
       if (
         app.isEmojiPanelSupported() &&
-        !['number', 'tel', 'other'].includes(params.inputFieldType)
+        !['input-number', 'input-telephone'].includes(params.formControlType)
       ) {
         append({
           label: labels.emoji,
