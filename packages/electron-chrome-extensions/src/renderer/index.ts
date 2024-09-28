@@ -273,6 +273,15 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      i18n: {
+        factory: (base) => {
+          return {
+            ...base,
+            getUILanguage: () => 'en-US', // TODO: implement
+          }
+        },
+      },
+
       notifications: {
         factory: (base) => {
           return {
@@ -285,6 +294,21 @@ export const injectExtensionAPIs = () => {
             onClicked: new ExtensionEvent('notifications.onClicked'),
             onButtonClicked: new ExtensionEvent('notifications.onButtonClicked'),
             onClosed: new ExtensionEvent('notifications.onClosed'),
+          }
+        },
+      },
+
+      permissions: {
+        factory: (base) => {
+          return {
+            ...base,
+            // TODO(mv3): implement
+            contains: () => Promise.resolve(true),
+            getAll: () => Promise.resolve({ permissions: [], origins: [] }),
+            remove: () => Promise.resolve(true),
+            request: () => Promise.resolve(true),
+            onAdded: new ExtensionEvent('permissions.onAdded'),
+            onRemoved: new ExtensionEvent('permissions.onRemoved'),
           }
         },
       },
@@ -451,8 +475,16 @@ export const injectExtensionAPIs = () => {
     contextBridge.exposeInMainWorld('electron', electronContext)
 
     // Mutate global 'chrome' object with additional APIs in the main world.
-    webFrame.executeJavaScript(`(${mainWorldScript}());`)
-  } catch {
+    const script = `(${mainWorldScript}());`;
+    if (process.type === 'renderer') {
+      webFrame.executeJavaScript(script);
+    // TODO(mv3): remove anys
+    } else if ((process as any).type === 'preload_realm') {
+      (contextBridge as any).evaluateInMainWorld(script);
+    }
+  } catch (error) {
+    console.error(error);
+    
     // contextBridge threw an error which means we're in the main world so we
     // can just execute our function.
     mainWorldScript()
