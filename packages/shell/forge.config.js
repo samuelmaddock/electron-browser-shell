@@ -1,6 +1,3 @@
-const path = require('path')
-const { promises: fs } = require('fs')
-
 module.exports = {
   packagerConfig: {
     name: 'Shell',
@@ -9,7 +6,11 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin', 'win32', 'linux'],
+      platforms: ['darwin', 'win32'],
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      platforms: ['darwin'],
     },
   ],
   plugins: [
@@ -35,5 +36,5 @@ module.exports = {
         },
       },
     },
-  ],
+  ].filter(Boolean),
 }

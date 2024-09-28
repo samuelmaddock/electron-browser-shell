@@ -60,6 +60,7 @@ export class PopupView {
       resizable: false,
       skipTaskbar: true,
       backgroundColor: '#ffffff',
+      roundedCorners: false,
       webPreferences: {
         session: opts.session,
         sandbox: true,

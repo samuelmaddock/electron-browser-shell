@@ -4,6 +4,7 @@ import { addExtensionListener, removeExtensionListener } from './event'
 export const injectExtensionAPIs = () => {
   interface ExtensionMessageOptions {
     noop?: boolean
+    defaultResponse?: any
     serialize?: (...args: any[]) => any[]
   }
 
@@ -21,8 +22,8 @@ export const injectExtensionAPIs = () => {
 
     if (options.noop) {
       console.warn(`${fnName} is not yet implemented.`)
-      if (callback) callback()
-      return
+      if (callback) callback(options.defaultResponse)
+      return Promise.resolve(options.defaultResponse)
     }
 
     if (options.serialize) {
@@ -60,16 +61,17 @@ export const injectExtensionAPIs = () => {
   // IMPORTANT: This must be self-contained, no closure variable will be included!
   function mainWorldScript() {
     // Use context bridge API or closure variable when context isolation is disabled.
-    const electron = ((window as any).electron as typeof electronContext) || electronContext
+    const electron = ((globalThis as any).electron as typeof electronContext) || electronContext
 
-    const chrome = window.chrome || {}
+    const chrome = globalThis.chrome || {}
     const extensionId = chrome.runtime?.id
 
     // NOTE: This uses a synchronous IPC to get the extension manifest.
     // To avoid this, JS bindings for RendererExtensionRegistry would be
     // required.
+    // OFFSCREEN_DOCUMENT contexts do not have this function defined.
     const manifest: chrome.runtime.Manifest =
-      (extensionId && chrome.runtime.getManifest()) || ({} as any)
+      (extensionId && chrome.runtime.getManifest?.()) || ({} as any)
 
     const invokeExtension =
       (fnName: string, opts: ExtensionMessageOptions = {}) =>
@@ -142,56 +144,72 @@ export const injectExtensionAPIs = () => {
       }
     }
 
+    const browserActionFactory = (base: DeepPartial<typeof globalThis.chrome.browserAction>) => {
+      // TODO(mv3): add new action APIs
+      const api = {
+        ...base,
+
+        setTitle: invokeExtension('browserAction.setTitle'),
+        getTitle: invokeExtension('browserAction.getTitle'),
+
+        setIcon: invokeExtension('browserAction.setIcon', {
+          serialize: (details: chrome.action.TabIconDetails) => {
+            if (details.imageData) {
+              if (manifest.manifest_version === 3) {
+                // TODO(mv3): might need to use offscreen document to serialize
+                console.warn(
+                  'action.setIcon with imageData is not yet supported by electron-chrome-extensions'
+                )
+                details.imageData = undefined
+              } else if (details.imageData instanceof ImageData) {
+                details.imageData = imageData2base64(details.imageData) as any
+              } else {
+                details.imageData = Object.entries(details.imageData).reduce(
+                  (obj: any, pair: any[]) => {
+                    obj[pair[0]] = imageData2base64(pair[1])
+                    return obj
+                  },
+                  {}
+                )
+              }
+            }
+
+            return [details]
+          },
+        }),
+
+        setPopup: invokeExtension('browserAction.setPopup'),
+        getPopup: invokeExtension('browserAction.getPopup'),
+
+        setBadgeText: invokeExtension('browserAction.setBadgeText'),
+        getBadgeText: invokeExtension('browserAction.getBadgeText'),
+
+        setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor'),
+        getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor'),
+
+        getUserSettings: invokeExtension('browserAction.getUserSettings'),
+
+        enable: invokeExtension('browserAction.enable', { noop: true }),
+        disable: invokeExtension('browserAction.disable', { noop: true }),
+
+        onClicked: new ExtensionEvent('browserAction.onClicked'),
+      }
+
+      return api
+    }
+
     /**
      * Factories for each additional chrome.* API.
      */
     const apiDefinitions: Partial<APIFactoryMap> = {
+      action: {
+        shouldInject: () => manifest.manifest_version === 3 && !!manifest.action,
+        factory: browserActionFactory,
+      },
+
       browserAction: {
-        shouldInject: () => !!manifest.browser_action,
-        factory: (base) => {
-          const api = {
-            ...base,
-
-            setTitle: invokeExtension('browserAction.setTitle'),
-            getTitle: invokeExtension('browserAction.getTitle'),
-
-            setIcon: invokeExtension('browserAction.setIcon', {
-              serialize: (details: any) => {
-                if (details.imageData) {
-                  if (details.imageData instanceof ImageData) {
-                    details.imageData = imageData2base64(details.imageData)
-                  } else {
-                    details.imageData = Object.entries(details.imageData).reduce(
-                      (obj: any, pair: any[]) => {
-                        obj[pair[0]] = imageData2base64(pair[1])
-                        return obj
-                      },
-                      {},
-                    )
-                  }
-                }
-
-                return [details]
-              },
-            }),
-
-            setPopup: invokeExtension('browserAction.setPopup'),
-            getPopup: invokeExtension('browserAction.getPopup'),
-
-            setBadgeText: invokeExtension('browserAction.setBadgeText'),
-            getBadgeText: invokeExtension('browserAction.getBadgeText'),
-
-            setBadgeBackgroundColor: invokeExtension('browserAction.setBadgeBackgroundColor'),
-            getBadgeBackgroundColor: invokeExtension('browserAction.getBadgeBackgroundColor'),
-
-            enable: invokeExtension('browserAction.enable', { noop: true }),
-            disable: invokeExtension('browserAction.disable', { noop: true }),
-
-            onClicked: new ExtensionEvent('browserAction.onClicked'),
-          }
-
-          return api
-        },
+        shouldInject: () => manifest.manifest_version === 2 && !!manifest.browser_action,
+        factory: browserActionFactory,
       },
 
       commands: {
@@ -264,13 +282,63 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      // TODO: implement
+      downloads: {
+        factory: (base) => {
+          return {
+            ...base,
+            acceptDanger: invokeExtension('downloads.acceptDanger', { noop: true }),
+            cancel: invokeExtension('downloads.cancel', { noop: true }),
+            download: invokeExtension('downloads.download', { noop: true }),
+            erase: invokeExtension('downloads.erase', { noop: true }),
+            getFileIcon: invokeExtension('downloads.getFileIcon', { noop: true }),
+            open: invokeExtension('downloads.open', { noop: true }),
+            pause: invokeExtension('downloads.pause', { noop: true }),
+            removeFile: invokeExtension('downloads.removeFile', { noop: true }),
+            resume: invokeExtension('downloads.resume', { noop: true }),
+            search: invokeExtension('downloads.search', { noop: true }),
+            setUiOptions: invokeExtension('downloads.setUiOptions', { noop: true }),
+            show: invokeExtension('downloads.show', { noop: true }),
+            showDefaultFolder: invokeExtension('downloads.showDefaultFolder', { noop: true }),
+            onChanged: new ExtensionEvent('downloads.onChanged'),
+            onCreated: new ExtensionEvent('downloads.onCreated'),
+            onDeterminingFilename: new ExtensionEvent('downloads.onDeterminingFilename'),
+            onErased: new ExtensionEvent('downloads.onErased'),
+          }
+        },
+      },
+
       extension: {
         factory: (base) => {
           return {
             ...base,
-            isAllowedIncognitoAccess: () => false,
+            isAllowedFileSchemeAccess: invokeExtension('extension.isAllowedFileSchemeAccess', {
+              noop: true,
+              defaultResponse: false
+            }),
+            isAllowedIncognitoAccess: invokeExtension('extension.isAllowedIncognitoAccess', {
+              noop: true,
+              defaultResponse: false
+            }),
             // TODO: Add native implementation
             getViews: () => [],
+          }
+        },
+      },
+
+      i18n: {
+        factory: (base) => {
+          return {
+            ...base,
+            // TODO(mv3): implement
+            getUILanguage: () => 'en-US',
+            getAcceptLanguages: (callback: any) => {
+              const results = ['en-US']
+              if (callback) {
+                queueMicrotask(() => callback(results))
+              }
+              return Promise.resolve(results)
+            },
           }
         },
       },
@@ -287,6 +355,21 @@ export const injectExtensionAPIs = () => {
             onClicked: new ExtensionEvent('notifications.onClicked'),
             onButtonClicked: new ExtensionEvent('notifications.onButtonClicked'),
             onClosed: new ExtensionEvent('notifications.onClosed'),
+          }
+        },
+      },
+
+      permissions: {
+        factory: (base) => {
+          return {
+            ...base,
+            // TODO(mv3): implement
+            contains: () => Promise.resolve(true),
+            getAll: () => Promise.resolve({ permissions: [], origins: [] }),
+            remove: () => Promise.resolve(true),
+            request: () => Promise.resolve(true),
+            onAdded: new ExtensionEvent('permissions.onAdded'),
+            onRemoved: new ExtensionEvent('permissions.onRemoved'),
           }
         },
       },
@@ -332,20 +415,19 @@ export const injectExtensionAPIs = () => {
           const api = {
             ...base,
             create: invokeExtension('tabs.create'),
-            executeScript: function (arg1: unknown, arg2: unknown, arg3: unknown) {
+            executeScript: async function (arg1: unknown, arg2: unknown, arg3: unknown): Promise<any> {
               // Electron's implementation of chrome.tabs.executeScript is in
               // C++, but it doesn't support implicit execution in the active
               // tab. To handle this, we need to get the active tab ID and
               // pass it into the C++ implementation ourselves.
               if (typeof arg1 === 'object') {
-                api.query(
-                  { active: true, windowId: chrome.windows.WINDOW_ID_CURRENT },
-                  ([activeTab]: chrome.tabs.Tab[]) => {
-                    api.executeScript(activeTab.id, arg1, arg2)
-                  },
-                )
+                const [activeTab] = await api.query({
+                  active: true,
+                  windowId: chrome.windows.WINDOW_ID_CURRENT,
+                })
+                return api.executeScript(activeTab.id, arg1, arg2)
               } else {
-                ;(base.executeScript as typeof chrome.tabs.executeScript)(
+                return (base.executeScript as typeof chrome.tabs.executeScript)(
                   arg1 as number,
                   arg2 as chrome.tabs.InjectDetails,
                   arg3 as () => {},
@@ -441,11 +523,17 @@ export const injectExtensionAPIs = () => {
     })
 
     // Remove access to internals
-    delete (window as any).electron
+    delete (globalThis as any).electron
 
     Object.freeze(chrome)
 
     void 0 // no return
+  }
+
+  if (!process.contextIsolated) {
+    console.warn(`injectExtensionAPIs: context isolation disabled in ${location.href}`)
+    mainWorldScript()
+    return
   }
 
   try {
@@ -453,10 +541,11 @@ export const injectExtensionAPIs = () => {
     contextBridge.exposeInMainWorld('electron', electronContext)
 
     // Mutate global 'chrome' object with additional APIs in the main world.
-    webFrame.executeJavaScript(`(${mainWorldScript}());`)
-  } catch {
-    // contextBridge threw an error which means we're in the main world so we
-    // can just execute our function.
-    mainWorldScript()
+    ;(contextBridge as any).evaluateInMainWorld({
+      func: mainWorldScript
+    })
+  } catch (error) {
+    console.error(`injectExtensionAPIs error (${location.href})`)
+    console.error(error)
   }
 }

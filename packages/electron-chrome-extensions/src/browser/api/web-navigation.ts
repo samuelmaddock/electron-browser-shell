@@ -4,29 +4,34 @@ import { ExtensionEvent } from '../router'
 
 const debug = require('debug')('electron-chrome-extensions:webNavigation')
 
-// https://github.com/electron/electron/pull/25464
-const getFrame = (frameProcessId: number, frameRoutingId: number) => {
-  return (
-    ('webFrameMain' in electron &&
-      (electron as any).webFrameMain.fromId(frameProcessId, frameRoutingId)) ||
-    null
-  )
-}
+const getFrame = (frameProcessId: number, frameRoutingId: number) =>
+  electron.webFrameMain.fromId(frameProcessId, frameRoutingId);
 
-const getFrameId = (frame: any) =>
-  'webFrameMain' in electron ? (frame === frame.top ? 0 : frame.frameTreeNodeId) : -1
+const getFrameId = (frame: Electron.WebFrameMain) =>
+  frame === frame.top ? 0 : frame.frameTreeNodeId
 
-const getParentFrameId = (frame: any) => {
+const getParentFrameId = (frame: Electron.WebFrameMain) => {
   const parentFrame = frame?.parent
   return parentFrame ? getFrameId(parentFrame) : -1
 }
 
-const getFrameDetails = (frame: any) => ({
-  errorOccurred: false, // TODO
-  processId: frame.processId,
-  frameId: getFrameId(frame),
-  parentFrameId: getParentFrameId(frame),
+// TODO(mv3): fenced_frame getter API needed
+const getFrameType = (frame: Electron.WebFrameMain) =>
+  !frame.parent ? 'outermost_frame' : 'sub_frame';
+
+// TODO(mv3): add WebFrameMain API to retrieve this
+const getDocumentLifecycle = (frame: Electron.WebFrameMain): DocumentLifecycle =>
+  'active' as const;
+
+const getFrameDetails = (frame: Electron.WebFrameMain): chrome.webNavigation.GetFrameResultDetails => ({
+  // TODO(mv3): implement new properties
   url: frame.url,
+  documentId: 'not-implemented',
+  documentLifecycle: getDocumentLifecycle(frame),
+  errorOccurred: false,
+  frameType: getFrameType(frame),
+  parentDocumentId: undefined,
+  parentFrameId: getParentFrameId(frame),
 })
 
 export class WebNavigationAPI {
@@ -68,17 +73,14 @@ export class WebNavigationAPI {
     const tab = this.ctx.store.getTabById(details.tabId)
     if (!tab) return null
 
-    let targetFrame: any
+    let targetFrame: Electron.WebFrameMain | undefined
 
     if (typeof details.frameId === 'number') {
-      // https://github.com/electron/electron/pull/25464
-      if ('mainFrame' in tab) {
-        const mainFrame = (tab as any).mainFrame
-        targetFrame = mainFrame.framesInSubtree.find((frame: any) => {
-          const isMainFrame = frame === frame.top
-          return isMainFrame ? details.frameId === 0 : details.frameId === frame.frameTreeNodeId
-        })
-      }
+      const mainFrame = tab.mainFrame
+      targetFrame = mainFrame.framesInSubtree.find((frame: any) => {
+        const isMainFrame = frame === frame.top
+        return isMainFrame ? details.frameId === 0 : details.frameId === frame.frameTreeNodeId
+      })
     }
 
     return targetFrame ? getFrameDetails(targetFrame) : null
@@ -134,6 +136,8 @@ export class WebNavigationAPI {
 
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
+      frameType: getFrameType(frame),
+      documentLifecycle: getDocumentLifecycle(frame),
       parentFrameId: getParentFrameId(frame),
       processId: frame ? frame.processId : -1,
       tabId: tab.id,
@@ -155,9 +159,21 @@ export class WebNavigationAPI {
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
+    if (!frame) {
+      // TODO(mv3): handle null return
+      return;
+    }
+    
+    const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails = {
       frameId: getFrameId(frame),
-      parentFrameId: getParentFrameId(frame),
+      // NOTE: workaround for property missing in type
+      ...({
+        parentFrameId: getParentFrameId(frame),
+      }),
+      frameType: getFrameType(frame),
+      transitionType: '', // TODO(mv3)
+      transitionQualifiers: [], // TODO(mv3)
+      documentLifecycle: getDocumentLifecycle(frame),
       processId: frameProcessId,
       tabId: tab.id,
       timeStamp: Date.now(),
@@ -175,6 +191,11 @@ export class WebNavigationAPI {
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
+    if (!frame) {
+      // TODO(mv3): handle null return
+      return;
+    }
+    
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
       parentFrameId: number
     } = {
@@ -182,6 +203,8 @@ export class WebNavigationAPI {
       transitionQualifiers: [], // TODO
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
+      frameType: getFrameType(frame),
+      documentLifecycle: getDocumentLifecycle(frame),
       processId: frameProcessId,
       tabId: tab.id,
       timeStamp: Date.now(),
@@ -194,6 +217,8 @@ export class WebNavigationAPI {
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
+      frameType: getFrameType(frame),
+      documentLifecycle: getDocumentLifecycle(frame),
       processId: frame.processId,
       tabId: tab.id,
       timeStamp: Date.now(),
@@ -214,10 +239,17 @@ export class WebNavigationAPI {
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
+    if (!frame) {
+      // TODO(mv3): handle null return
+      return;
+    }
+    
     const url = tab.getURL()
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
       parentFrameId: getParentFrameId(frame),
+      frameType: getFrameType(frame),
+      documentLifecycle: getDocumentLifecycle(frame),
       processId: frameProcessId,
       tabId: tab.id,
       timeStamp: Date.now(),

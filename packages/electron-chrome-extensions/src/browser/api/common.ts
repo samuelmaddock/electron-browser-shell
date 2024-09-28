@@ -80,8 +80,12 @@ export const getIconPath = (
   iconSize: number = 32,
   resizeType = ResizeType.Up,
 ) => {
-  const { browser_action, icons } = getExtensionManifest(extension)
-  const { default_icon } = browser_action || {}
+  const manifest = getExtensionManifest(extension)
+  const { icons } = manifest
+
+  const default_icon: chrome.runtime.ManifestIcons | undefined = (
+    manifest.manifest_version === 3 ? manifest.action : manifest.browser_action
+  )?.default_icon
 
   if (typeof default_icon === 'string') {
     const iconPath = default_icon

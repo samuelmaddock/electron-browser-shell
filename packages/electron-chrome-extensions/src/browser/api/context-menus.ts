@@ -54,7 +54,7 @@ const matchesConditions = (
 
   const { contextTypes, targetUrl, documentUrl } = conditions
 
-  const contexts = props.contexts || DEFAULT_CONTEXTS
+  const contexts = (Array.isArray(props.contexts) ? props.contexts : [props.contexts]) || DEFAULT_CONTEXTS
   const inContext = contexts.some((context) => contextTypes.has(context as ContextMenuType))
   if (!inContext) return false
 
@@ -139,7 +139,7 @@ export class ContextMenusAPI {
     for (const item of menuItemTemplates) {
       const menuItem = itemMap.get(item.props.id)
       if (item.props.parentId) {
-        const parentMenuItem = itemMap.get(item.props.parentId)
+        const parentMenuItem = itemMap.get(`${item.props.parentId}`)
         if (parentMenuItem) {
           const submenu = (parentMenuItem.submenu || []) as Electron.MenuItemConstructorOptions[]
           submenu.push(menuItem!)
@@ -320,7 +320,8 @@ export class ContextMenusAPI {
       frameId: -1, // TODO: match frameURL with webFrameMain in Electron 12
       frameUrl: params?.frameURL,
       editable: params?.isEditable || false,
-      mediaType: params?.mediaType,
+      // TODO(mv3): limit possible string enums
+      mediaType: params?.mediaType as any,
       wasChecked: false, // TODO
       pageUrl: params?.pageURL as any, // types are inaccurate
       linkUrl: params?.linkURL,
