@@ -297,17 +297,15 @@ class Browser {
         case 'foreground-tab':
         case 'background-tab':
         case 'new-window': {
-          // setWindowOpenHandler doesn't yet support creating BrowserViews
-          // instead of BrowserWindows. For now, we're opting to break
-          // window.open until a fix is available.
-          // https://github.com/electron/electron/issues/33383
-          queueMicrotask(() => {
-            const win = this.getWindowFromWebContents(webContents)
-            const tab = win.tabs.create()
-            tab.loadURL(details.url)
-          })
-
-          return { action: 'deny' }
+          return {
+            action: 'allow',
+            createWindow: () => {
+              const win = this.getWindowFromWebContents(webContents);
+              const tab = win.tabs.create();
+              tab.loadURL(details.url);
+              return tab.webContents;
+            }
+          }
         }
         default:
           return { action: 'allow' }
