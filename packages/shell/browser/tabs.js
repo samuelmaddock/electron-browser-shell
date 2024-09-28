@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const { WebContentsView } = require('electron')
 
-const toolbarHeight = 62
+const toolbarHeight = 64
 
 class Tab {
   constructor(parentWindow) {
@@ -63,9 +63,9 @@ class Tab {
     const padding = 4;
     this.view.setBounds({
       x: padding,
-      y: toolbarHeight + padding,
+      y: toolbarHeight,
       width: width - (padding * 2),
-      height: height - toolbarHeight - (padding * 2)
+      height: height - toolbarHeight - padding
     });
     this.view.setBorderRadius(8);
   }
