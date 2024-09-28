@@ -5,13 +5,13 @@ const toolbarHeight = 62
 
 class Tab {
   constructor(parentWindow) {
+    this.invalidateLayout = this.invalidateLayout.bind(this);
+
     this.view = new WebContentsView()
     this.id = this.view.webContents.id
     this.window = parentWindow
     this.webContents = this.view.webContents
     this.window.contentView.addChildView(this.view)
-
-    this.invalidateLayout = this.invalidateLayout.bind(this);
   }
 
   destroy() {
@@ -72,6 +72,7 @@ class Tab {
 
   // Replacement for BrowserView.setAutoResize. This could probably be better...
   startResizeListener() {
+    this.stopResizeListener();
     this.window.on('resize', this.invalidateLayout);
   }
   stopResizeListener() {
