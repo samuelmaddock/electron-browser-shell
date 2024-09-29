@@ -97,9 +97,14 @@
       }
 
       .tab .favicon[src] {
+        display: none;
         width: 16px;
         height: 16px;
         margin-right: 0.2rem;
+      }
+
+      .tab .favicon[src].loaded {
+        display: block;
       }
       
       .tab .title {

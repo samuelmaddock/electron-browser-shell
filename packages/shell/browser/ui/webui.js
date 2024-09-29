@@ -40,7 +40,7 @@ class WebUI {
     )
     this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
 
-    const platformClass = `platform-${(navigator.userAgentData.platform).toLowerCase()}`
+    const platformClass = `platform-${navigator.userAgentData.platform.toLowerCase()}`
     document.body.classList.add(platformClass)
 
     this.initTabs()
@@ -140,6 +140,13 @@ class WebUI {
     })
     tabElem.querySelector('.close').addEventListener('click', () => {
       chrome.tabs.remove(tab.id)
+    })
+    const faviconElem = tabElem.querySelector('.favicon')
+    faviconElem?.addEventListener('load', () => {
+      faviconElem.classList.toggle('loaded', true)
+    })
+    faviconElem?.addEventListener('error', () => {
+      faviconElem.classList.toggle('loaded', false)
     })
 
     this.$.tabList.appendChild(tabElem)
