@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2024-10-22
+
+### Added
+
+- Added required `license` property to ElectronChromeExtensions constructor.
+
+There are several applications distributing this package without sponsoring. I'm attempting to make this requirement more obvious ahead of Manifest V3 support.
+
 ## [3.10.1] - 2023-06-02
 
 ### Fixed

@@ -182,6 +182,7 @@ class Browser {
     this.session.setPreloads([PATHS.PRELOAD])
 
     this.extensions = new ElectronChromeExtensions({
+      license: 'internal-license-do-not-use',
       session: this.session,
       modulePath: path.join(__dirname, 'electron-chrome-extensions'),
 

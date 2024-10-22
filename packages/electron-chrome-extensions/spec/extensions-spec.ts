@@ -4,7 +4,10 @@ import { ElectronChromeExtensions } from '../dist'
 
 describe('Extensions', () => {
   const testSession = session.fromPartition('test-extensions')
-  const extensions = new ElectronChromeExtensions({ session: testSession })
+  const extensions = new ElectronChromeExtensions({
+    license: 'internal-license-do-not-use' as any,
+    session: testSession
+  })
 
   it('retrieves the instance with fromSession()', () => {
     expect(ElectronChromeExtensions.fromSession(testSession)).to.equal(extensions)
@@ -12,7 +15,10 @@ describe('Extensions', () => {
 
   it('throws when two instances are created for session', () => {
     expect(() => {
-      new ElectronChromeExtensions({ session: testSession })
+      new ElectronChromeExtensions({
+        license: 'internal-license-do-not-use' as any,
+        session: testSession,
+      })
     }).to.throw()
   })
 })

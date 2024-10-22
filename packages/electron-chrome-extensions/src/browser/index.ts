@@ -17,7 +17,22 @@ import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
 
+const INTERNAL_LICENSE = 'internal-license-do-not-use'
+const VALID_LICENSES = ['GPL-3.0', 'Patron-License-2020-11-19'] as const
+
+const getLicenseNotice =
+  () => `Please select a distribution license compatible with your application.
+Valid licenses include: ${VALID_LICENSES.join(', ')}
+See LICENSE.md for more details.`
+
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
+  /**
+   * License used to distribute electron-chrome-extensions.
+   *
+   * See LICENSE.md for more details.
+   */
+  license: (typeof VALID_LICENSES)[number]
+
   session?: Electron.Session
 
   /**
@@ -53,10 +68,22 @@ export class ElectronChromeExtensions extends EventEmitter {
     windows: WindowsAPI
   }
 
-  constructor(opts?: ChromeExtensionOptions) {
+  constructor(opts: ChromeExtensionOptions) {
     super()
 
-    const { session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
+    const { license, session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
+
+    if (!license) {
+      throw new Error(
+        `ElectronChromeExtensions: Missing 'license' property.\n${getLicenseNotice()}`
+      )
+    }
+
+    if (!VALID_LICENSES.includes(license) && (license as any) !== INTERNAL_LICENSE) {
+      throw new Error(
+        `ElectronChromeExtensions: Invalid 'license' property: ${license}\n${getLicenseNotice()}`
+      )
+    }
 
     if (sessionMap.has(session)) {
       throw new Error(`Extensions instance already exists for the given session`)
