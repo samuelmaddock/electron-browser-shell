@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added required `license` property to ElectronChromeExtensions constructor.
+- BREAKING: Added required `license` property to ElectronChromeExtensions constructor.
 
 There are several applications distributing this package without sponsoring. I'm attempting to make this requirement more obvious ahead of Manifest V3 support.
 
@@ -174,6 +174,7 @@ There are several applications distributing this package without sponsoring. I'm
 
 - Extension action popups now resize appropriately in electron@12.x.y.
 
+[4.0.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.10.1...electron-chrome-extensions@4.0.0
 [3.10.1]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.10.0...electron-chrome-extensions@3.10.1
 [3.10.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.9.0...electron-chrome-extensions@3.10.0
 [3.9.0]: https://github.com/samuelmaddock/electron-browser-shell/compare/electron-chrome-extensions@3.8.0...electron-chrome-extensions@3.9.0
