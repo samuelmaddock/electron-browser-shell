@@ -20,10 +20,6 @@ module.exports = {
           from: path.resolve(__dirname, '../electron-chrome-extensions/dist'),
           to: path.resolve(__dirname, '.webpack/main/electron-chrome-extensions/dist'),
         },
-        {
-          from: path.resolve(__dirname, '../../extensions'),
-          to: path.resolve(__dirname, '.webpack/main/extensions'),
-        },
       ],
     }),
   ],
