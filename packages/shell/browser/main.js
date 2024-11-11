@@ -8,10 +8,11 @@ const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 
 // https://www.electronforge.io/config/plugins/webpack#main-process-code
+const ROOT_DIR = path.join(__dirname, '../../../../');
 const PATHS = {
-  EXTENSIONS: path.join(__dirname, 'extensions'),
   WEBUI: path.join(__dirname, 'ui'),
   PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
+  LOCAL_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
 }
 
 let webuiExtensionId
@@ -26,6 +27,7 @@ const manifestExists = async (dirPath) => {
   }
 }
 
+const VERSION_REGEX = /^(?:\d+\.?){2,4}_\d+$/ // e.g. 2024.9.29.1273_0
 async function loadExtensions(session, extensionsPath) {
   const subDirectories = await fs.readdir(extensionsPath, {
     withFileTypes: true,
@@ -45,10 +47,10 @@ async function loadExtensions(session, extensionsPath) {
           withFileTypes: true,
         })
 
-        const versionDirPath =
-          extSubDirs.length === 1 && extSubDirs[0].isDirectory()
-            ? path.join(extPath, extSubDirs[0].name)
-            : null
+        const versionDir = extSubDirs.find(
+          (dir) => dir.isDirectory() && dir.name.match(VERSION_REGEX)
+        )?.name
+        const versionDirPath = path.join(extPath, versionDir)
 
         if (await manifestExists(versionDirPath)) {
           return versionDirPath
@@ -231,7 +233,15 @@ class Browser {
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
-    await loadExtensions(this.session, PATHS.EXTENSIONS)
+    const extensionsPath = app.isPackaged
+      ? path.join(app.getPath('userData'), 'Extensions')
+      : PATHS.LOCAL_EXTENSIONS
+    console.log(`Browser.init: loading extensions from ${extensionsPath}`)
+    try {
+      await loadExtensions(this.session, extensionsPath)
+    } catch (error) {
+      console.error('Failed to load extensions\n', error)
+    }
 
     this.createInitialWindow()
   }

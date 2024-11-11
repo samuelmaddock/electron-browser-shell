@@ -15,7 +15,7 @@
   "private": true,
   "dependencies": {
     "electron-chrome-context-menu": "^1.0.1",
-    "electron-chrome-extensions": "^3.10.1",
+    "electron-chrome-extensions": "^4.0.0",
     "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {
