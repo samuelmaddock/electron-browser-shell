@@ -116,13 +116,15 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       // Unpack extension
       const unpackedDir = path.join(extensionDir, installVersion)
       await fs.promises.mkdir(unpackedDir, { recursive: true })
-      // Use crx-parser to extract contents
+      
+      // Read and parse CRX file
       const crxBuffer = await fs.promises.readFile(extensionFile)
 
       interface CrxInfo {
         version: number;
         header: Buffer;
         contents: Buffer;
+        publicKey: Buffer;
       }
       
       // Parse CRX header and extract contents
@@ -141,24 +143,53 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
         const header = buffer.subarray(12, 12 + headerSize)
         const contents = buffer.subarray(12 + headerSize)
 
+        // For CRX2 format
+        let publicKey: Buffer
+        if (version === 2) {
+          const pubKeyLength = buffer.readUInt32LE(8)
+          const sigLength = buffer.readUInt32LE(12)
+          publicKey = buffer.subarray(16, 16 + pubKeyLength)
+        } else {
+          // For CRX3, extract public key from header
+          // CRX3 header contains a protocol buffer message
+          // The public key is stored in the 'signed_header_data' field
+          publicKey = header.subarray(header.indexOf(0x12) + 2)
+        }
+
         return {
           version,
           header,
-          contents
+          contents,
+          publicKey
         }
       }
 
-      // Extract CRX contents to directory
+      // Extract CRX contents and update manifest
       async function extractCrx(crx: CrxInfo, destPath: string) {
         // Create zip file from contents
         const zip = new AdmZip(crx.contents)
         
         // Extract zip to destination
         zip.extractAllTo(destPath, true)
+
+        // Read manifest.json
+        const manifestPath = path.join(destPath, 'manifest.json')
+        const manifestContent = await fs.promises.readFile(manifestPath, 'utf8')
+        const manifestJson = JSON.parse(manifestContent)
+
+        // Add public key to manifest
+        manifestJson.key = crx.publicKey.toString('base64')
+
+        // Write updated manifest back
+        await fs.promises.writeFile(
+          manifestPath, 
+          JSON.stringify(manifestJson, null, 2)
+        )
       }
 
       const crx = await parseCrx(crxBuffer)
       console.log('crx', crx)
+      console.log('publicKey base64', crx.publicKey.toString('base64'))
       await extractCrx(crx, unpackedDir)
 
       // Load extension into session
