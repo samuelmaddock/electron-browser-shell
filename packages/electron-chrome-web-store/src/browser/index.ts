@@ -58,6 +58,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
 
   // Add preload script to session
   session.setPreloads([...session.getPreloads(), preloadPath])
+
   interface InstallDetails {
     id: string
     manifest: string
@@ -137,8 +138,8 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
         const headerSize = buffer.readUInt32LE(8)
 
         // Extract header and contents
-        const header = buffer.subarray(16, 16 + headerSize)
-        const contents = buffer.subarray(16 + headerSize)
+        const header = buffer.subarray(12, 12 + headerSize)
+        const contents = buffer.subarray(12 + headerSize)
 
         return {
           version,
