@@ -54,7 +54,10 @@ interface WebstorePrivate {
   Result: typeof Result
   WebGlStatus: typeof WebGlStatus
 
-  beginInstallWithManifest3: (details: unknown, callback?: (result: string) => void) => Promise<string>
+  beginInstallWithManifest3: (
+    details: unknown,
+    callback?: (result: string) => void
+  ) => Promise<string>
   completeInstall: (id: string, callback?: (result: string) => void) => Promise<string>
   enableAppLauncher: (enable: boolean, callback?: (result: boolean) => void) => Promise<boolean>
   getBrowserLogin: (callback?: (result: string) => void) => Promise<string>
@@ -69,7 +72,11 @@ interface WebstorePrivate {
   getReferrerChain: (callback?: (result: unknown[]) => void) => Promise<unknown[]>
   getStoreLogin: (callback?: (result: string) => void) => Promise<string>
   getWebGLStatus: (callback?: (result: string) => void) => Promise<string>
-  install: (id: string, silentInstall: boolean, callback?: (result: string) => void) => Promise<string>
+  install: (
+    id: string,
+    silentInstall: boolean,
+    callback?: (result: string) => void
+  ) => Promise<string>
   isInIncognitoMode: (callback?: (result: boolean) => void) => Promise<boolean>
   isPendingCustodianApproval: (id: string, callback?: (result: boolean) => void) => Promise<boolean>
   setStoreLogin: (login: string, callback?: (result: boolean) => void) => Promise<boolean>

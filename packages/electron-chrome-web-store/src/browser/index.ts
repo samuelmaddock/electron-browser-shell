@@ -61,6 +61,18 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
   // Add preload script to session
   session.setPreloads([...session.getPreloads(), preloadPath])
 
+  async function uninstallExtension(id: string) {
+    const extensions = session.getAllExtensions()
+    const existingExt = extensions.find((ext) => ext.id === id)
+    if (existingExt) {
+      await session.removeExtension(id)
+    }
+
+    const userDataPath = app.getPath('userData')
+    const extensionDir = path.join(userDataPath, 'Extensions', id)
+    await fs.promises.rm(extensionDir, { recursive: true, force: true })
+  }
+
   interface InstallDetails {
     id: string
     manifest: string
@@ -75,11 +87,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       const installVersion = manifest.version
 
       // Check if extension is already loaded in session and remove it
-      const extensions = session.getAllExtensions()
-      const existingExt = extensions.find((ext) => ext.id === details.id)
-      if (existingExt) {
-        await session.removeExtension(details.id)
-      }
+      await uninstallExtension(details.id)
 
       // Get user data directory and ensure extensions folder exists
       const userDataPath = app.getPath('userData')
@@ -88,9 +96,6 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
 
       // Create extension directory
       const extensionDir = path.join(extensionsPath, details.id)
-
-      // Remove existing directory if it exists
-      await fs.promises.rm(extensionDir, { recursive: true, force: true })
       await fs.promises.mkdir(extensionDir, { recursive: true })
 
       // Download extension from Chrome Web Store
@@ -116,7 +121,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       })
 
       // Unpack extension
-      const unpackedDir = path.join(extensionDir, installVersion)
+      const unpackedDir = path.join(extensionDir, `${installVersion}_0`)
       await fs.promises.mkdir(unpackedDir, { recursive: true })
 
       // Read and parse CRX file
@@ -331,10 +336,22 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
     return true
   })
 
-  ipcMain.handle('chrome.management.uninstall', async (event, id, options) => {
-    // TODO: Implement uninstalling extension
-    return true
-  })
+  ipcMain.handle(
+    'chrome.management.uninstall',
+    async (event, id, options: { showConfirmDialog: boolean }) => {
+      if (options?.showConfirmDialog) {
+        // TODO: confirmation dialog
+      }
+
+      try {
+        await uninstallExtension(id)
+        return Result.SUCCESS
+      } catch (error) {
+        console.error(error)
+        return Result.UNKNOWN_ERROR
+      }
+    }
+  )
 
   // Handle extension install/uninstall events
   function emitExtensionEvent(eventName: string) {
