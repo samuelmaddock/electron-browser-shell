@@ -20,6 +20,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16"
+    "adm-zip": "^0.5.16",
+    "pbf": "^4.0.1"
   }
 }

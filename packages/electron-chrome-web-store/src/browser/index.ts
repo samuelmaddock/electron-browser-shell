@@ -2,6 +2,8 @@ import { app, ipcMain, net, BrowserWindow, Session } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
 import { Readable } from 'stream'
+import { readCrxFileHeader } from './crx3'
+import Pbf from 'pbf'
 
 const AdmZip = require('adm-zip')
 
@@ -70,11 +72,11 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
   ipcMain.handle('chromeWebstore.beginInstall', async (event, details: InstallDetails) => {
     try {
       const manifest: chrome.runtime.Manifest = JSON.parse(details.manifest)
-      const installVersion = manifest.version;
-      
+      const installVersion = manifest.version
+
       // Check if extension is already loaded in session and remove it
       const extensions = session.getAllExtensions()
-      const existingExt = extensions.find(ext => ext.id === details.id)
+      const existingExt = extensions.find((ext) => ext.id === details.id)
       if (existingExt) {
         await session.removeExtension(details.id)
       }
@@ -83,7 +85,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       const userDataPath = app.getPath('userData')
       const extensionsPath = path.join(userDataPath, 'Extensions')
       await fs.promises.mkdir(extensionsPath, { recursive: true })
-      
+
       // Create extension directory
       const extensionDir = path.join(extensionsPath, details.id)
 
@@ -92,7 +94,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       await fs.promises.mkdir(extensionDir, { recursive: true })
 
       // Download extension from Chrome Web Store
-      const chromeVersion = process.versions.chrome;
+      const chromeVersion = process.versions.chrome
       const response = await net.fetch(
         `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${details.id}%26uc&prodversion=${chromeVersion}`
       )
@@ -104,7 +106,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       // Save extension file
       const extensionFile = path.join(extensionDir, 'extension.crx')
       const fileStream = fs.createWriteStream(extensionFile)
-      
+
       // Convert ReadableStream to Node stream and pipe to file
       const readableStream = Readable.fromWeb(response.body as any)
       await new Promise((resolve, reject) => {
@@ -116,17 +118,17 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       // Unpack extension
       const unpackedDir = path.join(extensionDir, installVersion)
       await fs.promises.mkdir(unpackedDir, { recursive: true })
-      
+
       // Read and parse CRX file
       const crxBuffer = await fs.promises.readFile(extensionFile)
 
       interface CrxInfo {
-        version: number;
-        header: Buffer;
-        contents: Buffer;
-        publicKey: Buffer;
+        version: number
+        header: Buffer
+        contents: Buffer
+        publicKey: Buffer
       }
-      
+
       // Parse CRX header and extract contents
       function parseCrx(buffer: Buffer): CrxInfo {
         // CRX3 magic number: 'Cr24'
@@ -152,23 +154,27 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
         } else {
           // For CRX3, extract public key from header
           // CRX3 header contains a protocol buffer message
-          // The public key is stored in the 'signed_header_data' field
-          publicKey = header.subarray(header.indexOf(0x12) + 2)
+          const pbf = new Pbf(header)
+          const crxFileHeader = readCrxFileHeader(pbf)
+          publicKey = crxFileHeader.sha256_with_rsa[1]?.public_key
+
+          if (!publicKey) {
+            throw new Error('Invalid CRX header')
+          }
         }
 
         return {
           version,
           header,
           contents,
-          publicKey
+          publicKey,
         }
       }
-
       // Extract CRX contents and update manifest
       async function extractCrx(crx: CrxInfo, destPath: string) {
         // Create zip file from contents
         const zip = new AdmZip(crx.contents)
-        
+
         // Extract zip to destination
         zip.extractAllTo(destPath, true)
 
@@ -181,15 +187,10 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
         manifestJson.key = crx.publicKey.toString('base64')
 
         // Write updated manifest back
-        await fs.promises.writeFile(
-          manifestPath, 
-          JSON.stringify(manifestJson, null, 2)
-        )
+        await fs.promises.writeFile(manifestPath, JSON.stringify(manifestJson, null, 2))
       }
 
       const crx = await parseCrx(crxBuffer)
-      console.log('crx', crx)
-      console.log('publicKey base64', crx.publicKey.toString('base64'))
       await extractCrx(crx, unpackedDir)
 
       // Load extension into session
@@ -222,13 +223,16 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
     const extension = extensions.find((ext) => ext.id === id)
 
     if (!extension) {
-        console.log(extensions)
-      console.log('webstorePrivate.getExtensionStatus result:', id, ExtensionInstallStatus.INSTALLABLE)
+      console.log(
+        'webstorePrivate.getExtensionStatus result:',
+        id,
+        ExtensionInstallStatus.INSTALLABLE
+      )
       return ExtensionInstallStatus.INSTALLABLE
     }
 
     if (extension.manifest.disabled) {
-      console.log('webstorePrivate.getExtensionStatus result:', id, ExtensionInstallStatus.DISABLED) 
+      console.log('webstorePrivate.getExtensionStatus result:', id, ExtensionInstallStatus.DISABLED)
       return ExtensionInstallStatus.DISABLED
     }
 
