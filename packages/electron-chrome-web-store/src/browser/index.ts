@@ -199,23 +199,24 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       await extractCrx(crx, unpackedDir)
 
       // Load extension into session
-      await session.loadExtension(unpackedDir)
+      const ext = await session.loadExtension(unpackedDir)
 
-      return Result.SUCCESS
+      queueMicrotask(() => {
+        event.sender.send('chrome.management.onInstalled', getExtensionInfo(ext))
+      })
+
+      return { result: Result.SUCCESS }
     } catch (error) {
       console.error('Extension installation failed:', error)
-      return Result.INSTALL_ERROR
+      return {
+        result: Result.INSTALL_ERROR,
+        message: error instanceof Error ? error.message : String(error),
+      }
     }
   })
 
   ipcMain.handle('chromeWebstore.completeInstall', async (event, id) => {
     // TODO: Implement completion of extension installation
-    queueMicrotask(() => {
-      const ext = session.getExtension(id)
-      if (ext) {
-        event.sender.send('chrome.management.onInstalled', getExtensionInfo(ext))
-      }
-    })
     return Result.SUCCESS
   })
 
@@ -352,6 +353,9 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
 
       try {
         await uninstallExtension(id)
+        queueMicrotask(() => {
+          event.sender.send('chrome.management.onUninstalled', id)
+        })
         return Result.SUCCESS
       } catch (error) {
         console.error(error)

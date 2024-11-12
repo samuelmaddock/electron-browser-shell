@@ -83,6 +83,15 @@ interface WebstorePrivate {
 }
 
 function setupChromeWebStoreApi() {
+  const setExtensionError = (message?: string) => {
+    webFrame.executeJavaScript(`
+      if (typeof chrome !== 'undefined') {
+        if (!chrome.extension) chrome.extension = {};
+        chrome.extension.lastError = ${JSON.stringify(message ? { message } : null)};
+      }
+    `)
+  }
+
   /**
    * Implementation of Chrome's webstorePrivate for Electron.
    */
@@ -94,8 +103,9 @@ function setupChromeWebStoreApi() {
 
     beginInstallWithManifest3: async (details, callback) => {
       console.log('webstorePrivate.beginInstallWithManifest3', details)
-      const result = await ipcRenderer.invoke('chromeWebstore.beginInstall', details)
+      const { result, message } = await ipcRenderer.invoke('chromeWebstore.beginInstall', details)
       console.log('webstorePrivate.beginInstallWithManifest3 result:', result)
+      setExtensionError(result === Result.SUCCESS ? null : message)
       if (callback) callback(result)
       return result
     },
