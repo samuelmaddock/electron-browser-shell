@@ -6,6 +6,7 @@ const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
+const { setupChromeWebStore } = require('electron-chrome-web-store')
 
 // https://www.electronforge.io/config/plugins/webpack#main-process-code
 const ROOT_DIR = path.join(__dirname, '../../../../');
@@ -229,6 +230,8 @@ class Browser {
     this.extensions.on('browser-action-popup-created', (popup) => {
       this.popup = popup
     })
+
+    setupChromeWebStore(this.session, path.join(__dirname, 'electron-chrome-web-store'))
 
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id

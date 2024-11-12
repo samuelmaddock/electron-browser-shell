@@ -1,0 +1,25 @@
+{
+  "name": "electron-chrome-web-store",
+  "version": "0.0.1",
+  "description": "Download extensions from the Chrome Web Store in Electron",
+  "main": "dist/browser/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chrome",
+    "web",
+    "store",
+    "webstore",
+    "extensions"
+  ],
+  "author": "Samuel Maddock",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16"
+  }
+}
