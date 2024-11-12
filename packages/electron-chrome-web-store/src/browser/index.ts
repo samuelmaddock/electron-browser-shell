@@ -210,6 +210,12 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
 
   ipcMain.handle('chromeWebstore.completeInstall', async (event, id) => {
     // TODO: Implement completion of extension installation
+    queueMicrotask(() => {
+      const ext = session.getExtension(id)
+      if (ext) {
+        event.sender.send('chrome.management.onInstalled', getExtensionInfo(ext))
+      }
+    })
     return Result.SUCCESS
   })
 
@@ -299,36 +305,37 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
     return {}
   })
 
+  const getExtensionInfo = (ext: Electron.Extension) => {
+    const manifest: chrome.runtime.Manifest = ext.manifest
+    return {
+      description: manifest.description || '',
+      enabled: !manifest.disabled,
+      homepageUrl: manifest.homepage_url || '',
+      hostPermissions: manifest.host_permissions || [],
+      icons: Object.entries(manifest?.icons || {}).map(([size, url]) => ({
+        size: parseInt(size),
+        url: `chrome://extension-icon/${ext.id}/${size}/0`,
+      })),
+      id: ext.id,
+      installType: 'normal',
+      isApp: !!manifest.app,
+      mayDisable: true,
+      name: manifest.name,
+      offlineEnabled: !!manifest.offline_enabled,
+      optionsUrl: manifest.options_page
+        ? `chrome-extension://${ext.id}/${manifest.options_page}`
+        : '',
+      permissions: manifest.permissions || [],
+      shortName: manifest.short_name || manifest.name,
+      type: manifest.app ? 'app' : 'extension',
+      updateUrl: manifest.update_url || '',
+      version: manifest.version,
+    }
+  }
+
   ipcMain.handle('chrome.management.getAll', async (event) => {
     const extensions = session.getAllExtensions()
-
-    return extensions.map((ext) => {
-      const manifest: chrome.runtime.Manifest = ext.manifest
-      return {
-        description: manifest.description || '',
-        enabled: !manifest.disabled,
-        homepageUrl: manifest.homepage_url || '',
-        hostPermissions: manifest.host_permissions || [],
-        icons: Object.entries(manifest?.icons || {}).map(([size, url]) => ({
-          size: parseInt(size),
-          url: `chrome://extension-icon/${ext.id}/${size}/0`,
-        })),
-        id: ext.id,
-        installType: 'normal',
-        isApp: !!manifest.app,
-        mayDisable: true,
-        name: manifest.name,
-        offlineEnabled: !!manifest.offline_enabled,
-        optionsUrl: manifest.options_page
-          ? `chrome-extension://${ext.id}/${manifest.options_page}`
-          : '',
-        permissions: manifest.permissions || [],
-        shortName: manifest.short_name || manifest.name,
-        type: manifest.app ? 'app' : 'extension',
-        updateUrl: manifest.update_url || '',
-        version: manifest.version,
-      }
-    })
+    return extensions.map(getExtensionInfo)
   })
 
   ipcMain.handle('chrome.management.setEnabled', async (event, id, enabled) => {
