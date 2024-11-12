@@ -9,7 +9,7 @@ const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { setupChromeWebStore } = require('electron-chrome-web-store')
 
 // https://www.electronforge.io/config/plugins/webpack#main-process-code
-const ROOT_DIR = path.join(__dirname, '../../../../');
+const ROOT_DIR = path.join(__dirname, '../../../../')
 const PATHS = {
   WEBUI: path.join(__dirname, 'ui'),
   PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
@@ -27,9 +27,8 @@ const manifestExists = async (dirPath) => {
     return false
   }
 }
-
-const VERSION_REGEX = /^(?:\d+\.?){2,4}_\d+$/ // e.g. 2024.9.29.1273_0
 async function loadExtensions(session, extensionsPath) {
+  // Get top level directories
   const subDirectories = await fs.readdir(extensionsPath, {
     withFileTypes: true,
   })
@@ -40,21 +39,24 @@ async function loadExtensions(session, extensionsPath) {
       .map(async (dirEnt) => {
         const extPath = path.join(extensionsPath, dirEnt.name)
 
+        // Check if manifest exists in root directory
         if (await manifestExists(extPath)) {
           return extPath
         }
 
+        // Check one level deeper
         const extSubDirs = await fs.readdir(extPath, {
           withFileTypes: true,
         })
 
-        const versionDir = extSubDirs.find(
-          (dir) => dir.isDirectory() && dir.name.match(VERSION_REGEX)
-        )?.name
-        const versionDirPath = path.join(extPath, versionDir)
+        // Look for manifest in each subdirectory
+        for (const subDir of extSubDirs) {
+          if (!subDir.isDirectory()) continue
 
-        if (await manifestExists(versionDirPath)) {
-          return versionDirPath
+          const subDirPath = path.join(extPath, subDir.name)
+          if (await manifestExists(subDirPath)) {
+            return subDirPath
+          }
         }
       })
   )
@@ -236,14 +238,16 @@ class Browser {
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
-    const extensionsPath = app.isPackaged
-      ? path.join(app.getPath('userData'), 'Extensions')
-      : PATHS.LOCAL_EXTENSIONS
-    console.log(`Browser.init: loading extensions from ${extensionsPath}`)
-    try {
-      await loadExtensions(this.session, extensionsPath)
-    } catch (error) {
-      console.error('Failed to load extensions\n', error)
+    const extensionDirs = [path.join(app.getPath('userData'), 'Extensions')]
+    if (!app.isPackaged) extensionDirs.push(PATHS.LOCAL_EXTENSIONS)
+
+    for (const extensionDir of extensionDirs) {
+      console.log(`Browser.init: loading extensions from ${extensionDir}`)
+      try {
+        await loadExtensions(this.session, extensionDir)
+      } catch (error) {
+        console.error('Failed to load extensions\n', error)
+      }
     }
 
     this.createInitialWindow()
@@ -314,11 +318,11 @@ class Browser {
           return {
             action: 'allow',
             createWindow: () => {
-              const win = this.getWindowFromWebContents(webContents);
-              const tab = win.tabs.create();
-              tab.loadURL(details.url);
-              return tab.webContents;
-            }
+              const win = this.getWindowFromWebContents(webContents)
+              const tab = win.tabs.create()
+              tab.loadURL(details.url)
+              return tab.webContents
+            },
           }
         }
         default:
