@@ -26,3 +26,6 @@ const { installChromeWebStore } = require('electron-chrome-web-store')
 
 To enable full support for Chrome extensions in Electron, install [electron-chrome-extensions](https://www.npmjs.com/package/electron-chrome-extensions).
 
+## License
+
+MIT

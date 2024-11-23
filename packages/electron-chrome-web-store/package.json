@@ -9,14 +9,16 @@
     "prepublish": "NODE_ENV=production yarn build"
   },
   "keywords": [
+    "electron",
     "chrome",
     "web",
     "store",
     "webstore",
     "extensions"
   ],
+  "repository": "https://github.com/samuelmaddock/electron-browser-shell",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "devDependencies": {
     "esbuild": "^0.24.0",
     "rimraf": "^6.0.1",
