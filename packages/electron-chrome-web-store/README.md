@@ -6,7 +6,7 @@ Install and manage Chrome extensions from the Chrome Web Store.
 
 ```js
 const { app, BrowserWindow, session } = require('electron')
-const { setupChromeWebStore } = require('electron-chrome-web-store')
+const { installChromeWebStore } = require('electron-chrome-web-store')
 
 (async function main() {
   await app.whenReady()
@@ -18,8 +18,11 @@ const { setupChromeWebStore } = require('electron-chrome-web-store')
     }
   })
 
-  setupChromeWebStore(browserSession)
+  installChromeWebStore({ session: browserSession })
 
   browserWindow.loadURL('https://chromewebstore.google.com/')
 }())
 ```
+
+To enable full support for Chrome extensions in Electron, install [electron-chrome-extensions](https://www.npmjs.com/package/electron-chrome-extensions).
+

@@ -1,7 +1,9 @@
-import { app, ipcMain, net, BrowserWindow, Session } from 'electron'
+import { app, ipcMain, net, session as electronSession } from 'electron'
+import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs'
 import { Readable } from 'stream'
+import { pipeline } from 'stream/promises'
 import { readCrxFileHeader } from './crx3'
 import Pbf from 'pbf'
 import {
@@ -13,164 +15,262 @@ import {
 
 const AdmZip = require('adm-zip')
 
-export function setupChromeWebStore(session: Session, modulePath: string = __dirname) {
-  const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
+function getExtensionInfo(ext: Electron.Extension) {
+  const manifest: chrome.runtime.Manifest = ext.manifest
+  return {
+    description: manifest.description || '',
+    enabled: !manifest.disabled,
+    homepageUrl: manifest.homepage_url || '',
+    hostPermissions: manifest.host_permissions || [],
+    icons: Object.entries(manifest?.icons || {}).map(([size, url]) => ({
+      size: parseInt(size),
+      url: `chrome://extension-icon/${ext.id}/${size}/0`,
+    })),
+    id: ext.id,
+    installType: 'normal',
+    isApp: !!manifest.app,
+    mayDisable: true,
+    name: manifest.name,
+    offlineEnabled: !!manifest.offline_enabled,
+    optionsUrl: manifest.options_page
+      ? `chrome-extension://${ext.id}/${manifest.options_page}`
+      : '',
+    permissions: manifest.permissions || [],
+    shortName: manifest.short_name || manifest.name,
+    type: manifest.app ? 'app' : 'extension',
+    updateUrl: manifest.update_url || '',
+    version: manifest.version,
+  }
+}
+
+async function fetchCrx(extensionId: string) {
+  // Download extension from Chrome Web Store
+  const chromeVersion = process.versions.chrome
+  const response = await net.fetch(
+    `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${extensionId}%26uc&prodversion=${chromeVersion}`
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to download extension')
+  }
+
+  return response
+}
+
+interface CrxInfo {
+  version: number
+  header: Buffer
+  contents: Buffer
+  publicKey: Buffer
+}
+
+// Parse CRX header and extract contents
+function parseCrx(buffer: Buffer): CrxInfo {
+  // CRX3 magic number: 'Cr24'
+  const magicNumber = buffer.toString('utf8', 0, 4)
+  if (magicNumber !== 'Cr24') {
+    throw new Error('Invalid CRX format')
+  }
+
+  // CRX3 format has version = 3 and header size at bytes 8-12
+  const version = buffer.readUInt32LE(4)
+  const headerSize = buffer.readUInt32LE(8)
+
+  // Extract header and contents
+  const header = buffer.subarray(12, 12 + headerSize)
+  const contents = buffer.subarray(12 + headerSize)
+
+  // For CRX2 format
+  let publicKey: Buffer
+  if (version === 2) {
+    const pubKeyLength = buffer.readUInt32LE(8)
+    const sigLength = buffer.readUInt32LE(12)
+    publicKey = buffer.subarray(16, 16 + pubKeyLength)
+  } else {
+    // For CRX3, extract public key from header
+    // CRX3 header contains a protocol buffer message
+    const pbf = new Pbf(header)
+    const crxFileHeader = readCrxFileHeader(pbf)
+    publicKey = crxFileHeader.sha256_with_rsa[1]?.public_key
+
+    if (!publicKey) {
+      throw new Error('Invalid CRX header')
+    }
+  }
+
+  return {
+    version,
+    header,
+    contents,
+    publicKey,
+  }
+}
+
+// Extract CRX contents and update manifest
+async function extractCrx(crx: CrxInfo, destPath: string) {
+  // Create zip file from contents
+  const zip = new AdmZip(crx.contents)
+
+  // Extract zip to destination
+  zip.extractAllTo(destPath, true)
+
+  // Read manifest.json
+  const manifestPath = path.join(destPath, 'manifest.json')
+  const manifestContent = await fs.promises.readFile(manifestPath, 'utf8')
+  const manifestJson = JSON.parse(manifestContent)
+
+  // Add public key to manifest
+  manifestJson.key = crx.publicKey.toString('base64')
+
+  // Write updated manifest back
+  await fs.promises.writeFile(manifestPath, JSON.stringify(manifestJson, null, 2))
+}
+
+async function unpackCrx(crxPath: string, destDir: string) {
+  // Read and parse CRX file
+  const crxBuffer = await fs.promises.readFile(crxPath)
+  const crx = await parseCrx(crxBuffer)
+  await extractCrx(crx, destDir)
+}
+
+/**
+ * Download extension ID from the Chrome Web Store to the given destination.
+ *
+ * @param extensionId Extension ID.
+ * @param destDir Destination directory. Directory is expected to exist.
+ */
+export async function downloadExtension(extensionId: string, destDir: string) {
+  const response = await fetchCrx(extensionId)
+  const tmpCrxPath = path.join(os.tmpdir(), `electron-cws-download_${extensionId}.crx`)
+
+  try {
+    // Save extension file
+    const fileStream = fs.createWriteStream(tmpCrxPath)
+
+    // Convert ReadableStream to Node stream and pipe to file
+    const downloadStream = Readable.fromWeb(response.body as any)
+    await pipeline(downloadStream, fileStream)
+
+    await unpackCrx(tmpCrxPath, destDir)
+  } finally {
+    await fs.promises.rm(tmpCrxPath, { force: true })
+  }
+}
+
+async function uninstallExtension(
+  session: Electron.Session,
+  extensionId: string,
+  extensionsPath: string
+) {
+  const extensions = session.getAllExtensions()
+  const existingExt = extensions.find((ext) => ext.id === extensionId)
+  if (existingExt) {
+    await session.removeExtension(extensionId)
+  }
+
+  const extensionDir = path.join(extensionsPath, extensionId)
+  try {
+    const stat = await fs.promises.stat(extensionDir)
+    if (stat.isDirectory()) {
+      await fs.promises.rm(extensionDir, { recursive: true, force: true })
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+interface InstallDetails {
+  id: string
+  manifest: string
+  localizedName: string
+  esbAllowlist: boolean
+  iconUrl: string
+}
+
+async function beginInstall(
+  session: Electron.Session,
+  details: InstallDetails,
+  extensionsPath: string
+) {
+  try {
+    const extensionId = details.id
+    const manifest: chrome.runtime.Manifest = JSON.parse(details.manifest)
+    const installVersion = manifest.version
+
+    // Check if extension is already loaded in session and remove it
+    await uninstallExtension(session, extensionId, extensionsPath)
+
+    // Create extension directory
+    const unpackedDir = path.join(extensionsPath, extensionId, `${installVersion}_0`)
+    await fs.promises.mkdir(unpackedDir, { recursive: true })
+
+    await downloadExtension(extensionId, unpackedDir)
+
+    // Load extension into session
+    await session.loadExtension(unpackedDir)
+
+    return { result: Result.SUCCESS }
+  } catch (error) {
+    console.error('Extension installation failed:', error)
+    return {
+      result: Result.INSTALL_ERROR,
+      message: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
+interface ElectronChromeWebStoreOptions {
+  /**
+   * Session to enable the Chrome Web Store in.
+   * Defaults to session.defaultSession
+   */
+  session?: Electron.Session
+
+  /**
+   * Path to the 'electron-chrome-web-store' module.
+   */
+  modulePath?: string
+
+  /**
+   * Path to extensions directory.
+   * Defaults to 'Extensions/' under userData path.
+   */
+  extensionsPath?: string
+}
+
+/**
+ * Install Chrome Web Store support.
+ *
+ * @param options Chrome Web Store configuration options.
+ */
+export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
+  const session = opts.session || electronSession.defaultSession
+  const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
+  const modulePath = opts.modulePath || __dirname
 
   // Add preload script to session
+  const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
   session.setPreloads([...session.getPreloads(), preloadPath])
 
-  async function uninstallExtension(id: string) {
-    const extensions = session.getAllExtensions()
-    const existingExt = extensions.find((ext) => ext.id === id)
-    if (existingExt) {
-      await session.removeExtension(id)
-    }
-
-    const userDataPath = app.getPath('userData')
-    const extensionDir = path.join(userDataPath, 'Extensions', id)
-    await fs.promises.rm(extensionDir, { recursive: true, force: true })
-  }
-
-  interface InstallDetails {
-    id: string
-    manifest: string
-    localizedName: string
-    esbAllowlist: boolean
-    iconUrl: string
-  }
-
   ipcMain.handle('chromeWebstore.beginInstall', async (event, details: InstallDetails) => {
-    try {
-      const manifest: chrome.runtime.Manifest = JSON.parse(details.manifest)
-      const installVersion = manifest.version
+    const { senderFrame } = event
+    const result = await beginInstall(session, details, extensionsPath)
 
-      // Check if extension is already loaded in session and remove it
-      await uninstallExtension(details.id)
-
-      // Get user data directory and ensure extensions folder exists
-      const userDataPath = app.getPath('userData')
-      const extensionsPath = path.join(userDataPath, 'Extensions')
-      await fs.promises.mkdir(extensionsPath, { recursive: true })
-
-      // Create extension directory
-      const extensionDir = path.join(extensionsPath, details.id)
-      await fs.promises.mkdir(extensionDir, { recursive: true })
-
-      // Download extension from Chrome Web Store
-      const chromeVersion = process.versions.chrome
-      const response = await net.fetch(
-        `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${details.id}%26uc&prodversion=${chromeVersion}`
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to download extension')
-      }
-
-      // Save extension file
-      const extensionFile = path.join(extensionDir, 'extension.crx')
-      const fileStream = fs.createWriteStream(extensionFile)
-
-      // Convert ReadableStream to Node stream and pipe to file
-      const readableStream = Readable.fromWeb(response.body as any)
-      await new Promise((resolve, reject) => {
-        readableStream.pipe(fileStream)
-        readableStream.on('error', reject)
-        fileStream.on('finish', resolve)
-      })
-
-      // Unpack extension
-      const unpackedDir = path.join(extensionDir, `${installVersion}_0`)
-      await fs.promises.mkdir(unpackedDir, { recursive: true })
-
-      // Read and parse CRX file
-      const crxBuffer = await fs.promises.readFile(extensionFile)
-
-      interface CrxInfo {
-        version: number
-        header: Buffer
-        contents: Buffer
-        publicKey: Buffer
-      }
-
-      // Parse CRX header and extract contents
-      function parseCrx(buffer: Buffer): CrxInfo {
-        // CRX3 magic number: 'Cr24'
-        const magicNumber = buffer.toString('utf8', 0, 4)
-        if (magicNumber !== 'Cr24') {
-          throw new Error('Invalid CRX format')
-        }
-
-        // CRX3 format has version = 3 and header size at bytes 8-12
-        const version = buffer.readUInt32LE(4)
-        const headerSize = buffer.readUInt32LE(8)
-
-        // Extract header and contents
-        const header = buffer.subarray(12, 12 + headerSize)
-        const contents = buffer.subarray(12 + headerSize)
-
-        // For CRX2 format
-        let publicKey: Buffer
-        if (version === 2) {
-          const pubKeyLength = buffer.readUInt32LE(8)
-          const sigLength = buffer.readUInt32LE(12)
-          publicKey = buffer.subarray(16, 16 + pubKeyLength)
-        } else {
-          // For CRX3, extract public key from header
-          // CRX3 header contains a protocol buffer message
-          const pbf = new Pbf(header)
-          const crxFileHeader = readCrxFileHeader(pbf)
-          publicKey = crxFileHeader.sha256_with_rsa[1]?.public_key
-
-          if (!publicKey) {
-            throw new Error('Invalid CRX header')
+    if (result.result === Result.SUCCESS) {
+      queueMicrotask(() => {
+        const ext = session.getExtension(details.id)
+        if (ext) {
+          // TODO: use WebFrameMain.isDestroyed
+          try {
+            senderFrame.send('chrome.management.onInstalled', getExtensionInfo(ext))
+          } catch (error) {
+            console.error(error)
           }
         }
-
-        return {
-          version,
-          header,
-          contents,
-          publicKey,
-        }
-      }
-      // Extract CRX contents and update manifest
-      async function extractCrx(crx: CrxInfo, destPath: string) {
-        // Create zip file from contents
-        const zip = new AdmZip(crx.contents)
-
-        // Extract zip to destination
-        zip.extractAllTo(destPath, true)
-
-        // Read manifest.json
-        const manifestPath = path.join(destPath, 'manifest.json')
-        const manifestContent = await fs.promises.readFile(manifestPath, 'utf8')
-        const manifestJson = JSON.parse(manifestContent)
-
-        // Add public key to manifest
-        manifestJson.key = crx.publicKey.toString('base64')
-
-        // Write updated manifest back
-        await fs.promises.writeFile(manifestPath, JSON.stringify(manifestJson, null, 2))
-      }
-
-      const crx = await parseCrx(crxBuffer)
-      await extractCrx(crx, unpackedDir)
-
-      // Load extension into session
-      const ext = await session.loadExtension(unpackedDir)
-
-      queueMicrotask(() => {
-        event.sender.send('chrome.management.onInstalled', getExtensionInfo(ext))
       })
-
-      return { result: Result.SUCCESS }
-    } catch (error) {
-      console.error('Extension installation failed:', error)
-      return {
-        result: Result.INSTALL_ERROR,
-        message: error instanceof Error ? error.message : String(error),
-      }
     }
+
+    return result
   })
 
   ipcMain.handle('chromeWebstore.completeInstall', async (event, id) => {
@@ -266,34 +366,6 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
     return {}
   })
 
-  const getExtensionInfo = (ext: Electron.Extension) => {
-    const manifest: chrome.runtime.Manifest = ext.manifest
-    return {
-      description: manifest.description || '',
-      enabled: !manifest.disabled,
-      homepageUrl: manifest.homepage_url || '',
-      hostPermissions: manifest.host_permissions || [],
-      icons: Object.entries(manifest?.icons || {}).map(([size, url]) => ({
-        size: parseInt(size),
-        url: `chrome://extension-icon/${ext.id}/${size}/0`,
-      })),
-      id: ext.id,
-      installType: 'normal',
-      isApp: !!manifest.app,
-      mayDisable: true,
-      name: manifest.name,
-      offlineEnabled: !!manifest.offline_enabled,
-      optionsUrl: manifest.options_page
-        ? `chrome-extension://${ext.id}/${manifest.options_page}`
-        : '',
-      permissions: manifest.permissions || [],
-      shortName: manifest.short_name || manifest.name,
-      type: manifest.app ? 'app' : 'extension',
-      updateUrl: manifest.update_url || '',
-      version: manifest.version,
-    }
-  }
-
   ipcMain.handle('chrome.management.getAll', async (event) => {
     const extensions = session.getAllExtensions()
     return extensions.map(getExtensionInfo)
@@ -312,7 +384,7 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       }
 
       try {
-        await uninstallExtension(id)
+        await uninstallExtension(session, id, extensionsPath)
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
         })
@@ -323,11 +395,11 @@ export function setupChromeWebStore(session: Session, modulePath: string = __dir
       }
     }
   )
+}
 
-  // Handle extension install/uninstall events
-  function emitExtensionEvent(eventName: string) {
-    BrowserWindow.getAllWindows().forEach((window) => {
-      window.webContents.send(`chrome.management.${eventName}`)
-    })
-  }
+/**
+ * @deprecated Use `installChromeWebStore`
+ */
+export function setupChromeWebStore(session: Electron.Session, modulePath?: string) {
+  installChromeWebStore({ session, modulePath })
 }
