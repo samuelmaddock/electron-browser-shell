@@ -13,7 +13,10 @@ import {
   WebGlStatus,
 } from '../common/constants'
 
+const d = require('debug')('electron-chrome-web-store')
 const AdmZip = require('adm-zip')
+
+const WEBSTORE_URL = 'https://chromewebstore.google.com'
 
 function getExtensionInfo(ext: Electron.Extension) {
   const manifest: chrome.runtime.Manifest = ext.manifest
@@ -254,8 +257,29 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
   const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
   session.setPreloads([...session.getPreloads(), preloadPath])
 
-  ipcMain.handle('chromeWebstore.beginInstall', async (event, details: InstallDetails) => {
+  /** Handle IPCs from the Chrome Web Store. */
+  const handle = (
+    channel: string,
+    handle: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
+  ) => {
+    ipcMain.handle(channel, function handleWebStoreIpc(event, ...args) {
+      d('received %s', channel)
+
+      const senderOrigin = event.senderFrame?.origin
+      if (!senderOrigin || !senderOrigin.startsWith(WEBSTORE_URL)) {
+        d('ignoring webstore request from %s', senderOrigin)
+        return
+      }
+
+      return handle(event, ...args)
+    })
+  }
+
+  handle('chromeWebstore.beginInstall', async (event, details: InstallDetails) => {
     const { senderFrame } = event
+
+    d('beginInstall', details)
+
     const result = await beginInstall(session, details, extensionsPath)
 
     if (result.result === Result.SUCCESS) {
@@ -275,21 +299,21 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
     return result
   })
 
-  ipcMain.handle('chromeWebstore.completeInstall', async (event, id) => {
+  handle('chromeWebstore.completeInstall', async (event, id) => {
     // TODO: Implement completion of extension installation
     return Result.SUCCESS
   })
 
-  ipcMain.handle('chromeWebstore.enableAppLauncher', async (event, enable) => {
+  handle('chromeWebstore.enableAppLauncher', async (event, enable) => {
     // TODO: Implement app launcher enable/disable
     return true
   })
 
-  ipcMain.handle('chromeWebstore.getBrowserLogin', async () => {
+  handle('chromeWebstore.getBrowserLogin', async () => {
     // TODO: Implement getting browser login
     return ''
   })
-  ipcMain.handle('chromeWebstore.getExtensionStatus', async (event, id, manifestJson) => {
+  handle('chromeWebstore.getExtensionStatus', async (event, id, manifestJson) => {
     console.log('webstorePrivate.getExtensionStatus', JSON.stringify({ id }))
     const extensions = session.getAllExtensions()
     const extension = extensions.find((ext) => ext.id === id)
@@ -312,30 +336,30 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
     return ExtensionInstallStatus.ENABLED
   })
 
-  ipcMain.handle('chromeWebstore.getFullChromeVersion', async () => {
+  handle('chromeWebstore.getFullChromeVersion', async () => {
     return { version_number: process.versions.chrome }
   })
 
-  ipcMain.handle('chromeWebstore.getIsLauncherEnabled', async () => {
+  handle('chromeWebstore.getIsLauncherEnabled', async () => {
     // TODO: Implement checking if launcher is enabled
     return true
   })
 
-  ipcMain.handle('chromeWebstore.getMV2DeprecationStatus', async () => {
+  handle('chromeWebstore.getMV2DeprecationStatus', async () => {
     return MV2DeprecationStatus.INACTIVE
   })
 
-  ipcMain.handle('chromeWebstore.getReferrerChain', async () => {
+  handle('chromeWebstore.getReferrerChain', async () => {
     // TODO: Implement getting referrer chain
     return 'EgIIAA=='
   })
 
-  ipcMain.handle('chromeWebstore.getStoreLogin', async () => {
+  handle('chromeWebstore.getStoreLogin', async () => {
     // TODO: Implement getting store login
     return ''
   })
 
-  ipcMain.handle('chromeWebstore.getWebGLStatus', async () => {
+  handle('chromeWebstore.getWebGLStatus', async () => {
     await app.getGPUInfo('basic')
     const features = app.getGPUFeatureStatus()
     return features.webgl.startsWith('enabled')
@@ -343,42 +367,42 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
       : WebGlStatus.WEBGL_BLOCKED
   })
 
-  ipcMain.handle('chromeWebstore.install', async (event, id, silentInstall) => {
+  handle('chromeWebstore.install', async (event, id, silentInstall) => {
     // TODO: Implement extension installation
     return Result.SUCCESS
   })
 
-  ipcMain.handle('chromeWebstore.isInIncognitoMode', async () => {
+  handle('chromeWebstore.isInIncognitoMode', async () => {
     // TODO: Implement incognito mode check
     return false
   })
 
-  ipcMain.handle('chromeWebstore.isPendingCustodianApproval', async (event, id) => {
+  handle('chromeWebstore.isPendingCustodianApproval', async (event, id) => {
     // TODO: Implement custodian approval check
     return false
   })
 
-  ipcMain.handle('chromeWebstore.setStoreLogin', async (event, login) => {
+  handle('chromeWebstore.setStoreLogin', async (event, login) => {
     // TODO: Implement setting store login
     return true
   })
 
-  ipcMain.handle('chrome.runtime.getManifest', async () => {
+  handle('chrome.runtime.getManifest', async () => {
     // TODO: Implement getting extension manifest
     return {}
   })
 
-  ipcMain.handle('chrome.management.getAll', async (event) => {
+  handle('chrome.management.getAll', async (event) => {
     const extensions = session.getAllExtensions()
     return extensions.map(getExtensionInfo)
   })
 
-  ipcMain.handle('chrome.management.setEnabled', async (event, id, enabled) => {
+  handle('chrome.management.setEnabled', async (event, id, enabled) => {
     // TODO: Implement enabling/disabling extension
     return true
   })
 
-  ipcMain.handle(
+  handle(
     'chrome.management.uninstall',
     async (event, id, options: { showConfirmDialog: boolean }) => {
       if (options?.showConfirmDialog) {
