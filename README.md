@@ -36,16 +36,16 @@ Load unpacked extensions into `./extensions` then launch the browser.
 - [x] Unpacked extension loader
 - [x] Initial [`chrome.tabs` extensions API](https://developer.chrome.com/extensions/tabs)
 - [x] Initial [extension popup](https://developer.chrome.com/extensions/browserAction) support
+- [x] .CRX extension loader
+- [x] [Chrome Web Store](https://chromewebstore.google.com) extension installer
+- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support
 - [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 - [ ] Robust extension popup support
-- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support
 - [ ] Respect extension manifest permissions
 
 ### 🤞 Eventually
 - [ ] Extension management (enable/disable/uninstall)
-- [ ] .CRX extension loader
 - [ ] Installation prompt UX
-- [ ] [Chrome Web Store](https://chrome.google.com/webstore) extension installer
 - [ ] [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) extension installer
 - [ ] Automatic extension updates
 - [ ] Full support of [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
