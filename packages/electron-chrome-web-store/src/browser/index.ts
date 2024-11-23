@@ -18,6 +18,16 @@ const AdmZip = require('adm-zip')
 
 const WEBSTORE_URL = 'https://chromewebstore.google.com'
 
+type ExtensionId = Electron.Extension['id']
+
+interface WebStoreState {
+  session: Electron.Session
+  extensionsPath: string
+  installing: Set<ExtensionId>
+  allowlist?: Set<ExtensionId>
+  denylist?: Set<ExtensionId>
+}
+
 function getExtensionInfo(ext: Electron.Extension) {
   const manifest: chrome.runtime.Manifest = ext.manifest
   return {
@@ -46,7 +56,40 @@ function getExtensionInfo(ext: Electron.Extension) {
   }
 }
 
-async function fetchCrx(extensionId: string) {
+function getExtensionInstallStatus(
+  state: WebStoreState,
+  extensionId: ExtensionId,
+  manifest?: chrome.runtime.Manifest
+) {
+  if (state.denylist?.has(extensionId)) {
+    return ExtensionInstallStatus.BLOCKED_BY_POLICY
+  }
+
+  if (state.allowlist && !state.allowlist.has(extensionId)) {
+    return ExtensionInstallStatus.BLOCKED_BY_POLICY
+  }
+
+  if (manifest) {
+    if (manifest.manifest_version < 2) {
+      return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
+    }
+  }
+
+  const extensions = state.session.getAllExtensions()
+  const extension = extensions.find((ext) => ext.id === extensionId)
+
+  if (!extension) {
+    return ExtensionInstallStatus.INSTALLABLE
+  }
+
+  if (extension.manifest.disabled) {
+    return ExtensionInstallStatus.DISABLED
+  }
+
+  return ExtensionInstallStatus.ENABLED
+}
+
+async function fetchCrx(extensionId: ExtensionId) {
   // Download extension from Chrome Web Store
   const chromeVersion = process.versions.chrome
   const response = await net.fetch(
@@ -142,7 +185,7 @@ async function unpackCrx(crxPath: string, destDir: string) {
  * @param extensionId Extension ID.
  * @param destDir Destination directory. Directory is expected to exist.
  */
-export async function downloadExtension(extensionId: string, destDir: string) {
+export async function downloadExtension(extensionId: ExtensionId, destDir: string) {
   const response = await fetchCrx(extensionId)
   const tmpCrxPath = path.join(os.tmpdir(), `electron-cws-download_${extensionId}.crx`)
 
@@ -161,9 +204,8 @@ export async function downloadExtension(extensionId: string, destDir: string) {
 }
 
 async function uninstallExtension(
-  session: Electron.Session,
-  extensionId: string,
-  extensionsPath: string
+  { session, extensionsPath }: WebStoreState,
+  extensionId: ExtensionId
 ) {
   const extensions = session.getAllExtensions()
   const existingExt = extensions.find((ext) => ext.id === extensionId)
@@ -192,27 +234,47 @@ interface InstallDetails {
   iconUrl: string
 }
 
-async function beginInstall(
-  session: Electron.Session,
-  details: InstallDetails,
-  extensionsPath: string
-) {
+async function beginInstall(state: WebStoreState, details: InstallDetails) {
+  const extensionId = details.id
+
   try {
-    const extensionId = details.id
-    const manifest: chrome.runtime.Manifest = JSON.parse(details.manifest)
-    const installVersion = manifest.version
+    if (state.installing.has(extensionId)) {
+      return { result: Result.INSTALL_IN_PROGRESS }
+    }
+
+    let manifest: chrome.runtime.Manifest
+    try {
+      manifest = JSON.parse(details.manifest)
+    } catch {
+      return { result: Result.MANIFEST_ERROR }
+    }
+
+    const installStatus = getExtensionInstallStatus(state, extensionId, manifest)
+    switch (installStatus) {
+      case ExtensionInstallStatus.INSTALLABLE:
+        break // good to go
+      case ExtensionInstallStatus.BLOCKED_BY_POLICY:
+        return { result: Result.BLOCKED_BY_POLICY }
+      default: {
+        d('unable to install extension %s with status "%s"', extensionId, installStatus)
+        return { result: Result.UNKNOWN_ERROR }
+      }
+    }
+
+    state.installing.add(extensionId)
 
     // Check if extension is already loaded in session and remove it
-    await uninstallExtension(session, extensionId, extensionsPath)
+    await uninstallExtension(state, extensionId)
 
     // Create extension directory
-    const unpackedDir = path.join(extensionsPath, extensionId, `${installVersion}_0`)
+    const installVersion = manifest.version
+    const unpackedDir = path.join(state.extensionsPath, extensionId, `${installVersion}_0`)
     await fs.promises.mkdir(unpackedDir, { recursive: true })
 
     await downloadExtension(extensionId, unpackedDir)
 
     // Load extension into session
-    await session.loadExtension(unpackedDir)
+    await state.session.loadExtension(unpackedDir)
 
     return { result: Result.SUCCESS }
   } catch (error) {
@@ -221,6 +283,8 @@ async function beginInstall(
       result: Result.INSTALL_ERROR,
       message: error instanceof Error ? error.message : String(error),
     }
+  } finally {
+    state.installing.delete(extensionId)
   }
 }
 
@@ -241,6 +305,16 @@ interface ElectronChromeWebStoreOptions {
    * Defaults to 'Extensions/' under userData path.
    */
   extensionsPath?: string
+
+  /**
+   * List of allowed extension IDs to install.
+   */
+  allowlist?: ExtensionId[]
+
+  /**
+   * List of denied extension IDs to install.
+   */
+  denylist?: ExtensionId[]
 }
 
 /**
@@ -253,6 +327,14 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
   const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
   const modulePath = opts.modulePath || __dirname
 
+  const webStoreState: WebStoreState = {
+    session,
+    extensionsPath,
+    installing: new Set(),
+    allowlist: opts.allowlist ? new Set(opts.allowlist) : undefined,
+    denylist: opts.denylist ? new Set(opts.denylist) : undefined,
+  }
+
   // Add preload script to session
   const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
   session.setPreloads([...session.getPreloads(), preloadPath])
@@ -262,7 +344,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
     channel: string,
     handle: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
   ) => {
-    ipcMain.handle(channel, function handleWebStoreIpc(event, ...args) {
+    ipcMain.handle(channel, async function handleWebStoreIpc(event, ...args) {
       d('received %s', channel)
 
       const senderOrigin = event.senderFrame?.origin
@@ -271,7 +353,9 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
         return
       }
 
-      return handle(event, ...args)
+      const result = await handle(event, ...args)
+      d('%s result', channel, result)
+      return result
     })
   }
 
@@ -280,7 +364,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
 
     d('beginInstall', details)
 
-    const result = await beginInstall(session, details, extensionsPath)
+    const result = await beginInstall(webStoreState, details)
 
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {
@@ -313,27 +397,9 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
     // TODO: Implement getting browser login
     return ''
   })
-  handle('chromeWebstore.getExtensionStatus', async (event, id, manifestJson) => {
-    console.log('webstorePrivate.getExtensionStatus', JSON.stringify({ id }))
-    const extensions = session.getAllExtensions()
-    const extension = extensions.find((ext) => ext.id === id)
-
-    if (!extension) {
-      console.log(
-        'webstorePrivate.getExtensionStatus result:',
-        id,
-        ExtensionInstallStatus.INSTALLABLE
-      )
-      return ExtensionInstallStatus.INSTALLABLE
-    }
-
-    if (extension.manifest.disabled) {
-      console.log('webstorePrivate.getExtensionStatus result:', id, ExtensionInstallStatus.DISABLED)
-      return ExtensionInstallStatus.DISABLED
-    }
-
-    console.log('webstorePrivate.getExtensionStatus result:', id, ExtensionInstallStatus.ENABLED)
-    return ExtensionInstallStatus.ENABLED
+  handle('chromeWebstore.getExtensionStatus', async (_event, id, manifestJson) => {
+    const manifest = JSON.parse(manifestJson)
+    return getExtensionInstallStatus(webStoreState, id, manifest)
   })
 
   handle('chromeWebstore.getFullChromeVersion', async () => {
@@ -410,7 +476,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
       }
 
       try {
-        await uninstallExtension(session, id, extensionsPath)
+        await uninstallExtension(webStoreState, id)
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
         })
