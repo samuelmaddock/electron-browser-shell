@@ -174,8 +174,10 @@ async function uninstallExtension(
     if (stat.isDirectory()) {
       await fs.promises.rm(extensionDir, { recursive: true, force: true })
     }
-  } catch (error) {
-    console.error(error)
+  } catch (error: any) {
+    if (error?.code !== 'ENOENT') {
+      console.error(error)
+    }
   }
 }
 
