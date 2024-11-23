@@ -11,6 +11,7 @@ A minimal, tabbed web browser with support for Chrome extensions—built on Elec
 | [shell](./packages/shell) | A minimal, tabbed web browser used as a testbed for development of Chrome extension support. |
 | [electron-chrome-extensions](./packages/electron-chrome-extensions) | Adds additional API support for Chrome extensions to Electron. |
 | [electron-chrome-context-menu](./packages/electron-chrome-context-menu) | Chrome context menu for Electron browsers. |
+| [electron-chrome-web-store](./packages/electron-chrome-web-store) | Download extensions from the Chrome Web Store in Electron. |
 
 ## Usage
 
