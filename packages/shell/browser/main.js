@@ -6,7 +6,7 @@ const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
-const { installChromeWebStore } = require('electron-chrome-web-store')
+const { installChromeWebStore, loadAllExtensions } = require('electron-chrome-web-store')
 
 // https://www.electronforge.io/config/plugins/webpack#main-process-code
 const ROOT_DIR = path.join(__dirname, '../../../../')
@@ -17,64 +17,6 @@ const PATHS = {
 }
 
 let webuiExtensionId
-
-const manifestExists = async (dirPath) => {
-  if (!dirPath) return false
-  const manifestPath = path.join(dirPath, 'manifest.json')
-  try {
-    return (await fs.stat(manifestPath)).isFile()
-  } catch {
-    return false
-  }
-}
-async function loadExtensions(session, extensionsPath) {
-  // Get top level directories
-  const subDirectories = await fs.readdir(extensionsPath, {
-    withFileTypes: true,
-  })
-
-  const extensionDirectories = await Promise.all(
-    subDirectories
-      .filter((dirEnt) => dirEnt.isDirectory())
-      .map(async (dirEnt) => {
-        const extPath = path.join(extensionsPath, dirEnt.name)
-
-        // Check if manifest exists in root directory
-        if (await manifestExists(extPath)) {
-          return extPath
-        }
-
-        // Check one level deeper
-        const extSubDirs = await fs.readdir(extPath, {
-          withFileTypes: true,
-        })
-
-        // Look for manifest in each subdirectory
-        for (const subDir of extSubDirs) {
-          if (!subDir.isDirectory()) continue
-
-          const subDirPath = path.join(extPath, subDir.name)
-          if (await manifestExists(subDirPath)) {
-            return subDirPath
-          }
-        }
-      })
-  )
-
-  const results = []
-
-  for (const extPath of extensionDirectories.filter(Boolean)) {
-    console.log(`Loading extension from ${extPath}`)
-    try {
-      const extensionInfo = await session.loadExtension(extPath)
-      results.push(extensionInfo)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  return results
-}
 
 const getParentWindowOfTab = (tab) => {
   switch (tab.getType()) {
@@ -233,24 +175,16 @@ class Browser {
       this.popup = popup
     })
 
+    const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
+    webuiExtensionId = webuiExtension.id
+
     installChromeWebStore({
       session: this.session,
       modulePath: path.join(__dirname, 'electron-chrome-web-store'),
     })
 
-    const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
-    webuiExtensionId = webuiExtension.id
-
-    const extensionDirs = [path.join(app.getPath('userData'), 'Extensions')]
-    if (!app.isPackaged) extensionDirs.push(PATHS.LOCAL_EXTENSIONS)
-
-    for (const extensionDir of extensionDirs) {
-      console.log(`Browser.init: loading extensions from ${extensionDir}`)
-      try {
-        await loadExtensions(this.session, extensionDir)
-      } catch (error) {
-        console.error('Failed to load extensions\n', error)
-      }
+    if (!app.isPackaged) {
+      loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, true)
     }
 
     this.createInitialWindow()

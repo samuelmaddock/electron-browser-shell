@@ -12,6 +12,8 @@ import {
   Result,
   WebGlStatus,
 } from '../common/constants'
+import { loadAllExtensions } from './loader'
+export { loadAllExtensions } from './loader'
 
 const d = require('debug')('electron-chrome-web-store')
 const AdmZip = require('adm-zip')
@@ -288,57 +290,7 @@ async function beginInstall(state: WebStoreState, details: InstallDetails) {
   }
 }
 
-interface ElectronChromeWebStoreOptions {
-  /**
-   * Session to enable the Chrome Web Store in.
-   * Defaults to session.defaultSession
-   */
-  session?: Electron.Session
-
-  /**
-   * Path to the 'electron-chrome-web-store' module.
-   */
-  modulePath?: string
-
-  /**
-   * Path to extensions directory.
-   * Defaults to 'Extensions/' under userData path.
-   */
-  extensionsPath?: string
-
-  /**
-   * List of allowed extension IDs to install.
-   */
-  allowlist?: ExtensionId[]
-
-  /**
-   * List of denied extension IDs to install.
-   */
-  denylist?: ExtensionId[]
-}
-
-/**
- * Install Chrome Web Store support.
- *
- * @param options Chrome Web Store configuration options.
- */
-export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
-  const session = opts.session || electronSession.defaultSession
-  const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
-  const modulePath = opts.modulePath || __dirname
-
-  const webStoreState: WebStoreState = {
-    session,
-    extensionsPath,
-    installing: new Set(),
-    allowlist: opts.allowlist ? new Set(opts.allowlist) : undefined,
-    denylist: opts.denylist ? new Set(opts.denylist) : undefined,
-  }
-
-  // Add preload script to session
-  const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
-  session.setPreloads([...session.getPreloads(), preloadPath])
-
+function addIpcListeners(webStoreState: WebStoreState) {
   /** Handle IPCs from the Chrome Web Store. */
   const handle = (
     channel: string,
@@ -368,7 +320,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
 
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {
-        const ext = session.getExtension(details.id)
+        const ext = webStoreState.session.getExtension(details.id)
         if (ext) {
           // TODO: use WebFrameMain.isDestroyed
           try {
@@ -459,7 +411,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
   })
 
   handle('chrome.management.getAll', async (event) => {
-    const extensions = session.getAllExtensions()
+    const extensions = webStoreState.session.getAllExtensions()
     return extensions.map(getExtensionInfo)
   })
 
@@ -487,6 +439,82 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
       }
     }
   )
+}
+
+interface ElectronChromeWebStoreOptions {
+  /**
+   * Session to enable the Chrome Web Store in.
+   * Defaults to session.defaultSession
+   */
+  session?: Electron.Session
+
+  /**
+   * Path to the 'electron-chrome-web-store' module.
+   */
+  modulePath?: string
+
+  /**
+   * Path to extensions directory.
+   * Defaults to 'Extensions/' under app's userData path.
+   */
+  extensionsPath?: string
+
+  /**
+   * Load extensions installed by Chrome Web Store.
+   * Defaults to true.
+   */
+  loadExtensions?: boolean
+
+  /**
+   * Whether to allow loading unpacked extensions. Only loads if
+   * `loadExtensions` is also enabled.
+   * Defaults to false.
+   */
+  allowUnpackedExtensions?: boolean
+
+  /**
+   * List of allowed extension IDs to install.
+   */
+  allowlist?: ExtensionId[]
+
+  /**
+   * List of denied extension IDs to install.
+   */
+  denylist?: ExtensionId[]
+}
+
+/**
+ * Install Chrome Web Store support.
+ *
+ * @param options Chrome Web Store configuration options.
+ */
+export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
+  const session = opts.session || electronSession.defaultSession
+  const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
+  const modulePath = opts.modulePath || __dirname
+  const loadExtensions = typeof opts.loadExtensions === 'boolean' ? opts.loadExtensions : true
+  const allowUnpackedExtensions =
+    typeof opts.allowUnpackedExtensions === 'boolean' ? opts.allowUnpackedExtensions : false
+
+  const webStoreState: WebStoreState = {
+    session,
+    extensionsPath,
+    installing: new Set(),
+    allowlist: opts.allowlist ? new Set(opts.allowlist) : undefined,
+    denylist: opts.denylist ? new Set(opts.denylist) : undefined,
+  }
+
+  // Add preload script to session
+  const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
+  session.setPreloads([...session.getPreloads(), preloadPath])
+
+  addIpcListeners(webStoreState)
+
+  app.whenReady().then(() => {
+    if (loadExtensions) {
+      loadAllExtensions(session, extensionsPath, allowUnpackedExtensions)
+    }
+  })
 }
 
 /**
