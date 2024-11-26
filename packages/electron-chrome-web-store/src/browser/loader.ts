@@ -23,6 +23,17 @@ const manifestExists = async (dirPath: string) => {
  * Discover list of extensions in the given path.
  */
 async function discoverExtensions(extensionsPath: string): Promise<ExtensionPathInfo[]> {
+  try {
+    const stat = await fs.promises.stat(extensionsPath)
+    if (!stat.isDirectory()) {
+      d('%s is not a directory', extensionsPath)
+      return []
+    }
+  } catch {
+    d('%s does not exist', extensionsPath)
+    return []
+  }
+
   // Get top level directories
   const subDirectories = await fs.promises.readdir(extensionsPath, {
     withFileTypes: true,
@@ -97,7 +108,7 @@ export async function loadAllExtensions(
   allowUnpacked: boolean
 ) {
   const extensions = await discoverExtensions(extensionsPath)
-  d('discovered %d extension(s)', extensions.length)
+  d('discovered %d extension(s) in %s', extensions.length, extensionsPath)
 
   for (const ext of extensions) {
     try {
