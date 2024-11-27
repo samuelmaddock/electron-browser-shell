@@ -24,7 +24,10 @@ interface WebstorePrivate {
     manifestJson: string,
     callback?: (status: string) => void
   ) => Promise<string>
-  getFullChromeVersion: (callback?: (result: string) => void) => Promise<{ version_number: string }>
+  getFullChromeVersion: (callback?: (result: string) => void) => Promise<{
+    version_number: string
+    app_name: string
+  }>
   getIsLauncherEnabled: (callback?: (result: boolean) => void) => Promise<boolean>
   getMV2DeprecationStatus: (callback?: (result: string) => void) => Promise<string>
   getReferrerChain: (callback?: (result: unknown[]) => void) => Promise<unknown[]>
@@ -40,7 +43,36 @@ interface WebstorePrivate {
   setStoreLogin: (login: string, callback?: (result: boolean) => void) => Promise<boolean>
 }
 
+function updateBranding(appName: string) {
+  const update = () => {
+    requestAnimationFrame(() => {
+      const chromeButtons = Array.from(document.querySelectorAll('span')).filter((node) =>
+        node.innerText.includes('Chrome')
+      )
+
+      for (const button of chromeButtons) {
+        button.innerText = button.innerText.replace('Chrome', appName)
+      }
+    })
+  }
+
+  // Try twice to ensure branding changes
+  update()
+  setTimeout(update, 1000 / 60)
+}
+
 function setupChromeWebStoreApi() {
+  let appName: string | undefined
+
+  const setAppName = (name: string) => {
+    appName = name
+    updateBranding(appName)
+  }
+
+  const maybeUpdateBranding = () => {
+    if (appName) updateBranding(appName)
+  }
+
   const setExtensionError = (message?: string) => {
     webFrame.executeJavaScript(`
       if (typeof chrome !== 'undefined') {
@@ -73,6 +105,7 @@ function setupChromeWebStoreApi() {
       const result = await ipcRenderer.invoke('chromeWebstore.completeInstall', id)
       console.log('webstorePrivate.completeInstall result:', result)
       if (callback) callback(result)
+      maybeUpdateBranding()
       return result
     },
 
@@ -97,6 +130,7 @@ function setupChromeWebStoreApi() {
       const result = await ipcRenderer.invoke('chromeWebstore.getExtensionStatus', id, manifestJson)
       console.log('webstorePrivate.getExtensionStatus result:', id, result)
       if (callback) callback(result)
+      maybeUpdateBranding()
       return result
     },
 
@@ -104,6 +138,12 @@ function setupChromeWebStoreApi() {
       console.log('webstorePrivate.getFullChromeVersion called')
       const result = await ipcRenderer.invoke('chromeWebstore.getFullChromeVersion')
       console.log('webstorePrivate.getFullChromeVersion result:', result)
+
+      if (result.app_name) {
+        setAppName(result.app_name)
+        delete result.app_name
+      }
+
       if (callback) callback(result)
       return result
     },
@@ -243,6 +283,15 @@ function setupChromeWebStoreApi() {
     chrome.runtime = globalThis.electronRuntime;
     chrome.management = globalThis.electronManagement;
   `)
+
+  // Fetch app name
+  electronWebstore.getFullChromeVersion()
+
+  // Replace branding
+  process.once('document-start', maybeUpdateBranding)
+  if ('navigation' in window) {
+    ;(window.navigation as any).addEventListener('navigate', maybeUpdateBranding)
+  }
 }
 
 if (location.href.startsWith('https://chromewebstore.google.com')) {

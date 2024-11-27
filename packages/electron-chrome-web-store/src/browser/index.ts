@@ -355,7 +355,10 @@ function addIpcListeners(webStoreState: WebStoreState) {
   })
 
   handle('chromeWebstore.getFullChromeVersion', async () => {
-    return { version_number: process.versions.chrome }
+    return {
+      version_number: process.versions.chrome,
+      app_name: app.getName()
+    }
   })
 
   handle('chromeWebstore.getIsLauncherEnabled', async () => {
