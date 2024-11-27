@@ -5,7 +5,7 @@ const toolbarHeight = 64
 
 class Tab {
   constructor(parentWindow) {
-    this.invalidateLayout = this.invalidateLayout.bind(this);
+    this.invalidateLayout = this.invalidateLayout.bind(this)
 
     this.view = new WebContentsView()
     this.id = this.view.webContents.id
@@ -44,14 +44,14 @@ class Tab {
   }
 
   show() {
-    this.invalidateLayout();
-    this.startResizeListener();
-    this.view.setVisible(true);
+    this.invalidateLayout()
+    this.startResizeListener()
+    this.view.setVisible(true)
   }
 
   hide() {
-    this.stopResizeListener();
-    this.view.setVisible(false);
+    this.stopResizeListener()
+    this.view.setVisible(false)
   }
 
   reload() {
@@ -59,24 +59,24 @@ class Tab {
   }
 
   invalidateLayout() {
-    const [width, height] = this.window.getSize();
-    const padding = 4;
+    const [width, height] = this.window.getSize()
+    const padding = 4
     this.view.setBounds({
       x: padding,
       y: toolbarHeight,
-      width: width - (padding * 2),
-      height: height - toolbarHeight - padding
-    });
-    this.view.setBorderRadius(8);
+      width: width - padding * 2,
+      height: height - toolbarHeight - padding,
+    })
+    this.view.setBorderRadius(8)
   }
 
   // Replacement for BrowserView.setAutoResize. This could probably be better...
   startResizeListener() {
-    this.stopResizeListener();
-    this.window.on('resize', this.invalidateLayout);
+    this.stopResizeListener()
+    this.window.on('resize', this.invalidateLayout)
   }
   stopResizeListener() {
-    this.window.off('resize', this.invalidateLayout);
+    this.window.off('resize', this.invalidateLayout)
   }
 }
 

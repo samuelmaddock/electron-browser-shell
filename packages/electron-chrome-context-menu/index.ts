@@ -54,7 +54,7 @@ interface ChromeContextMenuOptions {
   openLink: (
     url: string,
     disposition: 'default' | 'foreground-tab' | 'background-tab' | 'new-window',
-    params: Electron.ContextMenuParams
+    params: Electron.ContextMenuParams,
   ) => void
 
   /** Chrome extension menu items. */

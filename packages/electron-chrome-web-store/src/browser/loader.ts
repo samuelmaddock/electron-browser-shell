@@ -66,7 +66,7 @@ async function discoverExtensions(extensionsPath: string): Promise<ExtensionPath
             return subDirPath
           }
         }
-      })
+      }),
   )
 
   const results: ExtensionPathInfo[] = []
@@ -105,7 +105,7 @@ async function discoverExtensions(extensionsPath: string): Promise<ExtensionPath
 export async function loadAllExtensions(
   session: Electron.Session,
   extensionsPath: string,
-  allowUnpacked: boolean
+  allowUnpacked: boolean,
 ) {
   const extensions = await discoverExtensions(extensionsPath)
   d('discovered %d extension(s) in %s', extensions.length, extensionsPath)

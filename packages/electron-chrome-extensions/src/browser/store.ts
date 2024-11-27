@@ -35,7 +35,7 @@ export class ExtensionStore extends EventEmitter {
 
   getWindowById(windowId: number) {
     return Array.from(this.windows).find(
-      (window) => !window.isDestroyed() && window.id === windowId
+      (window) => !window.isDestroyed() && window.id === windowId,
     )
   }
 

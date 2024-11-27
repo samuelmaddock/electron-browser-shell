@@ -11,7 +11,7 @@ const main = {
   },
 
   node: {
-    __dirname: false
+    __dirname: false,
   },
 
   output: {
@@ -27,7 +27,7 @@ const preload = {
   target: 'electron-preload',
 
   entry: {
-    preload: './src/preload.ts'
+    preload: './src/preload.ts',
   },
 
   output: {

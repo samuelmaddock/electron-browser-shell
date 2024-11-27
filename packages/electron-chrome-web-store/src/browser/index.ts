@@ -61,7 +61,7 @@ function getExtensionInfo(ext: Electron.Extension) {
 function getExtensionInstallStatus(
   state: WebStoreState,
   extensionId: ExtensionId,
-  manifest?: chrome.runtime.Manifest
+  manifest?: chrome.runtime.Manifest,
 ) {
   if (state.denylist?.has(extensionId)) {
     return ExtensionInstallStatus.BLOCKED_BY_POLICY
@@ -95,7 +95,7 @@ async function fetchCrx(extensionId: ExtensionId) {
   // Download extension from Chrome Web Store
   const chromeVersion = process.versions.chrome
   const response = await net.fetch(
-    `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${extensionId}%26uc&prodversion=${chromeVersion}`
+    `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${extensionId}%26uc&prodversion=${chromeVersion}`,
   )
 
   if (!response.ok) {
@@ -207,7 +207,7 @@ export async function downloadExtension(extensionId: ExtensionId, destDir: strin
 
 async function uninstallExtension(
   { session, extensionsPath }: WebStoreState,
-  extensionId: ExtensionId
+  extensionId: ExtensionId,
 ) {
   const extensions = session.getAllExtensions()
   const existingExt = extensions.find((ext) => ext.id === extensionId)
@@ -294,7 +294,7 @@ function addIpcListeners(webStoreState: WebStoreState) {
   /** Handle IPCs from the Chrome Web Store. */
   const handle = (
     channel: string,
-    handle: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
+    handle: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any,
   ) => {
     ipcMain.handle(channel, async function handleWebStoreIpc(event, ...args) {
       d('received %s', channel)
@@ -357,7 +357,7 @@ function addIpcListeners(webStoreState: WebStoreState) {
   handle('chromeWebstore.getFullChromeVersion', async () => {
     return {
       version_number: process.versions.chrome,
-      app_name: app.getName()
+      app_name: app.getName(),
     }
   })
 
@@ -440,7 +440,7 @@ function addIpcListeners(webStoreState: WebStoreState) {
         console.error(error)
         return Result.UNKNOWN_ERROR
       }
-    }
+    },
   )
 }
 

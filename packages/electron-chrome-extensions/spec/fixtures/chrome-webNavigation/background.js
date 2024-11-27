@@ -19,7 +19,7 @@ const logEvent = (eventName) => {
   if (eventName) eventLog.push(eventName)
   if (typeof activeTabId === 'undefined') return
 
-  eventLog.forEach(eventName => {
+  eventLog.forEach((eventName) => {
     chrome.tabs.sendMessage(activeTabId, { name: 'logEvent', args: eventName })
   })
 

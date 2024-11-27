@@ -32,7 +32,6 @@ const base = {
     // new webpack.EnvironmentPlugin({
     //   NODE_ENV: 'production',
     // }),
-
   ],
 }
 

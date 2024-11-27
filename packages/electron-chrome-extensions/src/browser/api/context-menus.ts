@@ -48,7 +48,7 @@ const matchesConditions = (
     contextTypes: Set<ContextMenuType>
     targetUrl?: string
     documentUrl?: string
-  }
+  },
 ) => {
   if (props.visible === false) return false
 
@@ -173,7 +173,7 @@ export class ContextMenusAPI {
 
   buildMenuItemsForParams(
     webContents: Electron.WebContents,
-    params: Electron.ContextMenuParams
+    params: Electron.ContextMenuParams,
   ): Electron.MenuItem[] {
     if (webContents.session !== this.ctx.session) return []
 
@@ -229,7 +229,7 @@ export class ContextMenusAPI {
                   ...opt.props,
                   parentId: groupId,
                 },
-              }
+              },
         )
 
         menuItemOptions = [...menuItemOptions, groupMenuItemOptions, ...children]
@@ -245,7 +245,7 @@ export class ContextMenusAPI {
 
   private buildMenuItemsForExtension(
     extensionId: string,
-    menuType: ContextMenuType
+    menuType: ContextMenuType,
   ): Electron.MenuItem[] {
     const extensionItems = this.menus.get(extensionId)
     const extension = this.ctx.session.getExtension(extensionId)
@@ -303,7 +303,7 @@ export class ContextMenusAPI {
     extensionId: string,
     menuItemId: string,
     webContents: Electron.WebContents,
-    params?: Electron.ContextMenuParams
+    params?: Electron.ContextMenuParams,
   ) {
     if (webContents.isDestroyed()) return
 

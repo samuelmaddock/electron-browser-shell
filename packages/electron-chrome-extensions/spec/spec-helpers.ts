@@ -86,7 +86,7 @@ class RemoteControlApp {
               resolve(ret.result)
             }
           })
-        }
+        },
       )
       req.write(js)
       req.end()

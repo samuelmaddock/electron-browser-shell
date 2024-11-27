@@ -75,13 +75,13 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     if (!license) {
       throw new Error(
-        `ElectronChromeExtensions: Missing 'license' property.\n${getLicenseNotice()}`
+        `ElectronChromeExtensions: Missing 'license' property.\n${getLicenseNotice()}`,
       )
     }
 
     if (!VALID_LICENSES.includes(license) && (license as any) !== INTERNAL_LICENSE) {
       throw new Error(
-        `ElectronChromeExtensions: Invalid 'license' property: ${license}\n${getLicenseNotice()}`
+        `ElectronChromeExtensions: Invalid 'license' property: ${license}\n${getLicenseNotice()}`,
       )
     }
 
@@ -140,7 +140,7 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     if (!preloadExists) {
       console.error(
-        `Unable to access electron-chrome-extensions preload file (${preloadPath}). Consider configuring the 'modulePath' constructor option.`
+        `Unable to access electron-chrome-extensions preload file (${preloadPath}). Consider configuring the 'modulePath' constructor option.`,
       )
     }
   }

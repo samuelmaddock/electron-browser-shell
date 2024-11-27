@@ -84,7 +84,7 @@ class RoutingDelegate {
   private onAddListener = (
     event: Electron.IpcMainInvokeEvent,
     extensionId: string,
-    eventName: string
+    eventName: string,
   ) => {
     const observer = this.sessionMap.get(event.sender.session)
     const listener: EventListener = { host: event.sender, extensionId }
@@ -94,7 +94,7 @@ class RoutingDelegate {
   private onRemoveListener = (
     event: Electron.IpcMainInvokeEvent,
     extensionId: string,
-    eventName: string
+    eventName: string,
   ) => {
     const observer = this.sessionMap.get(event.sender.session)
     const listener: EventListener = { host: event.sender, extensionId }
@@ -148,7 +148,7 @@ export class ExtensionRouter {
 
   constructor(
     public session: Electron.Session,
-    private delegate: RoutingDelegate = RoutingDelegate.get()
+    private delegate: RoutingDelegate = RoutingDelegate.get(),
   ) {
     this.delegate.addObserver(this)
 

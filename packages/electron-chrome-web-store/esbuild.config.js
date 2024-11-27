@@ -1,7 +1,7 @@
-const packageJson = require('./package.json');
+const packageJson = require('./package.json')
 const { createConfig, build } = require('../../build/esbuild/esbuild.config.base')
 
-console.log(`building ${packageJson.name}`);
+console.log(`building ${packageJson.name}`)
 
 const browserConfig = createConfig({
   entryPoints: ['src/browser/index.ts'],

@@ -21,7 +21,7 @@ describe('chrome.browserAction', () => {
     partition: string,
     webContents: WebContents,
     extension: Extension,
-    tabId: number = -1
+    tabId: number = -1,
   ) => {
     const details = {
       eventType: 'click',
@@ -158,7 +158,7 @@ describe('chrome.browserAction', () => {
       const [popup] = await popupPromise
       await popup.whenReady()
       expect(popup.browserWindow.webContents.getURL()).to.equal(
-        `chrome-extension://${browser.extension.id}/${popupPath}`
+        `chrome-extension://${browser.extension.id}/${popupPath}`,
       )
     })
   })
@@ -171,7 +171,7 @@ describe('chrome.browserAction', () => {
     })
 
     const getExtensionActionIds = async (
-      webContents: Electron.WebContents = browser.webContents
+      webContents: Electron.WebContents = browser.webContents,
     ) => {
       // Await update propagation to avoid flaky tests
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -182,7 +182,7 @@ describe('chrome.browserAction', () => {
           const actions = list.shadowRoot!.querySelectorAll('.action')
           const ids = Array.from(actions).map((elem) => elem.id)
           return ids
-        }})();`
+        }})();`,
       )
     }
 
@@ -204,7 +204,7 @@ describe('chrome.browserAction', () => {
           const list = document.createElement('browser-action-list')
           list.setAttribute('partition', partition)
           document.body.appendChild(list)
-        }})('${browser.partition}');`
+        }})('${browser.partition}');`,
       )
 
       const extensionIds = await getExtensionActionIds(remoteTab)

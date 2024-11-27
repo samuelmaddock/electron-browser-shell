@@ -73,7 +73,7 @@ export const injectBrowserAction = () => {
     const DEFAULT_PARTITION = '_self'
 
     // Access from globalThis to prevent accessing incorrect minified variable.
-    const browserAction: typeof __browserAction__ = (globalThis as any).browserAction;
+    const browserAction: typeof __browserAction__ = (globalThis as any).browserAction
 
     class BrowserActionElement extends HTMLButtonElement {
       private updateId?: number
@@ -356,7 +356,7 @@ export const injectBrowserAction = () => {
           await browserAction.getState(this.partition || DEFAULT_PARTITION)
         } catch {
           console.error(
-            `browser-action-list failed to update [tab: ${this.tab}, partition: '${this.partition}']`
+            `browser-action-list failed to update [tab: ${this.tab}, partition: '${this.partition}']`,
           )
         }
       }
@@ -368,7 +368,7 @@ export const injectBrowserAction = () => {
         // Create or update action buttons
         for (const action of state.actions) {
           let browserActionNode = this.shadowRoot?.querySelector(
-            `[id=${action.id}]`
+            `[id=${action.id}]`,
           ) as BrowserActionElement
 
           if (!browserActionNode) {
@@ -388,7 +388,7 @@ export const injectBrowserAction = () => {
 
         // Remove any actions no longer in use
         const actionNodes = Array.from(
-          this.shadowRoot?.querySelectorAll('.action') as any
+          this.shadowRoot?.querySelectorAll('.action') as any,
         ) as BrowserActionElement[]
         for (const actionNode of actionNodes) {
           if (!state.actions.some((action: any) => action.id === actionNode.id)) {

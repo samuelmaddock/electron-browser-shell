@@ -43,7 +43,7 @@ export const waitForEvent = (target: EventTarget, eventName: string) => {
 export const emittedOnce = (
   emitter: NodeJS.EventEmitter,
   eventName: string,
-  trigger?: () => void
+  trigger?: () => void,
 ) => {
   return emittedNTimes(emitter, eventName, 1, trigger).then(([result]) => result)
 }
@@ -52,7 +52,7 @@ export const emittedNTimes = async (
   emitter: NodeJS.EventEmitter,
   eventName: string,
   times: number,
-  trigger?: () => void
+  trigger?: () => void,
 ) => {
   const events: any[][] = []
   const p = new Promise<any[][]>((resolve) => {
@@ -74,7 +74,7 @@ export const emittedNTimes = async (
 export const emittedUntil = async (
   emitter: NodeJS.EventEmitter,
   eventName: string,
-  untilFn: Function
+  untilFn: Function,
 ) => {
   const p = new Promise<any[]>((resolve) => {
     const handler = (...args: any[]) => {

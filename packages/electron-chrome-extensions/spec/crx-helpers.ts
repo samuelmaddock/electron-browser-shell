@@ -39,7 +39,7 @@ const isBackgroundHostSupported = (extension: Electron.Extension) =>
 
 export const waitForBackgroundPage = async (
   extension: Electron.Extension,
-  session: Electron.Session
+  session: Electron.Session,
 ) => {
   if (!isBackgroundHostSupported(extension)) return
 
@@ -76,7 +76,7 @@ export const waitForBackgroundPage = async (
 
 export async function waitForBackgroundScriptEvaluated(
   extension: Electron.Extension,
-  session: Electron.Session
+  session: Electron.Session,
 ) {
   if (!isBackgroundHostSupported(extension)) return
 

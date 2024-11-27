@@ -26,7 +26,7 @@ const getBody = (opts: chrome.notifications.NotificationOptions) => {
 }
 
 const getUrgency = (
-  priority?: number
+  priority?: number,
 ): Required<Electron.NotificationConstructorOptions>['urgency'] => {
   if (typeof priority !== 'number') {
     return 'normal'
@@ -157,7 +157,7 @@ export class NotificationsAPI {
   private update = (
     { extension }: ExtensionEvent,
     id: string,
-    opts: chrome.notifications.NotificationOptions
+    opts: chrome.notifications.NotificationOptions,
   ) => {
     const notificationId = createScopedIdentifier(extension, id)
 

@@ -14,7 +14,7 @@ interface WebstorePrivate {
 
   beginInstallWithManifest3: (
     details: unknown,
-    callback?: (result: string) => void
+    callback?: (result: string) => void,
   ) => Promise<string>
   completeInstall: (id: string, callback?: (result: string) => void) => Promise<string>
   enableAppLauncher: (enable: boolean, callback?: (result: boolean) => void) => Promise<boolean>
@@ -22,7 +22,7 @@ interface WebstorePrivate {
   getExtensionStatus: (
     id: string,
     manifestJson: string,
-    callback?: (status: string) => void
+    callback?: (status: string) => void,
   ) => Promise<string>
   getFullChromeVersion: (callback?: (result: string) => void) => Promise<{
     version_number: string
@@ -36,7 +36,7 @@ interface WebstorePrivate {
   install: (
     id: string,
     silentInstall: boolean,
-    callback?: (result: string) => void
+    callback?: (result: string) => void,
   ) => Promise<string>
   isInIncognitoMode: (callback?: (result: boolean) => void) => Promise<boolean>
   isPendingCustodianApproval: (id: string, callback?: (result: boolean) => void) => Promise<boolean>
@@ -47,7 +47,7 @@ function updateBranding(appName: string) {
   const update = () => {
     requestAnimationFrame(() => {
       const chromeButtons = Array.from(document.querySelectorAll('span')).filter((node) =>
-        node.innerText.includes('Chrome')
+        node.innerText.includes('Chrome'),
       )
 
       for (const button of chromeButtons) {

@@ -93,7 +93,7 @@ export class BrowserActionAPI {
     const setDetails = (
       { extension }: ExtensionEvent,
       details: any,
-      propName: ExtensionActionKey
+      propName: ExtensionActionKey,
     ) => {
       const { tabId } = details
       let value = (details as any)[propName] || undefined
@@ -138,7 +138,7 @@ export class BrowserActionAPI {
       (event, { tabId, ...details }: chrome.browserAction.TabIconDetails) => {
         setDetails(event, { tabId, icon: details }, 'icon')
         setDetails(event, { tabId, iconModified: Date.now() }, 'iconModified')
-      }
+      },
     )
 
     // browserAction preload API
@@ -154,7 +154,7 @@ export class BrowserActionAPI {
           this.observers.delete(webContents)
         })
       },
-      preloadOpts
+      preloadOpts,
     )
     handle(
       'browserAction.removeObserver',
@@ -162,7 +162,7 @@ export class BrowserActionAPI {
         const { sender: webContents } = event
         this.observers.delete(webContents)
       },
-      preloadOpts
+      preloadOpts,
     )
 
     this.ctx.store.on('active-tab-changed', () => {
@@ -196,7 +196,7 @@ export class BrowserActionAPI {
 
   private handleCrxRequest = (
     request: Electron.ProtocolRequest,
-    callback: (response: Electron.ProtocolResponse) => void
+    callback: (response: Electron.ProtocolResponse) => void,
   ) => {
     debug('%s', request.url)
 
@@ -346,7 +346,7 @@ export class BrowserActionAPI {
     const { eventType, extensionId, tabId } = details
 
     debug(
-      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender.id}]`
+      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender.id}]`,
     )
 
     switch (eventType) {
@@ -433,7 +433,7 @@ export class BrowserActionAPI {
 
     const contextMenuItems: MenuItem[] = this.ctx.store.buildMenuItems(
       extensionId,
-      'browser_action'
+      'browser_action',
     )
     if (contextMenuItems.length > 0) {
       contextMenuItems.forEach((item) => menu.append(item))

@@ -113,7 +113,7 @@ export const injectExtensionAPIs = () => {
       }
       addRules(
         rules: chrome.events.Rule[],
-        callback?: ((rules: chrome.events.Rule[]) => void) | undefined
+        callback?: ((rules: chrome.events.Rule[]) => void) | undefined,
       ): void {
         throw new Error('Method not implemented.')
       }
@@ -136,7 +136,9 @@ export const injectExtensionAPIs = () => {
     type APIFactoryMap = {
       [apiName in keyof typeof chrome]: {
         shouldInject?: () => boolean
-        factory: (base: DeepPartial<typeof chrome[apiName]>) => DeepPartial<typeof chrome[apiName]>
+        factory: (
+          base: DeepPartial<(typeof chrome)[apiName]>,
+        ) => DeepPartial<(typeof chrome)[apiName]>
       }
     }
 
@@ -164,7 +166,7 @@ export const injectExtensionAPIs = () => {
                         obj[pair[0]] = imageData2base64(pair[1])
                         return obj
                       },
-                      {}
+                      {},
                     )
                   }
                 }
@@ -223,7 +225,7 @@ export const injectExtensionAPIs = () => {
             ...base,
             create: function (
               createProperties: chrome.contextMenus.CreateProperties,
-              callback?: Function
+              callback?: Function,
             ) {
               if (typeof createProperties.id === 'undefined') {
                 createProperties.id = `${++menuCounter}`
@@ -340,13 +342,13 @@ export const injectExtensionAPIs = () => {
                   { active: true, windowId: chrome.windows.WINDOW_ID_CURRENT },
                   ([activeTab]: chrome.tabs.Tab[]) => {
                     api.executeScript(activeTab.id, arg1, arg2)
-                  }
+                  },
                 )
               } else {
                 ;(base.executeScript as typeof chrome.tabs.executeScript)(
                   arg1 as number,
                   arg2 as chrome.tabs.InjectDetails,
-                  arg3 as () => {}
+                  arg3 as () => {},
                 )
               }
             },
@@ -380,13 +382,13 @@ export const injectExtensionAPIs = () => {
             onCommitted: new ExtensionEvent('webNavigation.onCommitted'),
             onCompleted: new ExtensionEvent('webNavigation.onCompleted'),
             onCreatedNavigationTarget: new ExtensionEvent(
-              'webNavigation.onCreatedNavigationTarget'
+              'webNavigation.onCreatedNavigationTarget',
             ),
             onDOMContentLoaded: new ExtensionEvent('webNavigation.onDOMContentLoaded'),
             onErrorOccurred: new ExtensionEvent('webNavigation.onErrorOccurred'),
             onHistoryStateUpdated: new ExtensionEvent('webNavigation.onHistoryStateUpdated'),
             onReferenceFragmentUpdated: new ExtensionEvent(
-              'webNavigation.onReferenceFragmentUpdated'
+              'webNavigation.onReferenceFragmentUpdated',
             ),
             onTabReplaced: new ExtensionEvent('webNavigation.onTabReplaced'),
           }

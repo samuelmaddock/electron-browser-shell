@@ -158,11 +158,11 @@ export class PopupView {
     if (!this.browserWindow || !this.parent) return
 
     const width = Math.floor(
-      Math.min(PopupView.BOUNDS.maxWidth, Math.max(rect.width || 0, PopupView.BOUNDS.minWidth))
+      Math.min(PopupView.BOUNDS.maxWidth, Math.max(rect.width || 0, PopupView.BOUNDS.minWidth)),
     )
 
     const height = Math.floor(
-      Math.min(PopupView.BOUNDS.maxHeight, Math.max(rect.height || 0, PopupView.BOUNDS.minHeight))
+      Math.min(PopupView.BOUNDS.maxHeight, Math.max(rect.height || 0, PopupView.BOUNDS.minHeight)),
     )
 
     debug(`setSize`, { width, height })
@@ -223,7 +223,7 @@ export class PopupView {
       `((${() => {
         const rect = document.body.getBoundingClientRect()
         return { width: rect.width, height: rect.height }
-      }})())`
+      }})())`,
     )
 
     if (this.destroyed) return

@@ -45,7 +45,7 @@ async function ensureWindowIsClosed(window: BrowserWindow | null) {
 
 export const closeWindow = async (
   window: BrowserWindow | null = null,
-  { assertNotWindows } = { assertNotWindows: true }
+  { assertNotWindows } = { assertNotWindows: true },
 ) => {
   await ensureWindowIsClosed(window)
 

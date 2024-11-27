@@ -63,7 +63,7 @@ export class WebNavigationAPI {
 
   private getFrame(
     event: ExtensionEvent,
-    details: chrome.webNavigation.GetFrameDetails
+    details: chrome.webNavigation.GetFrameDetails,
   ): chrome.webNavigation.GetFrameResultDetails | null {
     const tab = this.ctx.store.getTabById(details.tabId)
     if (!tab) return null
@@ -86,7 +86,7 @@ export class WebNavigationAPI {
 
   private getAllFrames(
     event: ExtensionEvent,
-    details: chrome.webNavigation.GetFrameDetails
+    details: chrome.webNavigation.GetFrameDetails,
   ): chrome.webNavigation.GetAllFrameResultDetails[] | null {
     const tab = this.ctx.store.getTabById(details.tabId)
     if (!tab || !('mainFrame' in tab)) return []
@@ -152,7 +152,7 @@ export class WebNavigationAPI {
     httpStatusText: string,
     isMainFrame: boolean,
     frameProcessId: number,
-    frameRoutingId: number
+    frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
@@ -172,7 +172,7 @@ export class WebNavigationAPI {
     url: string,
     isMainFrame: boolean,
     frameProcessId: number,
-    frameRoutingId: number
+    frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
@@ -211,7 +211,7 @@ export class WebNavigationAPI {
     event: Electron.Event,
     isMainFrame: boolean,
     frameProcessId: number,
-    frameRoutingId: number
+    frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
     const url = tab.getURL()

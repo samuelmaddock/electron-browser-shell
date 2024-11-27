@@ -67,7 +67,7 @@ export enum ResizeType {
 export const matchSize = (
   imageSet: { [key: number]: string },
   size: number,
-  match: ResizeType
+  match: ResizeType,
 ): string | undefined => {
   // TODO: match based on size
   const first = parseInt(Object.keys(imageSet).pop()!, 10)
@@ -78,7 +78,7 @@ export const matchSize = (
 export const getIconPath = (
   extension: Electron.Extension,
   iconSize: number = 32,
-  resizeType = ResizeType.Up
+  resizeType = ResizeType.Up,
 ) => {
   const { browser_action, icons } = getExtensionManifest(extension)
   const { default_icon } = browser_action || {}

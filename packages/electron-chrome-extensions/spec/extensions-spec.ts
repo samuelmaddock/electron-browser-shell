@@ -6,7 +6,7 @@ describe('Extensions', () => {
   const testSession = session.fromPartition('test-extensions')
   const extensions = new ElectronChromeExtensions({
     license: 'internal-license-do-not-use' as any,
-    session: testSession
+    session: testSession,
   })
 
   it('retrieves the instance with fromSession()', () => {

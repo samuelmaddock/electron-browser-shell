@@ -39,7 +39,7 @@ export class CookiesAPI {
 
   private async get(
     event: ExtensionEvent,
-    details: chrome.cookies.Details
+    details: chrome.cookies.Details,
   ): Promise<chrome.cookies.Cookie | null> {
     // TODO: storeId
     const cookies = await this.cookies.get({
@@ -55,7 +55,7 @@ export class CookiesAPI {
 
   private async getAll(
     event: ExtensionEvent,
-    details: chrome.cookies.GetAllDetails
+    details: chrome.cookies.GetAllDetails,
   ): Promise<chrome.cookies.Cookie[]> {
     // TODO: storeId
     const cookies = await this.cookies.get({
@@ -72,7 +72,7 @@ export class CookiesAPI {
 
   private async set(
     event: ExtensionEvent,
-    details: chrome.cookies.SetDetails
+    details: chrome.cookies.SetDetails,
   ): Promise<chrome.cookies.Cookie | null> {
     await this.cookies.set(details)
     const cookies = await this.cookies.get(details)
@@ -81,7 +81,7 @@ export class CookiesAPI {
 
   private async remove(
     event: ExtensionEvent,
-    details: chrome.cookies.Details
+    details: chrome.cookies.Details,
   ): Promise<chrome.cookies.Details | null> {
     try {
       await this.cookies.remove(details.url, details.name)
@@ -98,7 +98,12 @@ export class CookiesAPI {
     return [{ id: CookieStoreID.Default, tabIds }]
   }
 
-  private onChanged = (event: Electron.Event, cookie: Electron.Cookie, cause: string, removed: boolean) => {
+  private onChanged = (
+    event: Electron.Event,
+    cookie: Electron.Cookie,
+    cause: string,
+    removed: boolean,
+  ) => {
     const changeInfo: chrome.cookies.CookieChangeInfo = {
       cause: onChangedCauseTranslation[cause] || cause,
       cookie: createCookieDetails(cookie),

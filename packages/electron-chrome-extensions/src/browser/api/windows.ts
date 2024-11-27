@@ -112,7 +112,7 @@ export class WindowsAPI {
   private async update(
     event: ExtensionEvent,
     windowId: number,
-    updateProperties: chrome.windows.UpdateInfo = {}
+    updateProperties: chrome.windows.UpdateInfo = {},
   ) {
     const win = this.getWindowFromId(windowId)
     if (!win) return

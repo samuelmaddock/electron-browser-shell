@@ -20,7 +20,8 @@
     "start:skip-build": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn --cwd ./packages/shell start",
     "test": "yarn test:extensions",
     "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css}\""
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
@@ -41,7 +42,6 @@
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
-    "jsonEnable": false,
     "semi": false,
     "endOfLine": "lf"
   }

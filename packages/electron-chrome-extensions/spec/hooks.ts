@@ -30,7 +30,7 @@ export const useServer = () => {
       server.listen(0, '127.0.0.1', () => {
         url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`
         resolve()
-      })
+      }),
     )
   })
   after(() => {
@@ -139,7 +139,7 @@ export const useExtensionBrowser = (opts: {
       async eventOnce(eventName: string) {
         const p = emittedOnce(ipcMain, 'success')
         await w.webContents.executeJavaScript(
-          `exec('${JSON.stringify({ type: 'event-once', name: eventName })}')`
+          `exec('${JSON.stringify({ type: 'event-once', name: eventName })}')`,
         )
         const [, results] = await p
 
