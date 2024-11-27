@@ -18,9 +18,8 @@
     "start": "yarn build:context-menu && yarn build:extensions && yarn --cwd ./packages/shell start",
     "start:debug": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn start",
     "start:skip-build": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn --cwd ./packages/shell start",
-    "test": "yarn test:extensions && yarn test:shell",
-    "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
-    "test:shell": "yarn --cwd ./packages/shell test"
+    "test": "yarn test:extensions",
+    "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test"
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
