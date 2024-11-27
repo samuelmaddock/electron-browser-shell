@@ -19,15 +19,24 @@
     "start:debug": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn start",
     "start:skip-build": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn --cwd ./packages/shell start",
     "test": "yarn test:extensions",
-    "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test"
+    "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
+    "prepare": "husky"
   },
   "license": "GPL-3.0",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "dependencies": {},
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.1"
+  },
   "repository": "git@github.com:samuelmaddock/electron-browser-shell.git",
   "engines": {
     "node": ">= 16.0.0",
     "yarn": ">= 1.10.0 < 2.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write"
   },
   "prettier": {
     "printWidth": 100,
