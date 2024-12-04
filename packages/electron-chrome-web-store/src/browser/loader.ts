@@ -5,9 +5,10 @@ import { generateId } from './id'
 
 const d = require('debug')('electron-chrome-web-store:loader')
 
+type ExtensionPathBaseInfo = { manifest: chrome.runtime.Manifest; path: string }
 type ExtensionPathInfo =
-  | { type: 'store'; manifest: chrome.runtime.Manifest; path: string; id: string }
-  | { type: 'unpacked'; manifest: chrome.runtime.Manifest; path: string }
+  | ({ type: 'store'; id: string } & ExtensionPathBaseInfo)
+  | ({ type: 'unpacked' } & ExtensionPathBaseInfo)
 
 const manifestExists = async (dirPath: string) => {
   if (!dirPath) return false
