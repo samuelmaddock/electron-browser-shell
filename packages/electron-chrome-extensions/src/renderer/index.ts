@@ -158,7 +158,7 @@ export const injectExtensionAPIs = () => {
               if (manifest.manifest_version === 3) {
                 // TODO(mv3): might need to use offscreen document to serialize
                 console.warn(
-                  'action.setIcon with imageData is not yet supported by electron-chrome-extensions'
+                  'action.setIcon with imageData is not yet supported by electron-chrome-extensions',
                 )
                 details.imageData = undefined
               } else if (details.imageData instanceof ImageData) {
@@ -169,7 +169,7 @@ export const injectExtensionAPIs = () => {
                     obj[pair[0]] = imageData2base64(pair[1])
                     return obj
                   },
-                  {}
+                  {},
                 )
               }
             }
@@ -314,11 +314,11 @@ export const injectExtensionAPIs = () => {
             ...base,
             isAllowedFileSchemeAccess: invokeExtension('extension.isAllowedFileSchemeAccess', {
               noop: true,
-              defaultResponse: false
+              defaultResponse: false,
             }),
             isAllowedIncognitoAccess: invokeExtension('extension.isAllowedIncognitoAccess', {
               noop: true,
-              defaultResponse: false
+              defaultResponse: false,
             }),
             // TODO: Add native implementation
             getViews: () => [],
@@ -415,7 +415,11 @@ export const injectExtensionAPIs = () => {
           const api = {
             ...base,
             create: invokeExtension('tabs.create'),
-            executeScript: async function (arg1: unknown, arg2: unknown, arg3: unknown): Promise<any> {
+            executeScript: async function (
+              arg1: unknown,
+              arg2: unknown,
+              arg3: unknown,
+            ): Promise<any> {
               // Electron's implementation of chrome.tabs.executeScript is in
               // C++, but it doesn't support implicit execution in the active
               // tab. To handle this, we need to get the active tab ID and
@@ -541,8 +545,8 @@ export const injectExtensionAPIs = () => {
     contextBridge.exposeInMainWorld('electron', electronContext)
 
     // Mutate global 'chrome' object with additional APIs in the main world.
-    ;(contextBridge as any).evaluateInMainWorld({
-      func: mainWorldScript
+    ;(contextBridge as any).executeInMainWorld({
+      func: mainWorldScript,
     })
   } catch (error) {
     console.error(`injectExtensionAPIs error (${location.href})`)

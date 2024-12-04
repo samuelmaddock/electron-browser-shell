@@ -21,7 +21,7 @@ const getSessionFromEvent = (event: any): Electron.Session => {
 // TODO(mv3): add types
 const getHostFromEvent = (event: any) => {
   if (event.type === 'service-worker') {
-    const serviceWorker = event.session.serviceWorkers.fromVersionID(event.versionId)
+    const serviceWorker = event.session.serviceWorkers.getWorkerFromVersionID(event.versionId)
     return serviceWorker && !serviceWorker.isDestroyed() ? serviceWorker : null
   } else {
     return event.sender
@@ -72,7 +72,9 @@ class RoutingDelegate {
     const maybeListenForWorkerEvents = ({ runningStatus, versionId }: any) => {
       if (runningStatus !== 'starting') return
 
-      const serviceWorker = (observer.session as any).serviceWorkers.fromVersionID(versionId)
+      const serviceWorker = (observer.session as any).serviceWorkers.getWorkerFromVersionID(
+        versionId,
+      )
       if (
         serviceWorker?.scope?.startsWith('chrome-extension://') &&
         !this.workers.has(serviceWorker)
@@ -209,15 +211,18 @@ export class ExtensionRouter {
       }
     })
 
-    session.serviceWorkers.on('running-status-changed' as any, ({ runningStatus, versionId }: any) => {
-      if (runningStatus !== 'starting') return
+    session.serviceWorkers.on(
+      'running-status-changed' as any,
+      ({ runningStatus, versionId }: any) => {
+        if (runningStatus !== 'starting') return
 
-      const serviceWorker = (session as any).serviceWorkers.fromVersionID(versionId)
-      if (serviceWorker) {
-        debug(`storing reference to background service worker [url:'${serviceWorker.scope}']`)
-        this.extensionWorkers.add(serviceWorker)
-      }
-    })
+        const serviceWorker = (session as any).serviceWorkers.getWorkerFromVersionID(versionId)
+        if (serviceWorker) {
+          debug(`storing reference to background service worker [url:'${serviceWorker.scope}']`)
+          this.extensionWorkers.add(serviceWorker)
+        }
+      },
+    )
   }
 
   private filterListeners(predicate: (listener: EventListener) => boolean) {
@@ -380,7 +385,9 @@ export class ExtensionRouter {
 
       if (host.constructor.name === 'ServiceWorkerMain') {
         if (host.isDestroyed()) {
-          console.error(`Service Worker is destroyed.\nUnable to send '${eventName}' to extension host for ${extensionId}`)
+          console.error(
+            `Service Worker is destroyed.\nUnable to send '${eventName}' to extension host for ${extensionId}`,
+          )
           return
         }
         host.startWorker().then(send)
