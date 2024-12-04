@@ -279,9 +279,12 @@ function setupChromeWebStoreApi() {
   contextBridge.exposeInMainWorld('electronManagement', management)
 
   webFrame.executeJavaScript(`
-    chrome.webstorePrivate = globalThis.electronWebstore;
-    chrome.runtime = globalThis.electronRuntime;
-    chrome.management = globalThis.electronManagement;
+    (function () {
+      chrome.webstorePrivate = globalThis.electronWebstore;
+      Object.assign(chrome.runtime, electronRuntime);
+      Object.assign(chrome.management, electronManagement);
+      void 0;
+    }());
   `)
 
   // Fetch app name
