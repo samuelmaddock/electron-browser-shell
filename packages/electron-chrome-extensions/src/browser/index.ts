@@ -1,4 +1,4 @@
-import { app, session as electronSession } from 'electron'
+import { session as electronSession } from 'electron'
 import { EventEmitter } from 'events'
 import path from 'path'
 import { promises as fs } from 'fs'
@@ -16,14 +16,7 @@ import { ChromeExtensionImpl } from './impl'
 import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
-
-const INTERNAL_LICENSE = 'internal-license-do-not-use'
-const VALID_LICENSES = ['GPL-3.0', 'Patron-License-2020-11-19'] as const
-
-const getLicenseNotice =
-  () => `Please select a distribution license compatible with your application.
-Valid licenses include: ${VALID_LICENSES.join(', ')}
-See LICENSE.md for more details.`
+import { checkLicense, License } from './license'
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
@@ -31,7 +24,7 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
    *
    * See LICENSE.md for more details.
    */
-  license: (typeof VALID_LICENSES)[number]
+  license: License
 
   session?: Electron.Session
 
@@ -73,17 +66,7 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     const { license, session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
 
-    if (!license) {
-      throw new Error(
-        `ElectronChromeExtensions: Missing 'license' property.\n${getLicenseNotice()}`,
-      )
-    }
-
-    if (!VALID_LICENSES.includes(license) && (license as any) !== INTERNAL_LICENSE) {
-      throw new Error(
-        `ElectronChromeExtensions: Invalid 'license' property: ${license}\n${getLicenseNotice()}`,
-      )
-    }
+    checkLicense(license)
 
     if (sessionMap.has(session)) {
       throw new Error(`Extensions instance already exists for the given session`)
