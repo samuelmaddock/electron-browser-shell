@@ -535,10 +535,3 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
     }
   })
 }
-
-/**
- * @deprecated Use `installChromeWebStore`
- */
-export function setupChromeWebStore(session: Electron.Session, modulePath?: string) {
-  installChromeWebStore({ session, modulePath })
-}
