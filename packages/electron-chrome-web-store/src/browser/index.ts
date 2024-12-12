@@ -92,11 +92,27 @@ function getExtensionInstallStatus(
 }
 
 async function fetchCrx(extensionId: ExtensionId) {
-  // Download extension from Chrome Web Store
-  const chromeVersion = process.versions.chrome
-  const response = await net.fetch(
-    `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&x=id%3D${extensionId}%26uc&prodversion=${chromeVersion}`,
-  )
+  // Include fallbacks for node environments that aren't Electron
+  const chromeVersion = process.versions.chrome || '131.0.6778.109'
+  const fetch = net?.fetch || globalThis.fetch
+
+  if (!fetch) {
+    throw new Error('No available fetch implementation')
+  }
+
+  const url = new URL('https://clients2.google.com/service/update2/crx')
+  url.searchParams.append('response', 'redirect')
+  url.searchParams.append('acceptformat', ['crx2', 'crx3'].join(','))
+
+  const x = new URLSearchParams()
+  x.append('id', extensionId)
+  x.append('uc', '')
+
+  url.searchParams.append('x', x.toString())
+  url.searchParams.append('prodversion', chromeVersion)
+
+  const downloadUrl = url.toString()
+  const response = await fetch(downloadUrl)
 
   if (!response.ok) {
     throw new Error('Failed to download extension')
