@@ -531,7 +531,7 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
 
   app.whenReady().then(() => {
     if (loadExtensions) {
-      loadAllExtensions(session, extensionsPath, allowUnpackedExtensions)
+      loadAllExtensions(session, extensionsPath, { allowUnpacked: allowUnpackedExtensions })
     }
   })
 }

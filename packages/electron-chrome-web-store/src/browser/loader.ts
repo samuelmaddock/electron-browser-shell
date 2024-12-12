@@ -105,7 +105,9 @@ async function discoverExtensions(extensionsPath: string): Promise<ExtensionPath
 export async function loadAllExtensions(
   session: Electron.Session,
   extensionsPath: string,
-  allowUnpacked: boolean,
+  options: {
+    allowUnpacked?: boolean
+  } = {},
 ) {
   const extensions = await discoverExtensions(extensionsPath)
   d('discovered %d extension(s) in %s', extensions.length, extensionsPath)
@@ -120,7 +122,7 @@ export async function loadAllExtensions(
         }
         d('loading extension %s', ext.id)
         await session.loadExtension(ext.path)
-      } else if (allowUnpacked) {
+      } else if (options.allowUnpacked) {
         d('loading unpacked extension %s', ext.path)
         await session.loadExtension(ext.path)
       }
