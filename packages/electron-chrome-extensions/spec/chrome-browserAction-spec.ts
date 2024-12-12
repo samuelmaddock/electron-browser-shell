@@ -43,10 +43,14 @@ describe('chrome.browserAction', () => {
     it('supports cross-session communication', async () => {
       const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
 
-      // TODO(mv3): remove any
-      ;(browser.session as any).getPreloadScripts().forEach((script) => {
-        ;(otherSession as any).registerPreloadScript(script)
-      })
+      if ('registerPreloadScript' in otherSession) {
+        // TODO(mv3): remove any
+        ;(browser.session as any).getPreloadScripts().forEach((script: any) => {
+          ;(otherSession as any).registerPreloadScript(script)
+        })
+      } else {
+        otherSession.setPreloads(browser.session.getPreloads())
+      }
 
       const view = new BrowserView({
         webPreferences: { session: otherSession, nodeIntegration: false, contextIsolation: true },

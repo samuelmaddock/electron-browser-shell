@@ -104,18 +104,23 @@ export class ElectronChromeExtensions extends EventEmitter {
   private async prependPreload() {
     const { session } = this.ctx
 
-    // TODO(mv3): remove 'any'
     const preloadPath = path.join(this.modulePath, 'dist/preload.js')
-    ;(session as any).registerPreloadScript({
-      id: 'crx-mv2-preload',
-      type: 'frame',
-      filePath: preloadPath,
-    })
-    ;(session as any).registerPreloadScript({
-      id: 'crx-mv3-preload',
-      type: 'service-worker',
-      filePath: preloadPath,
-    })
+
+    if ('registerPreloadScript' in session) {
+      // TODO(mv3): remove 'any'
+      ;(session as any).registerPreloadScript({
+        id: 'crx-mv2-preload',
+        type: 'frame',
+        filePath: preloadPath,
+      })
+      ;(session as any).registerPreloadScript({
+        id: 'crx-mv3-preload',
+        type: 'service-worker',
+        filePath: preloadPath,
+      })
+    } else {
+      session.setPreloads([...session.getPreloads(), preloadPath])
+    }
 
     let preloadExists = false
     try {

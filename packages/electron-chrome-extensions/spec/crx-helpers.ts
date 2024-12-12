@@ -14,12 +14,17 @@ export const createCrxSession = () => {
 }
 
 export const addCrxPreload = (session: Electron.Session) => {
-  // TODO(mv3): remove any
-  (session as any).registerPreloadScript({
-    id: 'crx-test-preload',
-    type: 'frame',
-    filePath: path.join(__dirname, 'fixtures', 'crx-test-preload.js')
-  })
+  const preloadPath = path.join(__dirname, 'fixtures', 'crx-test-preload.js')
+  if ('registerPreloadScript' in session) {
+    // TODO(mv3): remove any
+    ;(session as any).registerPreloadScript({
+      id: 'crx-test-preload',
+      type: 'frame',
+      filePath: preloadPath,
+    })
+  } else {
+    session.setPreloads([...session.getPreloads(), preloadPath])
+  }
 }
 
 export const createCrxRemoteWindow = () => {

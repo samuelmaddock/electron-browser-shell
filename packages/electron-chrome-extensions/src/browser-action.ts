@@ -405,9 +405,14 @@ export const injectBrowserAction = () => {
     contextBridge.exposeInMainWorld('browserAction', __browserAction__)
 
     // Must execute script in main world to modify custom component registry.
-    ;(contextBridge as any).executeInMainWorld({
-      func: mainWorldScript,
-    })
+    if ('executeInMainWorld' in contextBridge) {
+      ;(contextBridge as any).executeInMainWorld({
+        func: mainWorldScript,
+      })
+    } else {
+      // TODO(mv3): remove webFrame usage
+      webFrame.executeJavaScript(`(${mainWorldScript}());`)
+    }
   } else {
     // When contextIsolation is disabled, contextBridge will throw an error.
     // If that's the case, we're in the main world so we can just execute our

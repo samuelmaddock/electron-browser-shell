@@ -525,7 +525,17 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
 
   // Add preload script to session
   const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
-  session.setPreloads([...session.getPreloads(), preloadPath])
+
+  if ('registerPreloadScript' in session) {
+    ;(session as any).registerPreloadScript({
+      id: 'electron-chrome-web-store',
+      type: 'frame',
+      filePath: preloadPath,
+    })
+  } else {
+    // TODO(mv3): remove
+    session.setPreloads([...session.getPreloads(), preloadPath])
+  }
 
   addIpcListeners(webStoreState)
 

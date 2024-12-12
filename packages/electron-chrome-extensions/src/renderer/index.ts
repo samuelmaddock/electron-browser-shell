@@ -545,9 +545,14 @@ export const injectExtensionAPIs = () => {
     contextBridge.exposeInMainWorld('electron', electronContext)
 
     // Mutate global 'chrome' object with additional APIs in the main world.
-    ;(contextBridge as any).executeInMainWorld({
-      func: mainWorldScript,
-    })
+    if ('executeInMainWorld' in contextBridge) {
+      ;(contextBridge as any).executeInMainWorld({
+        func: mainWorldScript,
+      })
+    } else {
+      // TODO(mv3): remove webFrame usage
+      webFrame.executeJavaScript(`(${mainWorldScript}());`)
+    }
   } catch (error) {
     console.error(`injectExtensionAPIs error (${location.href})`)
     console.error(error)
