@@ -20,8 +20,9 @@ A minimal, tabbed web browser with support for Chrome extensions—built on Elec
 git clone git@github.com:samuelmaddock/electron-browser-shell.git
 cd electron-browser-shell
 
-# Install and launch the browser
+# Install, build the necessary packages and launch the browser
 yarn
+yarn build
 yarn start
 ```
 
