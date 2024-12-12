@@ -4,7 +4,7 @@
   "description": "Download extensions from the Chrome Web Store in Electron",
   "main": "dist/browser/index.js",
   "scripts": {
-    "build": "yarn clean && node esbuild.config.js",
+    "build": "yarn clean && tsc && node esbuild.config.js",
     "clean": "node ../../scripts/clean.js",
     "prepublish": "NODE_ENV=production yarn build"
   },
