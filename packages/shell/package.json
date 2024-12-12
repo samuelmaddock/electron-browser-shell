@@ -15,8 +15,8 @@
   "private": true,
   "dependencies": {
     "electron-chrome-context-menu": "^1.0.1",
-    "electron-chrome-web-store": "*",
     "electron-chrome-extensions": "^4.0.0",
+    "electron-chrome-web-store": "^0.2.0",
     "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {
