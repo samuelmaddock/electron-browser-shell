@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-web-store",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Download extensions from the Chrome Web Store in Electron",
   "main": "dist/browser/index.js",
   "scripts": {
