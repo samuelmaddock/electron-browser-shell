@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ipcMain } from 'electron'
-import { emittedOnce } from './events-helpers'
+import { once } from 'node:events'
 
 import { useExtensionBrowser, useServer } from './hooks'
 import { uuid } from './spec-helpers'
@@ -13,22 +13,18 @@ describe('chrome.contextMenus', () => {
   })
 
   const getContextMenuItems = async () => {
-    const promise = new Promise<Electron.MenuItem[]>((resolve) => {
-      browser.webContents.once('context-menu', (_, params) => {
-        const items = browser.extensions.getContextMenuItems(browser.webContents, params)
-        resolve(items)
-      })
-    })
-
     // TODO: why is this needed since upgrading to Electron 22?
     await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const contextMenuPromise = once(browser.webContents, 'context-menu')
 
     // Simulate right-click to create context-menu event.
     const opts = { x: 0, y: 0, button: 'right' as any }
     browser.webContents.sendInputEvent({ ...opts, type: 'mouseDown' })
     browser.webContents.sendInputEvent({ ...opts, type: 'mouseUp' })
 
-    return await promise
+    const [, params] = await contextMenuPromise
+    return browser.extensions.getContextMenuItems(browser.webContents, params)
   }
 
   describe('create()', () => {
@@ -74,7 +70,7 @@ describe('chrome.contextMenus', () => {
         onclick: { __IPC_FN__: ipcName },
       })
       const items = await getContextMenuItems()
-      const p = emittedOnce(ipcMain, ipcName)
+      const p = once(ipcMain, ipcName)
       items[0].click()
       await p
     })

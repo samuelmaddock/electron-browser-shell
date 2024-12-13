@@ -42,8 +42,8 @@ const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionActio
     manifest.manifest_version === 3
       ? manifest.action
       : manifest.manifest_version === 2
-      ? manifest.browser_action
-      : undefined
+        ? manifest.browser_action
+        : undefined
   if (typeof browserAction === 'object') {
     const manifestAction: chrome.runtime.ManifestAction = browserAction
     const action: ExtensionAction = {}
@@ -106,7 +106,7 @@ export class BrowserActionAPI {
       const { tabId } = details
       let value = details[propName]
 
-      if (typeof value === 'undefined') {
+      if (typeof value === 'undefined' || value === null) {
         const defaults = getBrowserActionDefaults(extension)
         value = defaults ? defaults[propName] : value
       }

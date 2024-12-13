@@ -54,7 +54,11 @@ const matchesConditions = (
 
   const { contextTypes, targetUrl, documentUrl } = conditions
 
-  const contexts = (Array.isArray(props.contexts) ? props.contexts : [props.contexts]) || DEFAULT_CONTEXTS
+  const contexts = props.contexts
+    ? Array.isArray(props.contexts)
+      ? props.contexts
+      : [props.contexts]
+    : DEFAULT_CONTEXTS
   const inContext = contexts.some((context) => contextTypes.has(context as ContextMenuType))
   if (!inContext) return false
 
