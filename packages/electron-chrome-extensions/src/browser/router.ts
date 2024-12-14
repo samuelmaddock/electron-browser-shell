@@ -128,7 +128,11 @@ class RoutingDelegate {
   ) => {
     const observer = this.sessionMap.get(getSessionFromEvent(event))
     const host = getHostFromEvent(event)
-    const listener: EventListener = { host, extensionId }
+    const type = (event as any).type || 'frame'
+    const listener: EventListener =
+      type === 'service-worker'
+        ? { extensionId, type: (event as any).type }
+        : { extensionId, type: (event as any).type, host }
     return observer?.addListener(listener, extensionId, eventName)
   }
 
@@ -139,7 +143,11 @@ class RoutingDelegate {
   ) => {
     const observer = this.sessionMap.get(getSessionFromEvent(event))
     const host = getHostFromEvent(event)
-    const listener: EventListener = { host, extensionId }
+    const type = (event as any).type || 'frame'
+    const listener: EventListener =
+      type === 'service-worker'
+        ? { extensionId, type: (event as any).type }
+        : { extensionId, type: (event as any).type, host }
     return observer?.removeListener(listener, extensionId, eventName)
   }
 }
@@ -169,7 +177,8 @@ type HandlerMap = Map<EventName, Handler>
 
 interface EventListener {
   // TODO(mv3): host: Electron.WebContents | Electron.ServiceWorkerMain
-  host: any
+  host?: any
+  type: 'service-worker' | 'frame'
   extensionId: string
 }
 
@@ -217,8 +226,15 @@ export class ExtensionRouter {
         if (runningStatus !== 'starting') return
 
         const serviceWorker = (session as any).serviceWorkers.getWorkerFromVersionID(versionId)
-        if (serviceWorker) {
-          debug(`storing reference to background service worker [url:'${serviceWorker.scope}']`)
+        if (!serviceWorker) return
+
+        const { scope } = serviceWorker
+        if (!scope.startsWith('chrome-extension:')) return
+
+        if (this.extensionHosts.has(serviceWorker)) {
+          debug('%s running status changed to %s', scope, runningStatus)
+        } else {
+          debug(`storing reference to background service worker [url:'${scope}']`)
           this.extensionWorkers.add(serviceWorker)
         }
       },
@@ -271,7 +287,9 @@ export class ExtensionRouter {
     } else {
       debug(`adding '${eventName}' event listener for ${extensionId}`)
       eventListeners.push(listener)
-      this.observeListenerHost(listener.host)
+      if (listener.host) {
+        this.observeListenerHost(listener.host)
+      }
     }
   }
 
@@ -356,16 +374,10 @@ export class ExtensionRouter {
    * Sends extension event to the host for the given extension ID if it
    * registered a listener for it.
    */
-  sendEvent(extensionId: string | undefined, eventName: string, ...args: any[]) {
+  sendEvent(targetExtensionId: string | undefined, eventName: string, ...args: any[]) {
     const { listeners } = this
-
     let eventListeners = listeners.get(eventName)
-
-    if (extensionId) {
-      // TODO: extension permissions check
-
-      eventListeners = eventListeners?.filter((el) => el.extensionId === extensionId)
-    }
+    const ipcName = `crx-${eventName}`
 
     if (!eventListeners || eventListeners.length === 0) {
       debug(`ignoring '${eventName}' event with no listeners`)
@@ -373,26 +385,30 @@ export class ExtensionRouter {
     }
 
     let sentCount = 0
-    for (const { host } of eventListeners) {
-      const ipcName = `crx-${eventName}`
-      const send = () => {
+    for (const { type, extensionId, host } of eventListeners) {
+      if (targetExtensionId && targetExtensionId !== extensionId) {
+        continue
+      }
+
+      if (type === 'service-worker') {
+        const scope = `chrome-extension://${extensionId}/`
+        // TODO(mv3): remove any
+        ;(this.session.serviceWorkers as any)
+          .startWorkerForScope(scope)
+          .then((serviceWorker: any) => {
+            serviceWorker.send(ipcName, ...args)
+          })
+          .catch((error: any) => {
+            debug('failed to send %s to %s', eventName, extensionId)
+            console.error(error)
+            process.exit(1)
+          })
+      } else {
         if (host.isDestroyed()) {
           console.error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
           return
         }
         host.send(ipcName, ...args)
-      }
-
-      if (host.constructor.name === 'ServiceWorkerMain') {
-        if (host.isDestroyed()) {
-          console.error(
-            `Service Worker is destroyed.\nUnable to send '${eventName}' to extension host for ${extensionId}`,
-          )
-          return
-        }
-        host.startWorker().then(send)
-      } else {
-        send()
       }
 
       sentCount++
