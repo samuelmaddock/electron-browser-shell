@@ -2,7 +2,7 @@
 
 > Chrome extension API support for Electron.
 
-Electron provides [basic support for Chrome extensions](https://www.electronjs.org/docs/api/extensions)  out of the box. However, it only supports a subset of APIs with a focus on DevTools. Concepts like tabs, popups, and extension actions aren't known to Electron.
+Electron provides [basic support for Chrome extensions](https://www.electronjs.org/docs/api/extensions) out of the box. However, it only supports a subset of APIs with a focus on DevTools. Concepts like tabs, popups, and extension actions aren't known to Electron.
 
 This library aims to bring extension support in Electron up to the level you'd come to expect from a browser like Google Chrome. API behavior is customizable so you can define how to handle things like tab or window creation specific to your application's needs.
 
@@ -14,8 +14,8 @@ npm install electron-chrome-extensions
 
 ## Screenshots
 
-| uBlock Origin | Dark Reader |
-|---|---|
+| uBlock Origin                                                                                                                                                          | Dark Reader                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <img src="https://raw.githubusercontent.com/samuelmaddock/electron-browser-shell/master/packages/electron-chrome-extensions/screenshot-ublock-origin.png" width="405"> | <img src="https://raw.githubusercontent.com/samuelmaddock/electron-browser-shell/master/packages/electron-chrome-extensions/screenshot-dark-reader.png" width="391"> |
 
 ## Usage
@@ -26,20 +26,20 @@ Simple browser using Electron's [default session](https://www.electronjs.org/doc
 
 ```js
 const { app, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
+  (async function main() {
+    await app.whenReady()
 
-(async function main() {
-  await app.whenReady()
+    const extensions = new ElectronChromeExtensions()
+    const browserWindow = new BrowserWindow()
 
-  const extensions = new ElectronChromeExtensions()
-  const browserWindow = new BrowserWindow()
+    // Adds the active tab of the browser
+    extensions.addTab(browserWindow.webContents, browserWindow)
 
-  // Adds the active tab of the browser
-  extensions.addTab(browserWindow.webContents, browserWindow)
-
-  browserWindow.loadURL('https://samuelmaddock.com')
-  browserWindow.show()
-}())
+    browserWindow.loadURL('https://samuelmaddock.com')
+    browserWindow.show()
+  })(),
+)
 ```
 
 ### Advanced
@@ -50,45 +50,45 @@ Multi-tab browser with full support for Chrome extension APIs.
 
 ```js
 const { app, session, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
+  (async function main() {
+    await app.whenReady()
 
-(async function main() {
-  await app.whenReady()
+    const browserSession = session.fromPartition('persist:custom')
 
-  const browserSession = session.fromPartition('persist:custom')
-
-  const extensions = new ElectronChromeExtensions({
-    session: browserSession,
-    createTab(details) {
-      // Optionally implemented for chrome.tabs.create support
-    },
-    selectTab(tab, browserWindow) {
-      // Optionally implemented for chrome.tabs.update support
-    },
-    removeTab(tab, browserWindow) {
-      // Optionally implemented for chrome.tabs.remove support
-    },
-    createWindow(details) {
-      // Optionally implemented for chrome.windows.create support
-    }
-  })
-
-  const browserWindow = new BrowserWindow({
-    webPreferences: {
-      // Same session given to Extensions class
+    const extensions = new ElectronChromeExtensions({
       session: browserSession,
-      // Recommended options for loading remote content
-      sandbox: true,
-      contextIsolation: true
-    }
-  })
+      createTab(details) {
+        // Optionally implemented for chrome.tabs.create support
+      },
+      selectTab(tab, browserWindow) {
+        // Optionally implemented for chrome.tabs.update support
+      },
+      removeTab(tab, browserWindow) {
+        // Optionally implemented for chrome.tabs.remove support
+      },
+      createWindow(details) {
+        // Optionally implemented for chrome.windows.create support
+      },
+    })
 
-  // Adds the active tab of the browser
-  extensions.addTab(browserWindow.webContents, browserWindow)
+    const browserWindow = new BrowserWindow({
+      webPreferences: {
+        // Same session given to Extensions class
+        session: browserSession,
+        // Recommended options for loading remote content
+        sandbox: true,
+        contextIsolation: true,
+      },
+    })
 
-  browserWindow.loadURL('https://samuelmaddock.com')
-  browserWindow.show()
-}())
+    // Adds the active tab of the browser
+    extensions.addTab(browserWindow.webContents, browserWindow)
+
+    browserWindow.loadURL('https://samuelmaddock.com')
+    browserWindow.show()
+  })(),
+)
 ```
 
 ## API
@@ -99,31 +99,31 @@ const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
 #### `new ElectronChromeExtensions([options])`
 
-* `options` Object
-  * `license` String - Distribution license compatible with your application. See LICENSE.md for more details. \
-      Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
-  * `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
-  * `session` Electron.Session (optional) - Session which should support
+- `options` Object
+  - `license` String - Distribution license compatible with your application. See LICENSE.md for more details. \
+     Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
+  - `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
+  - `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
-  * `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
+  - `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
     Called when `chrome.tabs.create` is invoked by an extension. Allows the
     application to handle how tabs are created.
-    * `details` [chrome.tabs.CreateProperties](https://developer.chrome.com/docs/extensions/reference/tabs/#method-create)
-  * `selectTab(webContents, browserWindow)` (optional) - Called when
+    - `details` [chrome.tabs.CreateProperties](https://developer.chrome.com/docs/extensions/reference/tabs/#method-create)
+  - `selectTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.update` is invoked by an extension with the option to set the
     active tab.
-    * `webContents` Electron.WebContents - The tab to be activated.
-    * `browserWindow` Electron.BrowserWindow - The window which owns the tab.
-  * `removeTab(webContents, browserWindow)` (optional) - Called when
+    - `webContents` Electron.WebContents - The tab to be activated.
+    - `browserWindow` Electron.BrowserWindow - The window which owns the tab.
+  - `removeTab(webContents, browserWindow)` (optional) - Called when
     `chrome.tabs.remove` is invoked by an extension.
-    * `webContents` Electron.WebContents - The tab to be removed.
-    * `browserWindow` Electron.BrowserWindow - The window which owns the tab.
-  * `createWindow(details) => Promise<Electron.BrowserWindow>`
+    - `webContents` Electron.WebContents - The tab to be removed.
+    - `browserWindow` Electron.BrowserWindow - The window which owns the tab.
+  - `createWindow(details) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.create` is invoked by an extension.
-    * `details` [chrome.windows.CreateData](https://developer.chrome.com/docs/extensions/reference/windows/#method-create)
-  * `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
+    - `details` [chrome.windows.CreateData](https://developer.chrome.com/docs/extensions/reference/windows/#method-create)
+  - `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.remove` is invoked by an extension.
-    * `browserWindow` Electron.BrowserWindow
+    - `browserWindow` Electron.BrowserWindow
 
 ```ts
 new ElectronChromeExtensions({
@@ -137,7 +137,7 @@ new ElectronChromeExtensions({
   createWindow(details) {
     const window = new BrowserWindow()
     return window
-  }
+  },
 })
 ```
 
@@ -175,7 +175,7 @@ An array of all extension context menu items given the context.
 
 Returns:
 
-* `popup` PopupView - An instance of the popup.
+- `popup` PopupView - An instance of the popup.
 
 Emitted when a popup is created by the `chrome.browserAction` API.
 
@@ -196,7 +196,9 @@ To enable the element on a webpage, you must define a preload script which injec
 #### Browser action example
 
 ##### Preload
+
 Inject the browserAction API to make the `<browser-action-list>` element accessible in your application.
+
 ```js
 import { injectBrowserAction } from 'electron-chrome-extensions/dist/browser-action'
 
@@ -209,7 +211,9 @@ if (location.href === 'webui://browser-chrome.html') {
 > The use of `import` implies that your preload script must be compiled using a JavaScript bundler like Webpack.
 
 ##### Webpage
+
 Add the `<browser-action-list>` element with attributes appropriate for your application.
+
 ```html
 <!-- Show actions for the same session and active tab of current window. -->
 <browser-action-list></browser-action-list>
@@ -253,20 +257,21 @@ The following APIs are supported, in addition to [those already built-in to Elec
 <details>
 <summary>Click to reveal supported APIs</summary>
 
-### [`chrome.browserAction`](https://developer.chrome.com/extensions/browserAction)
+### [`chrome.action`](https://developer.chrome.com/extensions/action)
 
-- [x] chrome.browserAction.setTitle
-- [x] chrome.browserAction.getTitle
-- [x] chrome.browserAction.setIcon
-- [x] chrome.browserAction.setPopup
-- [x] chrome.browserAction.getPopup
-- [x] chrome.browserAction.setBadgeText
-- [x] chrome.browserAction.getBadgeText
-- [x] chrome.browserAction.setBadgeBackgroundColor
-- [x] chrome.browserAction.getBadgeBackgroundColor
-- [ ] chrome.browserAction.enable
-- [ ] chrome.browserAction.disable
-- [x] chrome.browserAction.onClicked
+- [x] chrome.action.setTitle
+- [x] chrome.action.getTitle
+- [x] chrome.action.setIcon
+- [x] chrome.action.setPopup
+- [x] chrome.action.getPopup
+- [x] chrome.action.setBadgeText
+- [x] chrome.action.getBadgeText
+- [x] chrome.action.setBadgeBackgroundColor
+- [x] chrome.action.getBadgeBackgroundColor
+- [ ] chrome.action.enable
+- [ ] chrome.action.disable
+- [x] chrome.action.openPopup
+- [x] chrome.action.onClicked
 
 ### [`chrome.commands`](https://developer.chrome.com/extensions/commands)
 
@@ -394,11 +399,13 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 ## Limitations
 
 ### electron-chrome-extensions
+
 - The latest version of Electron is recommended. Minimum support requires Electron v9.
 - Chrome's Manifest V3 extensions are not yet supported.
 - All background scripts are persistent.
 
 ### electron
+
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
 - Chrome extensions are not supported in non-persistent/incognito sessions.
 - `chrome.webNavigation.onDOMContentLoaded` is only emitted for the top frame until [support for iframes](https://github.com/electron/electron/issues/27344) is added.

@@ -154,6 +154,8 @@ export class BrowserActionAPI {
       },
     )
 
+    handle('browserAction.openPopup', this.openPopup)
+
     // browserAction preload API
     const preloadOpts = { allowRemote: true, extensionContext: false }
     handle('browserAction.getState', this.getState.bind(this), preloadOpts)
@@ -488,6 +490,31 @@ export class BrowserActionAPI {
     menu.popup({
       x: Math.floor(anchorRect.x),
       y: Math.floor(anchorRect.y + anchorRect.height),
+    })
+  }
+
+  private openPopup = (event: ExtensionEvent, options?: chrome.action.OpenPopupOptions) => {
+    const window =
+      typeof options?.windowId === 'number'
+        ? this.ctx.store.getWindowById(options.windowId)
+        : this.ctx.store.getCurrentWindow()
+    if (!window || window.isDestroyed()) {
+      debug('openPopup: window %d destroyed', window?.id)
+      return
+    }
+
+    const activeTab = this.ctx.store.getActiveTabFromWindow(window)
+    if (!activeTab) return
+
+    const [width] = window.getSize()
+    const anchorSize = 64
+
+    this.activateClick({
+      eventType: 'click',
+      extensionId: event.extension.id,
+      tabId: activeTab?.id,
+      // TODO(mv3): get anchor position
+      anchorRect: { x: width - anchorSize, y: 0, width: anchorSize, height: anchorSize },
     })
   }
 

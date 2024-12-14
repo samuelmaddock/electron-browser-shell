@@ -192,6 +192,8 @@ export const injectExtensionAPIs = () => {
         enable: invokeExtension('browserAction.enable', { noop: true }),
         disable: invokeExtension('browserAction.disable', { noop: true }),
 
+        openPopup: invokeExtension('browserAction.openPopup'),
+
         onClicked: new ExtensionEvent('browserAction.onClicked'),
       }
 
