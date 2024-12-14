@@ -401,7 +401,6 @@ export class ExtensionRouter {
           .catch((error: any) => {
             debug('failed to send %s to %s', eventName, extensionId)
             console.error(error)
-            process.exit(1)
           })
       } else {
         if (host.isDestroyed()) {
