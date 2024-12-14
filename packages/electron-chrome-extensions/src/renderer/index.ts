@@ -341,6 +341,7 @@ export const injectExtensionAPIs = () => {
               }
               return Promise.resolve(results)
             },
+            getMessage: (messageName: string) => messageName,
           }
         },
       },
