@@ -40,6 +40,7 @@ const libs = {
   ...webpackBase,
 
   target: 'electron-preload',
+  devtool: false,
 
   entry: {
     'browser-action': './src/browser-action.ts',

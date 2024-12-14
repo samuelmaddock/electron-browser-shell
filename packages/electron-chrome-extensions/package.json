@@ -4,10 +4,11 @@
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "node ../../scripts/clean.js",
     "build": "tsc && webpack",
     "pretest": "esbuild spec/fixtures/crx-test-preload.ts --bundle --external:electron --outfile=spec/fixtures/crx-test-preload.js --platform=node",
     "test": "node ./script/spec-runner.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "yarn clean && NODE_ENV=production yarn build"
   },
   "keywords": [
     "electron",
