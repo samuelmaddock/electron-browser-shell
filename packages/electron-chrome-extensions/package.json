@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-extensions",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Chrome extension support for Electron",
   "main": "dist/index.js",
   "scripts": {
