@@ -4,10 +4,10 @@ const { WebContentsView } = require('electron')
 const toolbarHeight = 64
 
 class Tab {
-  constructor(parentWindow) {
+  constructor(parentWindow, webContentsViewOptions = {}) {
     this.invalidateLayout = this.invalidateLayout.bind(this)
 
-    this.view = new WebContentsView()
+    this.view = new WebContentsView(webContentsViewOptions)
     this.id = this.view.webContents.id
     this.window = parentWindow
     this.webContents = this.view.webContents
@@ -105,8 +105,8 @@ class Tabs extends EventEmitter {
     return this.tabList.find((tab) => tab.id === tabId)
   }
 
-  create() {
-    const tab = new Tab(this.window)
+  create(webContentsViewOptions) {
+    const tab = new Tab(this.window, webContentsViewOptions)
     this.tabList.push(tab)
     if (!this.selected) this.selected = tab
     tab.show() // must be attached to window

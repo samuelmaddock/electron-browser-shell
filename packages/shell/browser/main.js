@@ -263,9 +263,10 @@ class Browser {
         case 'new-window': {
           return {
             action: 'allow',
-            createWindow: () => {
+            outlivesOpener: true,
+            createWindow: ({ webContents: guest, webPreferences }) => {
               const win = this.getWindowFromWebContents(webContents)
-              const tab = win.tabs.create()
+              const tab = win.tabs.create({ webContents: guest, webPreferences })
               tab.loadURL(details.url)
               return tab.webContents
             },
