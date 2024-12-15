@@ -329,10 +329,16 @@ export const injectExtensionAPIs = () => {
       },
 
       i18n: {
+        shouldInject: () => manifest.manifest_version === 3,
         factory: (base) => {
+          // Electron configuration prevented this API from being available.
+          // https://github.com/electron/electron/pull/45031
+          if (base.getMessage) {
+            return base
+          }
+
           return {
             ...base,
-            // TODO(mv3): implement
             getUILanguage: () => 'en-US',
             getAcceptLanguages: (callback: any) => {
               const results = ['en-US']
