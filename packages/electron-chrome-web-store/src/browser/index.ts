@@ -4,7 +4,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
-import { readCrxFileHeader } from './crx3'
+import { readCrxFileHeader, readSignedData } from './crx3'
 import Pbf from 'pbf'
 import {
   ExtensionInstallStatus,
@@ -13,6 +13,7 @@ import {
   WebGlStatus,
 } from '../common/constants'
 import { loadAllExtensions } from './loader'
+import { convertHexadecimalToIDAlphabet, generateId } from './id'
 export { loadAllExtensions } from './loader'
 
 const d = require('debug')('electron-chrome-web-store')
@@ -153,13 +154,27 @@ function parseCrx(buffer: Buffer): CrxInfo {
   } else {
     // For CRX3, extract public key from header
     // CRX3 header contains a protocol buffer message
-    const pbf = new Pbf(header)
-    const crxFileHeader = readCrxFileHeader(pbf)
-    publicKey = crxFileHeader.sha256_with_rsa[1]?.public_key
+    const crxFileHeader = readCrxFileHeader(new Pbf(header))
+    const crxSignedData = readSignedData(new Pbf(crxFileHeader.signed_header_data))
+    const declaredCrxId = crxSignedData.crx_id
+      ? convertHexadecimalToIDAlphabet(crxSignedData.crx_id.toString('hex'))
+      : null
 
-    if (!publicKey) {
-      throw new Error('Invalid CRX header')
+    if (!declaredCrxId) {
+      throw new Error('Invalid CRX signed data')
     }
+
+    // Need to find store key proof which matches the declared ID
+    const keyProof = crxFileHeader.sha256_with_rsa.find((proof) => {
+      const crxId = proof.public_key ? generateId(proof.public_key.toString('base64')) : null
+      return crxId === declaredCrxId
+    })
+
+    if (!keyProof) {
+      throw new Error('Invalid CRX key')
+    }
+
+    publicKey = keyProof.public_key
   }
 
   return {

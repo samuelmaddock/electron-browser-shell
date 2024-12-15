@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
  *
  * @param id - The hexadecimal string to convert. This is modified in place.
  */
-function convertHexadecimalToIDAlphabet(id: string) {
+export function convertHexadecimalToIDAlphabet(id: string) {
   let result = ''
   for (const ch of id) {
     const val = parseInt(ch, 16)

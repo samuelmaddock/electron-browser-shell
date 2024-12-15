@@ -47,7 +47,7 @@ function readAsymmetricKeyProofField(tag: any, obj: any, pbf: Pbf) {
   else if (tag === 2) obj.signature = pbf.readBytes()
 }
 
-export function readSignedData(pbf: Pbf, end: any) {
+export function readSignedData(pbf: Pbf, end?: any): { crx_id?: Buffer } {
   return pbf.readFields(readSignedDataField, { crx_id: undefined }, end)
 }
 function readSignedDataField(tag: any, obj: any, pbf: Pbf) {
