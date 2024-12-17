@@ -169,6 +169,19 @@ Notify the extension system that a tab has been selected as the active tab.
 Returns [`Electron.MenuItem[]`](https://www.electronjs.org/docs/api/menu-item#class-menuitem) -
 An array of all extension context menu items given the context.
 
+##### `extensions.getURLOverrides()`
+
+Returns `Object` which maps special URL types to an extension URL. See [chrome_urls_overrides](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides) for a list of
+supported URL types.
+
+Example:
+
+```
+{
+  newtab: 'chrome-extension://<id>/newtab.html'
+}
+```
+
 #### Instance Events
 
 ##### Event: 'browser-action-popup-created'
@@ -178,6 +191,14 @@ Returns:
 - `popup` PopupView - An instance of the popup.
 
 Emitted when a popup is created by the `chrome.browserAction` API.
+
+##### Event: 'url-overrides-updated'
+
+Returns:
+
+- `urlOverrides` Object - A map of url types to extension URLs.
+
+Emitted after an extension is loaded with [chrome_urls_overrides](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides) set.
 
 ### Element: `<browser-action-list>`
 

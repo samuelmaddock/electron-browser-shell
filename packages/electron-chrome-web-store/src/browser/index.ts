@@ -522,7 +522,7 @@ interface ElectronChromeWebStoreOptions {
  *
  * @param options Chrome Web Store configuration options.
  */
-export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
+export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
   const session = opts.session || electronSession.defaultSession
   const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
   const modulePath = opts.modulePath || __dirname
@@ -554,9 +554,9 @@ export function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) 
 
   addIpcListeners(webStoreState)
 
-  app.whenReady().then(() => {
-    if (loadExtensions) {
-      loadAllExtensions(session, extensionsPath, { allowUnpacked: allowUnpackedExtensions })
-    }
-  })
+  await app.whenReady()
+
+  if (loadExtensions) {
+    await loadAllExtensions(session, extensionsPath, { allowUnpacked: allowUnpackedExtensions })
+  }
 }

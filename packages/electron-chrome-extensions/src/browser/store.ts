@@ -29,6 +29,8 @@ export class ExtensionStore extends EventEmitter {
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
 
+  urlOverrides: Record<string, string> = {}
+
   constructor(public impl: ChromeExtensionImpl) {
     super()
   }

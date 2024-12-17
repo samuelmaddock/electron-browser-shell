@@ -17,6 +17,7 @@ import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
 import { checkLicense, License } from './license'
+import { readLoadedExtensionManifest } from './manifest'
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
@@ -98,7 +99,14 @@ export class ElectronChromeExtensions extends EventEmitter {
       windows: new WindowsAPI(this.ctx),
     }
 
+    this.listenForExtensions()
     this.prependPreload()
+  }
+
+  private listenForExtensions() {
+    this.ctx.session.addListener('extension-loaded', (_event, extension) => {
+      readLoadedExtensionManifest(this.ctx, extension)
+    })
   }
 
   private async prependPreload() {
@@ -167,6 +175,15 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   getContextMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
     return this.api.contextMenus.buildMenuItemsForParams(webContents, params)
+  }
+
+  /**
+   * Gets map of special pages to extension override URLs.
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides
+   */
+  getURLOverrides(): Record<string, string> {
+    return this.ctx.store.urlOverrides
   }
 
   /**

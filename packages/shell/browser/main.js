@@ -1,5 +1,4 @@
 const path = require('path')
-const { promises: fs } = require('fs')
 const { app, session, BrowserWindow } = require('electron')
 
 const { Tabs } = require('./tabs')
@@ -51,7 +50,7 @@ class TabbedBrowserWindow {
     const self = this
 
     this.tabs.on('tab-created', function onTabCreated(tab) {
-      if (options.initialUrl) tab.webContents.loadURL(options.initialUrl)
+      tab.loadURL(options.urls.newtab)
 
       // Track tab that may have been created outside of the extensions API.
       self.extensions.addTab(tab.webContents, tab.window)
@@ -63,7 +62,11 @@ class TabbedBrowserWindow {
 
     queueMicrotask(() => {
       // Create initial tab
-      this.tabs.create()
+      const tab = this.tabs.create()
+
+      if (options.initialUrl) {
+        tab.loadURL(options.initialUrl)
+      }
     })
   }
 
@@ -79,6 +82,10 @@ class TabbedBrowserWindow {
 
 class Browser {
   windows = []
+
+  urls = {
+    newtab: 'about:blank',
+  }
 
   constructor() {
     app.whenReady().then(this.init.bind(this))
@@ -153,7 +160,7 @@ class Browser {
 
         const tab = win.tabs.create()
 
-        if (details.url) tab.loadURL(details.url || newTabUrl)
+        if (details.url) tab.loadURL(details.url)
         if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
 
         return [tab.webContents, tab.window]
@@ -169,7 +176,7 @@ class Browser {
 
       createWindow: (details) => {
         const win = this.createWindow({
-          initialUrl: details.url || newTabUrl,
+          initialUrl: details.url,
         })
         // if (details.active) tabs.select(tab.id)
         return win.window
@@ -184,16 +191,25 @@ class Browser {
       this.popup = popup
     })
 
+    // Allow extensions to override new tab page
+    this.extensions.on('url-overrides-updated', (urlOverrides) => {
+      if (urlOverrides.newtab) {
+        this.urls.newtab = urlOverrides.newtab
+      }
+    })
+
     const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
-    installChromeWebStore({
+    // Wait for web store extensions to finish loading as they may change the
+    // newtab URL.
+    await installChromeWebStore({
       session: this.session,
       modulePath: path.join(__dirname, 'electron-chrome-web-store'),
     })
 
     if (!app.isPackaged) {
-      loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, true)
+      await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, true)
     }
 
     this.createInitialWindow()
@@ -213,6 +229,7 @@ class Browser {
   createWindow(options) {
     const win = new TabbedBrowserWindow({
       ...options,
+      urls: this.urls,
       extensions: this.extensions,
       window: {
         width: 1280,
@@ -243,8 +260,7 @@ class Browser {
   }
 
   createInitialWindow() {
-    const newTabUrl = path.join('chrome-extension://', webuiExtensionId, 'new-tab.html')
-    this.createWindow({ initialUrl: newTabUrl })
+    this.createWindow()
   }
 
   async onWebContentsCreated(event, webContents) {
