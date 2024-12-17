@@ -467,6 +467,14 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      topSites: {
+        factory: () => {
+          return {
+            get: invokeExtension('topSites.get', { noop: true, defaultResponse: [] }),
+          }
+        },
+      },
+
       webNavigation: {
         factory: (base) => {
           return {
