@@ -1,3 +1,4 @@
+import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { app, powerMonitor } from 'electron'
 
@@ -231,7 +232,8 @@ async function updateExtension(session: Electron.Session, update: ExtensionUpdat
   await session.loadExtension(updateDir)
   d('loaded update %s@%s', update.id, update.version)
 
-  // TODO: remove old extension
+  // Remove old version
+  await fs.promises.rm(oldExtension.path, { recursive: true, force: true })
 }
 
 async function checkForUpdates(session: Electron.Session) {
@@ -248,7 +250,12 @@ async function checkForUpdates(session: Electron.Session) {
 
   d('updating %d extension(s)', updates.length)
   for (const update of updates) {
-    await updateExtension(session, update)
+    try {
+      await updateExtension(session, update)
+    } catch (error) {
+      console.error(`checkForUpdates: Error updating extension ${update.id}`)
+      console.error(error)
+    }
   }
 }
 
