@@ -2,6 +2,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import { generateId } from './id'
+import { compareVersions } from './utils'
 
 const d = require('debug')('electron-chrome-web-store:loader')
 
@@ -21,6 +22,25 @@ const manifestExists = async (dirPath: string) => {
 }
 
 /**
+ * DFS directories for extension manifests.
+ */
+async function extensionSearch(dirPath: string, depth: number = 0): Promise<string[]> {
+  if (depth >= 2) return []
+  const results = []
+  const dirEntries = await fs.promises.readdir(dirPath, { withFileTypes: true })
+  for (const entry of dirEntries) {
+    if (entry.isDirectory()) {
+      if (await manifestExists(path.join(dirPath, entry.name))) {
+        results.push(path.join(dirPath, entry.name))
+      } else {
+        results.push(...(await extensionSearch(path.join(dirPath, entry.name), depth + 1)))
+      }
+    }
+  }
+  return results
+}
+
+/**
  * Discover list of extensions in the given path.
  */
 async function discoverExtensions(extensionsPath: string): Promise<ExtensionPathInfo[]> {
@@ -35,69 +55,62 @@ async function discoverExtensions(extensionsPath: string): Promise<ExtensionPath
     return []
   }
 
-  // Get top level directories
-  const subDirectories = await fs.promises.readdir(extensionsPath, {
-    withFileTypes: true,
-  })
-
-  // Find all directories containing extension manifest.json
-  // Limits search depth to 1-2.
-  const extensionDirectories = await Promise.all(
-    subDirectories
-      .filter((dirEnt) => dirEnt.isDirectory())
-      .map(async (dirEnt) => {
-        const extPath = path.join(extensionsPath, dirEnt.name)
-
-        // Check if manifest exists in root directory
-        if (await manifestExists(extPath)) {
-          return extPath
-        }
-
-        // Check one level deeper
-        const extSubDirs = await fs.promises.readdir(extPath, {
-          withFileTypes: true,
-        })
-
-        // Look for manifest in each subdirectory
-        for (const subDir of extSubDirs) {
-          if (!subDir.isDirectory()) continue
-
-          const subDirPath = path.join(extPath, subDir.name)
-          if (await manifestExists(subDirPath)) {
-            return subDirPath
-          }
-        }
-      }),
-  )
-
+  const extensionDirectories = await extensionSearch(extensionsPath)
   const results: ExtensionPathInfo[] = []
 
   for (const extPath of extensionDirectories.filter(Boolean)) {
-    console.log(`Loading extension from ${extPath}`)
     try {
       const manifestPath = path.join(extPath!, 'manifest.json')
       const manifestJson = (await fs.promises.readFile(manifestPath)).toString()
       const manifest: chrome.runtime.Manifest = JSON.parse(manifestJson)
-      if (manifest.key) {
-        results.push({
-          type: 'store',
-          path: extPath!,
-          manifest,
-          id: generateId(manifest.key),
-        })
-      } else {
-        results.push({
-          type: 'unpacked',
-          path: extPath!,
-          manifest,
-        })
-      }
+      const result = manifest.key
+        ? {
+            type: 'store' as const,
+            path: extPath!,
+            manifest,
+            id: generateId(manifest.key),
+          }
+        : {
+            type: 'unpacked' as const,
+            path: extPath!,
+            manifest,
+          }
+      results.push(result)
     } catch (e) {
       console.error(e)
     }
   }
 
   return results
+}
+
+/**
+ * Filter any outdated extensions in the case of duplicate installations.
+ */
+function filterOutdatedExtensions(extensions: ExtensionPathInfo[]): ExtensionPathInfo[] {
+  const uniqueExtensions: ExtensionPathInfo[] = []
+  const storeExtMap = new Map<ExtensionId, ExtensionPathInfo>()
+
+  for (const ext of extensions) {
+    if (ext.type === 'unpacked') {
+      // Unpacked extensions are always unique to their path
+      uniqueExtensions.push(ext)
+    } else if (!storeExtMap.has(ext.id)) {
+      // New store extension
+      storeExtMap.set(ext.id, ext)
+    } else {
+      // Existing store extension, compare with existing version
+      const latestExt = storeExtMap.get(ext.id)!
+      if (compareVersions(latestExt.manifest.version, ext.manifest.version) < 0) {
+        storeExtMap.set(ext.id, ext)
+      }
+    }
+  }
+
+  // Append up to date store extensions
+  storeExtMap.forEach((ext) => uniqueExtensions.push(ext))
+
+  return uniqueExtensions
 }
 
 /**
@@ -110,7 +123,8 @@ export async function loadAllExtensions(
     allowUnpacked?: boolean
   } = {},
 ) {
-  const extensions = await discoverExtensions(extensionsPath)
+  let extensions = await discoverExtensions(extensionsPath)
+  extensions = filterOutdatedExtensions(extensions)
   d('discovered %d extension(s) in %s', extensions.length, extensionsPath)
 
   for (const ext of extensions) {
