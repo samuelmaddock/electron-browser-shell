@@ -76,7 +76,7 @@ const getSessionId = (() => {
   return () => sessionId || (sessionId = crypto.randomUUID())
 })()
 
-const getOmahaPlatform = () => {
+const getOmahaPlatform = (): string => {
   switch (process.platform) {
     case 'win32':
       return 'win'
@@ -87,14 +87,14 @@ const getOmahaPlatform = () => {
   }
 }
 
-const getOmahaArch = () => {
+const getOmahaArch = (): string => {
   switch (process.arch) {
     case 'ia32':
       return 'x86'
     case 'x64':
       return 'x64'
     default:
-      process.arch
+      return process.arch
   }
 }
 
@@ -107,7 +107,6 @@ async function requestExtensionUpdates(extensions: Electron.Extension[]) {
     }),
     {},
   )
-  d('checking extensions for updates', extensionIds)
 
   const chromeVersion = getChromeVersion()
   const url = 'https://update.googleapis.com/service/update2/json'
@@ -197,26 +196,49 @@ async function requestExtensionUpdates(extensions: Electron.Extension[]) {
   return updates
 }
 
-async function updateExtension(update: ExtensionUpdate) {
-  d('updating %s', update.id)
-  const updateDir = path.join(update.extension.path, '..', `${update.version}_0`)
+async function updateExtension(session: Electron.Session, update: ExtensionUpdate) {
+  const oldExtension = update.extension
+  d('updating %s %s -> %s', update.id, oldExtension.version, update.version)
+
+  // Updates must be installed in adjacent directories. Ensure the old install
+  // was contained in a versioned directory structure.
+  const oldVersionDirectoryName = path.basename(oldExtension.path)
+  if (!oldVersionDirectoryName.startsWith(oldExtension.version)) {
+    console.error(
+      `updateExtension: extension ${update.id} must conform to versioned directory names`,
+      {
+        oldPath: oldExtension.path,
+      },
+    )
+    d('skipping %s update due to invalid install path %s', update.id, oldExtension.path)
+    return
+  }
+
+  // Download update
+  const updateDir = path.join(oldExtension.path, '..', `${update.version}_0`)
   await downloadCrx(update.url, updateDir)
-  d('updated %s', update.id)
-  // TODO: load new extension version
+  d('downloaded update %s@%s', update.id, update.version)
+
+  // Replace extension
+  session.removeExtension(update.id)
+  await session.loadExtension(updateDir)
+  d('loaded update %s@%s', update.id, update.version)
+
+  // TODO: remove old extension
 }
 
-async function checkForUpdates(extensions: Electron.Extension[]) {
-  d('checking for updates', extensions)
+async function checkForUpdates(session: Electron.Session, extensions: Electron.Extension[]) {
+  d('checking for updates: %s', extensions.map((ext) => `${ext.id}@${ext.version}`).join(','))
 
   const updates = await requestExtensionUpdates(extensions)
-  if (!updates) {
+  if (!updates || updates.length === 0) {
     d('no updates found')
     return
   }
 
-  d('updating %d extensions', updates.length)
+  d('updating %d extension(s)', updates.length)
   for (const update of updates) {
-    await updateExtension(update)
+    await updateExtension(session, update)
   }
 }
 
@@ -246,7 +268,7 @@ async function maybeCheckForUpdates(session: Electron.Session) {
     return
   }
 
-  await checkForUpdates(extensions)
+  await checkForUpdates(session, extensions)
 }
 
 export async function initUpdater(state: WebStoreState) {

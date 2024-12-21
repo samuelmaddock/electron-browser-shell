@@ -98,6 +98,6 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   }
 
   if (autoUpdate) {
-    await initUpdater(webStoreState)
+    void initUpdater(webStoreState)
   }
 }

@@ -135,7 +135,7 @@ export async function loadAllExtensions(
           d('skipping loading existing extension %s', ext.id)
           continue
         }
-        d('loading extension %s', ext.id)
+        d('loading extension %s', `${ext.id}@${ext.manifest.version}`)
         await session.loadExtension(ext.path)
       } else if (options.allowUnpacked) {
         d('loading unpacked extension %s', ext.path)
