@@ -11,7 +11,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
-  "license": "GPL-3.0",
+  "license": "MIT",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "private": true,
   "dependencies": {

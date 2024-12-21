@@ -6,4 +6,4 @@ A `WebContentsView` is used for tab contents due to its stability for browsing r
 
 ## License
 
-GPL-3
+MIT
