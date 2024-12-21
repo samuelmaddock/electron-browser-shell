@@ -8,9 +8,7 @@ Install and manage Chrome extensions from the Chrome Web Store.
 const { app, BrowserWindow, session } = require('electron')
 const { installChromeWebStore } = require('electron-chrome-web-store')
 
-async function main() {
-  await app.whenReady()
-
+app.whenReady().then(async () => {
   const browserSession = session.defaultSession
   const browserWindow = new BrowserWindow({
     webPreferences: {
@@ -18,12 +16,11 @@ async function main() {
     },
   })
 
-  installChromeWebStore({ session: browserSession })
+  // Install Chrome web store and wait for extensions to load
+  await installChromeWebStore({ session: browserSession })
 
   browserWindow.loadURL('https://chromewebstore.google.com/')
-}
-
-main()
+})
 ```
 
 To enable full support for Chrome extensions in Electron, install [electron-chrome-extensions](https://www.npmjs.com/package/electron-chrome-extensions).
@@ -37,7 +34,8 @@ Installs Chrome Web Store support in the specified session.
 - `options`: An object with the following properties:
   - `session`: The Electron session to enable the Chrome Web Store in. Defaults to `session.defaultSession`.
   - `modulePath`: The path to the 'electron-chrome-web-store' module.
-  - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' under the app's userData path.
+  - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
+  - `autoUpdate`: Whether to auto-update web store extensions at startup and once every 5 hours. Defaults to true.
   - `loadExtensions`: A boolean indicating whether to load extensions installed by Chrome Web Store. Defaults to true.
   - `allowUnpackedExtensions`: A boolean indicating whether to allow loading unpacked extensions. Only loads if `loadExtensions` is also enabled. Defaults to false.
   - `allowlist`: An array of allowed extension IDs to install.
@@ -52,18 +50,8 @@ Loads all extensions from the specified directory.
 - `options`: An object with the following property:
   - `allowUnpacked`: A boolean indicating whether to allow loading unpacked extensions. Defaults to false.
 
-> [!NOTE] \
-> `installChromeWebStore` will automatically load installed extensions as long as the `loadExtensions` property is set to `true`.
-
-### `downloadExtension`
-
-Downloads an extension from the Chrome Web Store to the specified destination directory.
-
-- `extensionId`: The ID of the extension to download.
-- `destDir`: The destination directory where the extension will be downloaded. The directory is expected to exist.
-
-> [!TIP]
-> This API is designed to work in Node or Electron.
+> [!NOTE]
+> The `installChromeWebStore` API will automatically load web store extensions by default.
 
 ## License
 

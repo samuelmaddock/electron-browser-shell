@@ -6,12 +6,12 @@ A minimal, tabbed web browser with support for Chrome extensions—built on Elec
 
 ## Packages
 
-| Name | Description |
-| --- | --- |
-| [shell](./packages/shell) | A minimal, tabbed web browser used as a testbed for development of Chrome extension support. |
-| [electron-chrome-extensions](./packages/electron-chrome-extensions) | Adds additional API support for Chrome extensions to Electron. |
-| [electron-chrome-context-menu](./packages/electron-chrome-context-menu) | Chrome context menu for Electron browsers. |
-| [electron-chrome-web-store](./packages/electron-chrome-web-store) | Download extensions from the Chrome Web Store in Electron. |
+| Name                                                                    | Description                                                                                  |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [shell](./packages/shell)                                               | A minimal, tabbed web browser used as a testbed for development of Chrome extension support. |
+| [electron-chrome-extensions](./packages/electron-chrome-extensions)     | Adds additional API support for Chrome extensions to Electron.                               |
+| [electron-chrome-context-menu](./packages/electron-chrome-context-menu) | Chrome context menu for Electron browsers.                                                   |
+| [electron-chrome-web-store](./packages/electron-chrome-web-store)       | Download extensions from the Chrome Web Store in Electron.                                   |
 
 ## Usage
 
@@ -39,16 +39,17 @@ Load unpacked extensions into `./extensions` then launch the browser.
 - [x] Initial [extension popup](https://developer.chrome.com/extensions/browserAction) support
 - [x] .CRX extension loader
 - [x] [Chrome Web Store](https://chromewebstore.google.com) extension installer
-- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support
+- [x] Automatic extension updates
+- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support—pending [electron/electron#44411](https://github.com/electron/electron/pull/44411)
 - [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 - [ ] Robust extension popup support
 - [ ] Respect extension manifest permissions
 
 ### 🤞 Eventually
+
 - [ ] Extension management (enable/disable/uninstall)
 - [ ] Installation prompt UX
 - [ ] [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) extension installer
-- [ ] Automatic extension updates
 - [ ] Full support of [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 
 ### 🤔 Considering
