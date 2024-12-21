@@ -98,7 +98,14 @@ const getOmahaArch = (): string => {
   }
 }
 
-async function requestExtensionUpdates(extensions: Electron.Extension[]) {
+function filterWebStoreExtension(extension: Electron.Extension) {
+  const manifest = extension.manifest as chrome.runtime.Manifest
+  if (!manifest) return false
+  // TODO: implement extension.isFromStore() to check creation flags
+  return manifest.key && manifest.update_url && ALLOWED_UPDATE_URLS.has(manifest.update_url)
+}
+
+async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
   const extensionIds = extensions.map((extension) => extension.id)
   const extensionMap: Record<string, Electron.Extension> = extensions.reduce(
     (map, ext) => ({
@@ -227,10 +234,13 @@ async function updateExtension(session: Electron.Session, update: ExtensionUpdat
   // TODO: remove old extension
 }
 
-async function checkForUpdates(session: Electron.Session, extensions: Electron.Extension[]) {
+async function checkForUpdates(session: Electron.Session) {
+  // Only check for extensions from the store
+  const extensions = session.getAllExtensions().filter(filterWebStoreExtension)
+
   d('checking for updates: %s', extensions.map((ext) => `${ext.id}@${ext.version}`).join(','))
 
-  const updates = await requestExtensionUpdates(extensions)
+  const updates = await fetchAvailableUpdates(extensions)
   if (!updates || updates.length === 0) {
     d('no updates found')
     return
@@ -255,20 +265,7 @@ async function maybeCheckForUpdates(session: Electron.Session) {
   }
   lastUpdateCheck = Date.now()
 
-  // Only check for extensions from the store
-  const extensions = session.getAllExtensions().filter((ext) => {
-    const manifest = ext.manifest as chrome.runtime.Manifest
-    if (!manifest) return false
-    // TODO: implement extension.isFromStore() to check creation flags
-    return manifest.key && manifest.update_url && ALLOWED_UPDATE_URLS.has(manifest.update_url)
-  })
-
-  if (extensions.length === 0) {
-    d('no extensions installed')
-    return
-  }
-
-  await checkForUpdates(session, extensions)
+  await checkForUpdates(session)
 }
 
 export async function initUpdater(state: WebStoreState) {
@@ -279,10 +276,20 @@ export async function initUpdater(state: WebStoreState) {
       app.on('did-become-active', check)
       break
     case 'win32':
+    case 'linux':
       app.on('browser-window-focus', check)
       break
   }
 
-  setInterval(check, UPDATE_CHECK_INTERVAL)
+  const updateIntervalId = setInterval(check, UPDATE_CHECK_INTERVAL)
   check()
+
+  app.on('before-quit', (event) => {
+    queueMicrotask(() => {
+      if (!event.defaultPrevented) {
+        d('stopping update checks')
+        clearInterval(updateIntervalId)
+      }
+    })
+  })
 }
