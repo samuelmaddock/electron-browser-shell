@@ -8,6 +8,9 @@ Install and update Chrome extensions from the Chrome Web Store for Electron.
 npm install electron-chrome-web-store
 ```
 
+> [!TIP]
+> To enable full support for Chrome extensions in Electron, install [electron-chrome-extensions](https://www.npmjs.com/package/electron-chrome-extensions).
+
 ### Enable downloading extensions from the Chrome Web Store
 
 ```js
@@ -53,8 +56,6 @@ app.whenReady().then(async () => {
   await updateExtensions()
 })
 ```
-
-To enable full support for Chrome extensions in Electron, install [electron-chrome-extensions](https://www.npmjs.com/package/electron-chrome-extensions).
 
 ## API
 
