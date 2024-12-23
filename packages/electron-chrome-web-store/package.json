@@ -1,7 +1,7 @@
 {
   "name": "electron-chrome-web-store",
   "version": "0.5.0",
-  "description": "Download extensions from the Chrome Web Store in Electron",
+  "description": "Install and update Chrome extensions from the Chrome Web Store for Electron",
   "main": "dist/browser/index.js",
   "scripts": {
     "build": "yarn clean && tsc && node esbuild.config.js",
