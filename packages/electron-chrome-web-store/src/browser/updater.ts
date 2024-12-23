@@ -208,38 +208,41 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]): Promise<
 }
 
 async function updateExtension(session: Electron.Session, update: ExtensionUpdate) {
+  const extensionId = update.id
   const oldExtension = update.extension
-  d('updating %s %s -> %s', update.id, oldExtension.version, update.version)
+  d('updating %s %s -> %s', extensionId, oldExtension.version, update.version)
 
   // Updates must be installed in adjacent directories. Ensure the old install
   // was contained in a versioned directory structure.
   const oldVersionDirectoryName = path.basename(oldExtension.path)
   if (!oldVersionDirectoryName.startsWith(oldExtension.version)) {
     console.error(
-      `updateExtension: extension ${update.id} must conform to versioned directory names`,
+      `updateExtension: extension ${extensionId} must conform to versioned directory names`,
       {
         oldPath: oldExtension.path,
       },
     )
-    d('skipping %s update due to invalid install path %s', update.id, oldExtension.path)
+    d('skipping %s update due to invalid install path %s', extensionId, oldExtension.path)
     return
   }
 
   // Download update
   const extensionsPath = path.join(oldExtension.path, '..', '..')
-  const updatePath = await downloadExtensionFromURL(update.url, extensionsPath, update.id)
-  d('downloaded update %s@%s', update.id, update.version)
+  const updatePath = await downloadExtensionFromURL(update.url, extensionsPath, extensionId)
+  d('downloaded update %s@%s', extensionId, update.version)
 
-  // Replace extension
-  session.removeExtension(update.id)
-  await session.loadExtension(updatePath)
-  d('loaded update %s@%s', update.id, update.version)
+  // Reload extension if already loaded
+  if (session.getExtension(extensionId)) {
+    session.removeExtension(extensionId)
+    await session.loadExtension(updatePath)
+    d('loaded update %s@%s', extensionId, update.version)
+  }
 
   // Remove old version
   await fs.promises.rm(oldExtension.path, { recursive: true, force: true })
 }
 
-async function checkForUpdates(session: Electron.Session = electronSession.defaultSession) {
+async function checkForUpdates(session: Electron.Session) {
   // Only check for extensions from the store
   const extensions = session.getAllExtensions().filter(filterWebStoreExtension)
   d('checking for updates: %s', extensions.map((ext) => `${ext.id}@${ext.version}`).join(','))
@@ -268,7 +271,7 @@ async function installUpdates(session: Electron.Session, updates: ExtensionUpdat
 /**
  * Check session's loaded extensions for updates and install any if available.
  */
-export async function updateExtensions(session: Electron.Session): Promise<void> {
+export async function updateExtensions(session: Electron.Session = electronSession.defaultSession): Promise<void> {
   const updates = await checkForUpdates(session)
   if (updates.length > 0) {
     await installUpdates(session, updates)
