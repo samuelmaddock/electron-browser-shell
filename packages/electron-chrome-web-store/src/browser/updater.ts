@@ -1,9 +1,9 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { app, powerMonitor } from 'electron'
+import { app, powerMonitor, session as electronSession } from 'electron'
 
 import { compareVersions, fetch, getChromeVersion } from './utils'
-import { downloadCrx } from './installer'
+import { downloadExtensionFromURL } from './installer'
 
 const d = require('debug')('electron-chrome-web-store:updater')
 
@@ -106,7 +106,9 @@ function filterWebStoreExtension(extension: Electron.Extension) {
   return manifest.key && manifest.update_url && ALLOWED_UPDATE_URLS.has(manifest.update_url)
 }
 
-async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
+async function fetchAvailableUpdates(extensions: Electron.Extension[]): Promise<ExtensionUpdate[]> {
+  if (extensions.length === 0) return []
+
   const extensionIds = extensions.map((extension) => extension.id)
   const extensionMap: Record<string, Electron.Extension> = extensions.reduce(
     (map, ext) => ({
@@ -158,7 +160,7 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
 
   if (!response.ok) {
     d('update response not ok')
-    return
+    return []
   }
 
   // Skip safe JSON prefix
@@ -166,7 +168,7 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
   const prefix = `)]}'\n`
   if (!text.startsWith(prefix)) {
     d('unexpected update response: %s', text)
-    return
+    return []
   }
 
   const json = text.substring(prefix.length)
@@ -174,7 +176,8 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
 
   let updates: ExtensionUpdate[]
   try {
-    updates = result.response.app
+    const apps = result?.response?.app || []
+    updates = apps
       // Find extensions with update
       .filter((app) => app.updatecheck.status === 'ok')
       // Collect info
@@ -198,7 +201,7 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]) {
       })
   } catch (error) {
     console.error('Unable to read extension updates response', error)
-    return
+    return []
   }
 
   return updates
@@ -223,31 +226,34 @@ async function updateExtension(session: Electron.Session, update: ExtensionUpdat
   }
 
   // Download update
-  const updateDir = path.join(oldExtension.path, '..', `${update.version}_0`)
-  await downloadCrx(update.url, updateDir)
+  const extensionsPath = path.join(oldExtension.path, '..', '..')
+  const updatePath = await downloadExtensionFromURL(update.url, extensionsPath, update.id)
   d('downloaded update %s@%s', update.id, update.version)
 
   // Replace extension
   session.removeExtension(update.id)
-  await session.loadExtension(updateDir)
+  await session.loadExtension(updatePath)
   d('loaded update %s@%s', update.id, update.version)
 
   // Remove old version
   await fs.promises.rm(oldExtension.path, { recursive: true, force: true })
 }
 
-async function checkForUpdates(session: Electron.Session) {
+async function checkForUpdates(session: Electron.Session = electronSession.defaultSession) {
   // Only check for extensions from the store
   const extensions = session.getAllExtensions().filter(filterWebStoreExtension)
-
   d('checking for updates: %s', extensions.map((ext) => `${ext.id}@${ext.version}`).join(','))
 
   const updates = await fetchAvailableUpdates(extensions)
   if (!updates || updates.length === 0) {
     d('no updates found')
-    return
+    return []
   }
 
+  return updates
+}
+
+async function installUpdates(session: Electron.Session, updates: ExtensionUpdate[]) {
   d('updating %d extension(s)', updates.length)
   for (const update of updates) {
     try {
@@ -256,6 +262,16 @@ async function checkForUpdates(session: Electron.Session) {
       console.error(`checkForUpdates: Error updating extension ${update.id}`)
       console.error(error)
     }
+  }
+}
+
+/**
+ * Check session's loaded extensions for updates and install any if available.
+ */
+export async function updateExtensions(session: Electron.Session): Promise<void> {
+  const updates = await checkForUpdates(session)
+  if (updates.length > 0) {
+    await installUpdates(session, updates)
   }
 }
 
@@ -272,7 +288,7 @@ async function maybeCheckForUpdates(session: Electron.Session) {
   }
   lastUpdateCheck = Date.now()
 
-  await checkForUpdates(session)
+  void updateExtensions(session)
 }
 
 export async function initUpdater(state: WebStoreState) {

@@ -1,4 +1,5 @@
-import { net } from 'electron'
+import * as path from 'node:path'
+import { app, net } from 'electron'
 
 // Include fallbacks for node environments that aren't Electron
 export const fetch = net?.fetch || globalThis.fetch
@@ -14,3 +15,5 @@ export function compareVersions(version1: string, version2: string) {
   }
   return 0
 }
+
+export const getDefaultExtensionsPath = () => path.join(app.getPath('userData'), 'Extensions')

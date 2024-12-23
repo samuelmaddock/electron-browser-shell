@@ -147,3 +147,10 @@ export async function loadAllExtensions(
     }
   }
 }
+
+export async function findExtensionInstall(extensionId: string, extensionsPath: string) {
+  const extensionPath = path.join(extensionsPath, extensionId)
+  let extensions = await discoverExtensions(extensionPath)
+  extensions = filterOutdatedExtensions(extensions)
+  return extensions.length > 0 ? extensions[0] : null
+}

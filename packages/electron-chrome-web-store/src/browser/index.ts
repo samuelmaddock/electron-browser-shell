@@ -4,7 +4,10 @@ import * as path from 'path'
 import { registerWebStoreApi } from './api'
 import { loadAllExtensions } from './loader'
 export { loadAllExtensions } from './loader'
+export { installExtension } from './installer'
 import { initUpdater } from './updater'
+export { updateExtensions } from './updater'
+import { getDefaultExtensionsPath } from './utils'
 
 interface ElectronChromeWebStoreOptions {
   /**
@@ -60,7 +63,7 @@ interface ElectronChromeWebStoreOptions {
  */
 export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
   const session = opts.session || electronSession.defaultSession
-  const extensionsPath = opts.extensionsPath || path.join(app.getPath('userData'), 'Extensions')
+  const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
   const modulePath = opts.modulePath || __dirname
   const loadExtensions = typeof opts.loadExtensions === 'boolean' ? opts.loadExtensions : true
   const allowUnpackedExtensions =

@@ -8,7 +8,7 @@ import {
   Result,
   WebGlStatus,
 } from '../common/constants'
-import { downloadExtension } from './installer'
+import { installExtension } from './installer'
 
 const d = require('debug')('electron-chrome-web-store:api')
 
@@ -134,20 +134,7 @@ async function beginInstall(state: WebStoreState, details: InstallDetails) {
     }
 
     state.installing.add(extensionId)
-
-    // Check if extension is already loaded in session and remove it
-    await uninstallExtension(state, extensionId)
-
-    // Create extension directory
-    const installVersion = manifest.version
-    const unpackedDir = path.join(state.extensionsPath, extensionId, `${installVersion}_0`)
-    await fs.promises.mkdir(unpackedDir, { recursive: true })
-
-    await downloadExtension(extensionId, unpackedDir)
-
-    // Load extension into session
-    await state.session.loadExtension(unpackedDir)
-
+    await installExtension(extensionId, state)
     return { result: Result.SUCCESS }
   } catch (error) {
     console.error('Extension installation failed:', error)

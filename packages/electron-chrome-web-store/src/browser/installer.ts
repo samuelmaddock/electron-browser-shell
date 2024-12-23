@@ -3,16 +3,19 @@ import * as os from 'os'
 import * as path from 'path'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
+import { session as electronSession } from 'electron'
 
 import Pbf from 'pbf'
 
 import { readCrxFileHeader, readSignedData } from './crx3'
 import { convertHexadecimalToIDAlphabet, generateId } from './id'
-import { fetch, getChromeVersion } from './utils'
+import { fetch, getChromeVersion, getDefaultExtensionsPath } from './utils'
+import { findExtensionInstall } from './loader'
 
 const AdmZip = require('adm-zip')
+const d = require('debug')('electron-chrome-web-store:installer')
 
-function getCrxDownloadURL(extensionId: ExtensionId) {
+function getExtensionCrxURL(extensionId: ExtensionId) {
   const url = new URL('https://clients2.google.com/service/update2/crx')
   url.searchParams.append('response', 'redirect')
   url.searchParams.append('acceptformat', ['crx2', 'crx3'].join(','))
@@ -28,6 +31,7 @@ function getCrxDownloadURL(extensionId: ExtensionId) {
 }
 
 interface CrxInfo {
+  extensionId: string
   version: number
   header: Buffer
   contents: Buffer
@@ -50,12 +54,15 @@ function parseCrx(buffer: Buffer): CrxInfo {
   const header = buffer.subarray(12, 12 + headerSize)
   const contents = buffer.subarray(12 + headerSize)
 
-  // For CRX2 format
+  let extensionId: string
   let publicKey: Buffer
+
+  // For CRX2 format
   if (version === 2) {
     const pubKeyLength = buffer.readUInt32LE(8)
     const sigLength = buffer.readUInt32LE(12)
     publicKey = buffer.subarray(16, 16 + pubKeyLength)
+    extensionId = generateId(publicKey.toString('base64'))
   } else {
     // For CRX3, extract public key from header
     // CRX3 header contains a protocol buffer message
@@ -79,10 +86,12 @@ function parseCrx(buffer: Buffer): CrxInfo {
       throw new Error('Invalid CRX key')
     }
 
+    extensionId = declaredCrxId
     publicKey = keyProof.public_key
   }
 
   return {
+    extensionId,
     version,
     header,
     contents,
@@ -91,7 +100,7 @@ function parseCrx(buffer: Buffer): CrxInfo {
 }
 
 // Extract CRX contents and update manifest
-async function extractCrx(crx: CrxInfo, destPath: string) {
+async function unpackCrx(crx: CrxInfo, destPath: string): Promise<chrome.runtime.Manifest> {
   // Create zip file from contents
   const zip = new AdmZip(crx.contents)
 
@@ -101,52 +110,117 @@ async function extractCrx(crx: CrxInfo, destPath: string) {
   // Read manifest.json
   const manifestPath = path.join(destPath, 'manifest.json')
   const manifestContent = await fs.promises.readFile(manifestPath, 'utf8')
-  const manifestJson = JSON.parse(manifestContent)
+  const manifest = JSON.parse(manifestContent) as chrome.runtime.Manifest
 
   // Add public key to manifest
-  manifestJson.key = crx.publicKey.toString('base64')
+  manifest.key = crx.publicKey.toString('base64')
 
   // Write updated manifest back
-  await fs.promises.writeFile(manifestPath, JSON.stringify(manifestJson, null, 2))
+  await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
+
+  return manifest
 }
 
-async function unpackCrx(crxPath: string, destDir: string) {
-  // Read and parse CRX file
+async function readCrx(crxPath: string) {
   const crxBuffer = await fs.promises.readFile(crxPath)
-  const crx = await parseCrx(crxBuffer)
-  await extractCrx(crx, destDir)
+  return parseCrx(crxBuffer)
 }
 
-export async function downloadCrx(url: string, destDir: string) {
+async function downloadCrx(url: string, dest: string) {
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error('Failed to download extension')
   }
 
-  const downloadUuid = crypto.randomUUID()
-  const tmpCrxPath = path.join(os.tmpdir(), `electron-cws-download_${downloadUuid}.crx`)
+  const fileStream = fs.createWriteStream(dest)
+  const downloadStream = Readable.fromWeb(response.body as any)
+  await pipeline(downloadStream, fileStream)
+}
 
+export async function downloadExtensionFromURL(
+  url: string,
+  extensionsDir: string,
+  expectedExtensionId?: string,
+): Promise<string> {
+  d('downloading %s', url)
+
+  const installUuid = crypto.randomUUID()
+  const crxPath = path.join(os.tmpdir(), `electron-cws-download_${installUuid}.crx`)
   try {
-    // Save extension file
-    const fileStream = fs.createWriteStream(tmpCrxPath)
+    await downloadCrx(url, crxPath)
 
-    // Convert ReadableStream to Node stream and pipe to file
-    const downloadStream = Readable.fromWeb(response.body as any)
-    await pipeline(downloadStream, fileStream)
+    const crx = await readCrx(crxPath)
 
-    await unpackCrx(tmpCrxPath, destDir)
+    if (expectedExtensionId && expectedExtensionId !== crx.extensionId) {
+      throw new Error(
+        `CRX mismatches expected extension ID: ${expectedExtensionId} !== ${crx.extensionId}`,
+      )
+    }
+
+    const unpackedPath = path.join(extensionsDir, crx.extensionId, installUuid)
+    await fs.promises.mkdir(unpackedPath, { recursive: true })
+    const manifest = await unpackCrx(crx, unpackedPath)
+
+    if (!manifest.version) {
+      throw new Error('Installed extension is missing manifest version')
+    }
+
+    const versionedPath = path.join(extensionsDir, crx.extensionId, `${manifest.version}_0`)
+    await fs.promises.rename(unpackedPath, versionedPath)
+
+    return versionedPath
   } finally {
-    await fs.promises.rm(tmpCrxPath, { force: true })
+    await fs.promises.rm(crxPath, { force: true })
   }
 }
 
+async function downloadExtension(extensionId: string, extensionsDir: string): Promise<string> {
+  const url = getExtensionCrxURL(extensionId)
+  return await downloadExtensionFromURL(url, extensionsDir, extensionId)
+}
+
+interface InstallExtensionOptions {
+  /** Session to load extensions into. */
+  session?: Electron.Session
+  /**
+   * Directory to install extensions.
+   * Defaults to `Extensions` under the app's `userData` directory.
+   */
+  extensionsPath?: string
+  /** Options for loading the extension. */
+  loadExtensionOptions?: Electron.LoadExtensionOptions
+}
+
 /**
- * Download extension ID from the Chrome Web Store to the given destination.
- *
- * @param extensionId Extension ID.
- * @param destDir Destination directory. Directory is expected to exist.
+ * Install extension from the web store.
  */
-export async function downloadExtension(extensionId: string, destDir: string) {
-  const url = getCrxDownloadURL(extensionId)
-  await downloadCrx(url, destDir)
+export async function installExtension(
+  extensionId: string,
+  opts: InstallExtensionOptions = {},
+): Promise<Electron.Extension> {
+  d('installing %s', extensionId)
+
+  const session = opts.session || electronSession.defaultSession
+  const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
+
+  // Check if already loaded
+  const existingExtension = session.getExtension(extensionId)
+  if (existingExtension) {
+    d('%s already loaded', extensionId)
+    return existingExtension
+  }
+
+  // Check if already installed
+  const existingExtensionInfo = await findExtensionInstall(extensionId, extensionsPath)
+  if (existingExtensionInfo && existingExtensionInfo.type === 'store') {
+    d('%s already installed', extensionId)
+    return await session.loadExtension(existingExtensionInfo.path, opts.loadExtensionOptions)
+  }
+
+  // Download and load new extension
+  const extensionPath = await downloadExtension(extensionId, extensionsPath)
+  const extension = await session.loadExtension(extensionPath, opts.loadExtensionOptions)
+  d('installed %s', extensionId)
+
+  return extension
 }
