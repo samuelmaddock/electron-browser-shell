@@ -174,7 +174,13 @@ export async function downloadExtensionFromURL(
   }
 }
 
-async function downloadExtension(extensionId: string, extensionsDir: string): Promise<string> {
+/**
+ * Download and unpack extension to the given extensions directory.
+ */
+export async function downloadExtension(
+  extensionId: string,
+  extensionsDir: string,
+): Promise<string> {
   const url = getExtensionCrxURL(extensionId)
   return await downloadExtensionFromURL(url, extensionsDir, extensionId)
 }
