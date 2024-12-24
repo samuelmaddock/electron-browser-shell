@@ -83,7 +83,8 @@ export class TabsAPI {
     })
 
     this.onCreated(tabId)
-    this.onActivated(tabId)
+    const activeTab = this.ctx.store.getActiveTabFromWebContents(tab)
+    if (activeTab?.id === tabId) this.onActivated(tabId);
 
     debug(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
