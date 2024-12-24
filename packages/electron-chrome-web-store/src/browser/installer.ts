@@ -1,10 +1,12 @@
-import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
-import { Readable } from 'stream'
-import { pipeline } from 'stream/promises'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { session as electronSession } from 'electron'
 
+import AdmZip from 'adm-zip'
+import debug from 'debug'
 import Pbf from 'pbf'
 
 import { readCrxFileHeader, readSignedData } from './crx3'
@@ -12,8 +14,7 @@ import { convertHexadecimalToIDAlphabet, generateId } from './id'
 import { fetch, getChromeVersion, getDefaultExtensionsPath } from './utils'
 import { findExtensionInstall } from './loader'
 
-const AdmZip = require('adm-zip')
-const d = require('debug')('electron-chrome-web-store:installer')
+const d = debug('electron-chrome-web-store:installer')
 
 function getExtensionCrxURL(extensionId: ExtensionId) {
   const url = new URL('https://clients2.google.com/service/update2/crx')

@@ -1,11 +1,12 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import debug from 'debug'
 import { app, powerMonitor, session as electronSession } from 'electron'
 
 import { compareVersions, fetch, getChromeVersion } from './utils'
 import { downloadExtensionFromURL } from './installer'
 
-const d = require('debug')('electron-chrome-web-store:updater')
+const d = debug('electron-chrome-web-store:updater')
 
 interface OmahaResponseBody {
   response: {
@@ -271,7 +272,9 @@ async function installUpdates(session: Electron.Session, updates: ExtensionUpdat
 /**
  * Check session's loaded extensions for updates and install any if available.
  */
-export async function updateExtensions(session: Electron.Session = electronSession.defaultSession): Promise<void> {
+export async function updateExtensions(
+  session: Electron.Session = electronSession.defaultSession,
+): Promise<void> {
   const updates = await checkForUpdates(session)
   if (updates.length > 0) {
     await installUpdates(session, updates)

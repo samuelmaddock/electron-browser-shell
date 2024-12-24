@@ -1,10 +1,11 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import debug from 'debug'
 
 import { generateId } from './id'
 import { compareVersions } from './utils'
 
-const d = require('debug')('electron-chrome-web-store:loader')
+const d = debug('electron-chrome-web-store:loader')
 
 type ExtensionPathBaseInfo = { manifest: chrome.runtime.Manifest; path: string }
 type ExtensionPathInfo =

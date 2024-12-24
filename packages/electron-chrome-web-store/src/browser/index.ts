@@ -1,5 +1,5 @@
 import { app, session as electronSession } from 'electron'
-import * as path from 'path'
+import * as path from 'node:path'
 
 import { registerWebStoreApi } from './api'
 import { loadAllExtensions } from './loader'

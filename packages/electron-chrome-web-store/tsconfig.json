@@ -3,7 +3,7 @@
 
   "compilerOptions": {
     "moduleResolution": "node",
-    "outDir": "dist",
+    "outDir": "dist/types",
     "declaration": true,
     "emitDeclarationOnly": true
   },
