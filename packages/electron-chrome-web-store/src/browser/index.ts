@@ -8,6 +8,7 @@ export { installExtension, downloadExtension } from './installer'
 import { initUpdater } from './updater'
 export { updateExtensions } from './updater'
 import { getDefaultExtensionsPath } from './utils'
+import { ExtensionId, WebStoreState } from './types'
 
 interface ElectronChromeWebStoreOptions {
   /**

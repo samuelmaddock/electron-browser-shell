@@ -5,6 +5,7 @@ import { app, powerMonitor, session as electronSession } from 'electron'
 
 import { compareVersions, fetch, getChromeVersion } from './utils'
 import { downloadExtensionFromURL } from './installer'
+import { WebStoreState } from './types'
 
 const d = debug('electron-chrome-web-store:updater')
 

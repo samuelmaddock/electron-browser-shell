@@ -4,6 +4,7 @@ import debug from 'debug'
 
 import { generateId } from './id'
 import { compareVersions } from './utils'
+import { ExtensionId } from './types'
 
 const d = debug('electron-chrome-web-store:loader')
 

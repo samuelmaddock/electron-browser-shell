@@ -1,6 +1,6 @@
-type ExtensionId = Electron.Extension['id']
+export type ExtensionId = Electron.Extension['id']
 
-interface WebStoreState {
+export interface WebStoreState {
   session: Electron.Session
   extensionsPath: string
   installing: Set<ExtensionId>

@@ -13,6 +13,7 @@ import { readCrxFileHeader, readSignedData } from './crx3'
 import { convertHexadecimalToIDAlphabet, generateId } from './id'
 import { fetch, getChromeVersion, getDefaultExtensionsPath } from './utils'
 import { findExtensionInstall } from './loader'
+import { ExtensionId } from './types'
 
 const d = debug('electron-chrome-web-store:installer')
 

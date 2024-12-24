@@ -10,6 +10,7 @@ import {
   WebGlStatus,
 } from '../common/constants'
 import { installExtension } from './installer'
+import { ExtensionId, WebStoreState } from './types'
 
 const d = debug('electron-chrome-web-store:api')
 
