@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-web-store",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Install and update Chrome extensions from the Chrome Web Store for Electron",
   "main": "./dist/cjs/browser/index.js",
   "module": "./dist/esm/browser/index.mjs",
