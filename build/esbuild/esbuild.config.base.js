@@ -5,7 +5,7 @@ function createConfig(opts = {}) {
   return {
     bundle: true,
     platform: opts.platform || 'node',
-    target: 'es2020',
+    target: 'esnext',
     sourcemap: !prod,
     minify: false,
     external: [],
