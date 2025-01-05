@@ -1,7 +1,7 @@
 import { session as electronSession } from 'electron'
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
-import { promises as fs } from 'node:fs'
+import { existsSync } from 'node:fs'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -99,7 +99,11 @@ export class ElectronChromeExtensions extends EventEmitter {
       store,
     }
 
-    this.modulePath = modulePath || path.join(__dirname, '../..')
+    console.log('***load', {
+      resolve: require.resolve('electron-chrome-extensions/preload'),
+      require: require('electron-chrome-extensions')
+    })
+    this.modulePath = modulePath || __dirname
 
     this.api = {
       browserAction: new BrowserActionAPI(this.ctx),
@@ -132,7 +136,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   private async prependPreload() {
     const { session } = this.ctx
 
-    const preloadPath = path.join(this.modulePath, 'dist/preload.js')
+    const preloadPath = path.join(this.modulePath, 'chrome-extension-api.preload.js')
 
     if ('registerPreloadScript' in session) {
       session.registerPreloadScript({
@@ -150,16 +154,12 @@ export class ElectronChromeExtensions extends EventEmitter {
       session.setPreloads([...session.getPreloads(), preloadPath])
     }
 
-    let preloadExists = false
-    try {
-      const stat = await fs.stat(preloadPath)
-      preloadExists = stat.isFile()
-    } catch {}
-
-    if (!preloadExists) {
-      console.error(
-        `Unable to access electron-chrome-extensions preload file (${preloadPath}). Consider configuring the 'modulePath' constructor option.`,
+    if (!existsSync(preloadPath)) {
+      const preloadError = new Error(
+        `electron-chrome-extensions: Preload file not found at "${preloadPath}". ` +
+          'Copy "electron-chrome-extensions/preload" into your build files and/or configure the modulePath option.',
       )
+      console.error(preloadError)
     }
   }
 
