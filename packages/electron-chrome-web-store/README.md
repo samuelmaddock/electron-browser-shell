@@ -57,6 +57,31 @@ app.whenReady().then(async () => {
 })
 ```
 
+### Including the preload script
+
+This module requires including its preload script. Be sure to copy it next to your app's entry
+point script so it works in your packaged app.
+
+```js
+const fs = require('node:fs')
+const path = require('node:path')
+
+const preloadPath = require.resolve('electron-chrome-web-store/preload')
+const buildPath = './path/to/entry/point'
+
+fs.cp(preloadPath, path.join(buildPath, path.basename(preloadPath)))
+```
+
+For bundlers, you can try using [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin), [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy), or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy).
+
+The `modulePath` option can be used for loading the preload from elsewhere.
+
+```js
+installChromeWebStore({
+  modulePath: path.resolve('./out', 'node_modules', 'electron-chrome-web-store'),
+})
+```
+
 ## API
 
 ### `installChromeWebStore`

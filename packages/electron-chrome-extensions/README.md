@@ -26,20 +26,18 @@ Simple browser using Electron's [default session](https://www.electronjs.org/doc
 
 ```js
 const { app, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
-  (async function main() {
-    await app.whenReady()
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
-    const extensions = new ElectronChromeExtensions()
-    const browserWindow = new BrowserWindow()
+app.whenReady().then(() => {
+  const extensions = new ElectronChromeExtensions()
+  const browserWindow = new BrowserWindow()
 
-    // Adds the active tab of the browser
-    extensions.addTab(browserWindow.webContents, browserWindow)
+  // Adds the active tab of the browser
+  extensions.addTab(browserWindow.webContents, browserWindow)
 
-    browserWindow.loadURL('https://samuelmaddock.com')
-    browserWindow.show()
-  })(),
-)
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
+})
 ```
 
 ### Advanced
@@ -50,45 +48,68 @@ Multi-tab browser with full support for Chrome extension APIs.
 
 ```js
 const { app, session, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
-  (async function main() {
-    await app.whenReady()
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
-    const browserSession = session.fromPartition('persist:custom')
+app.whenReady().then(() => {
+  const browserSession = session.fromPartition('persist:custom')
 
-    const extensions = new ElectronChromeExtensions({
+  const extensions = new ElectronChromeExtensions({
+    session: browserSession,
+    createTab(details) {
+      // Optionally implemented for chrome.tabs.create support
+    },
+    selectTab(tab, browserWindow) {
+      // Optionally implemented for chrome.tabs.update support
+    },
+    removeTab(tab, browserWindow) {
+      // Optionally implemented for chrome.tabs.remove support
+    },
+    createWindow(details) {
+      // Optionally implemented for chrome.windows.create support
+    },
+  })
+
+  const browserWindow = new BrowserWindow({
+    webPreferences: {
+      // Same session given to Extensions class
       session: browserSession,
-      createTab(details) {
-        // Optionally implemented for chrome.tabs.create support
-      },
-      selectTab(tab, browserWindow) {
-        // Optionally implemented for chrome.tabs.update support
-      },
-      removeTab(tab, browserWindow) {
-        // Optionally implemented for chrome.tabs.remove support
-      },
-      createWindow(details) {
-        // Optionally implemented for chrome.windows.create support
-      },
-    })
+      // Recommended options for loading remote content
+      sandbox: true,
+      contextIsolation: true,
+    },
+  })
 
-    const browserWindow = new BrowserWindow({
-      webPreferences: {
-        // Same session given to Extensions class
-        session: browserSession,
-        // Recommended options for loading remote content
-        sandbox: true,
-        contextIsolation: true,
-      },
-    })
+  // Adds the active tab of the browser
+  extensions.addTab(browserWindow.webContents, browserWindow)
 
-    // Adds the active tab of the browser
-    extensions.addTab(browserWindow.webContents, browserWindow)
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
+})
+```
 
-    browserWindow.loadURL('https://samuelmaddock.com')
-    browserWindow.show()
-  })(),
-)
+### Including the preload script
+
+This module requires including its preload script. Be sure to copy it next to your app's entry
+point script so it works in your packaged app.
+
+```js
+const fs = require('node:fs')
+const path = require('node:path')
+
+const preloadPath = require.resolve('electron-chrome-extensions/preload')
+const buildPath = './path/to/entry/point'
+
+fs.cp(preloadPath, path.join(buildPath, path.basename(preloadPath)))
+```
+
+For bundlers, you can try using [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin), [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy), or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy).
+
+The `modulePath` option can be used for loading the preload from elsewhere.
+
+```js
+new ElectronChromeExtensions({
+  modulePath: path.resolve('./out', 'node_modules', 'electron-chrome-extensions'),
+})
 ```
 
 ## API
@@ -221,7 +242,7 @@ To enable the element on a webpage, you must define a preload script which injec
 Inject the browserAction API to make the `<browser-action-list>` element accessible in your application.
 
 ```js
-import { injectBrowserAction } from 'electron-chrome-extensions/dist/browser-action'
+import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 
 // Inject <browser-action-list> element into our page
 if (location.href === 'webui://browser-chrome.html') {

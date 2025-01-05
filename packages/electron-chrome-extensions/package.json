@@ -11,11 +11,17 @@
       "import": "./dist/esm/index.mjs",
       "require": "./dist/cjs/index.js"
     },
+    "./browser-action": {
+      "types": "./dist/types/browser-action.d.ts",
+      "import": "./dist/esm/browser-action.mjs",
+      "require": "./dist/cjs/browser-action.js"
+    },
     "./dist/browser-action": {
       "types": "./dist/types/browser-action.d.ts",
       "import": "./dist/esm/browser-action.mjs",
       "require": "./dist/cjs/browser-action.js"
-    }
+    },
+    "./preload": "./chrome-extension-api.preload.js"
   },
   "scripts": {
     "build": "yarn clean && tsc && node esbuild.config.js",
