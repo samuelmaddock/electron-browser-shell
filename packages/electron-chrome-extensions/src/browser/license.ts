@@ -17,8 +17,6 @@ export type License = (typeof VALID_LICENSES_CONST)[number]
 const NONCOMPLIANT_PROJECTS = new Set([
   '9588cd7085bc3ae89f2c9cf8b7dee35a77a6747b4717be3d7b6b8f395c9ca1d8',
   '8cf1d008c4c5d4e8a6f32de274359cf4ac02fcb82aeffae10ff0b99553c9d745',
-  'fb1b86cc6cb0d144c9873682036b6482b31cd20a29ee3e4fc01ddee0811f4568',
-  '9a3ec64997e58ef30679fe6bcc39b63f229168557fe7d500fa4edb8d032ccae9',
 ])
 
 const getLicenseNotice =
