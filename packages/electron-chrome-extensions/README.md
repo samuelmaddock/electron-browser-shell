@@ -48,7 +48,7 @@ Multi-tab browser with full support for Chrome extension APIs.
 
 ```js
 const { app, session, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
 app.whenReady().then(() => {
   const browserSession = session.fromPartition('persist:custom')
@@ -93,6 +93,34 @@ app.whenReady().then(() => {
 })
 ```
 
+### Packaging the preload script
+
+This module uses a [preload script](https://www.electronjs.org/docs/latest/tutorial/tutorial-preload#what-is-a-preload-script).
+When packaging your application, it's required that the preload script is included. This can be
+handled in two ways:
+
+1. Include `node_modules` in your packaged app. This allows `electron-chrome-extensions/preload` to
+   be resolved.
+2. In the case of using JavaScript bundlers, you may need to copy the preload script next to your
+   app's entry point script. You can try using
+   [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin),
+   [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy),
+   or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy) depending on your app's
+   configuration.
+
+Here's an example for webpack configurations:
+
+```js
+module.exports = {
+  entry: './index.js',
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [require.resolve('electron-chrome-extensions/preload')],
+    }),
+  ],
+}
+```
+
 ## API
 
 ### Class: ElectronChromeExtensions
@@ -104,7 +132,6 @@ app.whenReady().then(() => {
 - `options` Object
   - `license` String - Distribution license compatible with your application. See LICENSE.md for more details. \
      Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
-  - `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
   - `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
   - `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
@@ -224,7 +251,7 @@ To enable the element on a webpage, you must define a preload script which injec
 Inject the browserAction API to make the `<browser-action-list>` element accessible in your application.
 
 ```js
-import { injectBrowserAction } from 'electron-chrome-extensions/dist/browser-action'
+import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 
 // Inject <browser-action-list> element into our page
 if (location.href === 'webui://browser-chrome.html') {

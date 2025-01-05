@@ -3,7 +3,7 @@ const { createConfig, build, EXTERNAL_BASE } = require('../../build/esbuild/esbu
 
 console.log(`building ${packageJson.name}`)
 
-const external = [...EXTERNAL_BASE, 'adm-zip', 'pbf']
+const external = [...EXTERNAL_BASE, 'adm-zip', 'pbf', 'electron-chrome-web-store/preload']
 
 const esmOnlyModules = ['pbf']
 
@@ -26,8 +26,8 @@ build(browserConfig)
 build(browserESMConfig)
 
 const preloadConfig = createConfig({
-  entryPoints: ['src/renderer/web-store-preload.ts'],
-  outfile: 'dist/renderer/web-store-preload.js',
+  entryPoints: ['src/renderer/chrome-web-store.preload.ts'],
+  outfile: 'dist/chrome-web-store.preload.js',
   platform: 'browser',
   external,
   sourcemap: false,

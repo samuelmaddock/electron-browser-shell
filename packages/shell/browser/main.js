@@ -8,9 +8,12 @@ const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { installChromeWebStore, loadAllExtensions } = require('electron-chrome-web-store')
 
 // https://www.electronforge.io/config/plugins/webpack#main-process-code
+const SHELL_ROOT_DIR = path.join(__dirname, '../../')
 const ROOT_DIR = path.join(__dirname, '../../../../')
 const PATHS = {
-  WEBUI: path.join(__dirname, 'ui'),
+  WEBUI: app.isPackaged
+    ? path.resolve(process.resourcesPath, 'ui')
+    : path.resolve(SHELL_ROOT_DIR, 'browser', 'ui'),
   PRELOAD: path.join(__dirname, '../renderer/browser/preload.js'),
   LOCAL_EXTENSIONS: path.join(ROOT_DIR, 'extensions'),
 }
@@ -151,7 +154,6 @@ class Browser {
     this.extensions = new ElectronChromeExtensions({
       license: 'internal-license-do-not-use',
       session: this.session,
-      modulePath: path.join(__dirname, 'electron-chrome-extensions'),
 
       createTab: async (details) => {
         await this.ready
@@ -213,7 +215,6 @@ class Browser {
     // newtab URL.
     await installChromeWebStore({
       session: this.session,
-      modulePath: path.join(__dirname, 'electron-chrome-web-store'),
       async beforeInstall(details) {
         if (!details.browserWindow || details.browserWindow.isDestroyed()) return
 

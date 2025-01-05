@@ -36,6 +36,7 @@ const EXTERNAL_BASE = [
   'node:crypto',
   'node:events',
   'node:fs',
+  'node:module',
   'node:os',
   'node:path',
   'node:stream',

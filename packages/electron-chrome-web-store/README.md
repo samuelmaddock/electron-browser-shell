@@ -57,6 +57,34 @@ app.whenReady().then(async () => {
 })
 ```
 
+### Packaging the preload script
+
+This module uses a [preload script](https://www.electronjs.org/docs/latest/tutorial/tutorial-preload#what-is-a-preload-script).
+When packaging your application, it's required that the preload script is included. This can be
+handled in two ways:
+
+1. Include `node_modules` in your packaged app. This allows `electron-chrome-web-store/preload` to
+   be resolved.
+2. In the case of using JavaScript bundlers, you may need to copy the preload script next to your
+   app's entry point script. You can try using
+   [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin),
+   [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy),
+   or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy) depending on your app's
+   configuration.
+
+Here's an example for webpack configurations:
+
+```js
+module.exports = {
+  entry: './index.js',
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [require.resolve('electron-chrome-web-store/preload')],
+    }),
+  ],
+}
+```
+
 ## API
 
 ### `installChromeWebStore`
@@ -65,7 +93,6 @@ Installs Chrome Web Store support in the specified session.
 
 - `options`
   - `session`: The Electron session to enable the Chrome Web Store in. Defaults to `session.defaultSession`.
-  - `modulePath`: The path to the 'electron-chrome-web-store' module.
   - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
   - `autoUpdate`: Whether to auto-update web store extensions at startup and once every 5 hours. Defaults to true.
   - `loadExtensions`: A boolean indicating whether to load extensions installed by Chrome Web Store. Defaults to true.

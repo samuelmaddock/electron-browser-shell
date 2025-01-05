@@ -1,7 +1,8 @@
 import { session as electronSession } from 'electron'
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
-import { promises as fs } from 'node:fs'
+import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -27,6 +28,31 @@ function checkVersion() {
   }
 }
 
+function resolvePreloadPath(modulePath?: string) {
+  // Attempt to resolve preload path from module exports
+  try {
+    return createRequire(__dirname).resolve('electron-chrome-extensions/preload')
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(error)
+    }
+  }
+
+  const preloadFilename = 'chrome-extension-api.preload.js'
+
+  // Deprecated: use modulePath if provided
+  if (modulePath) {
+    process.emitWarning(
+      'electron-chrome-extensions: "modulePath" is deprecated and will be removed in future versions.',
+      { type: 'DeprecationWarning' },
+    )
+    return path.join(modulePath, 'dist', preloadFilename)
+  }
+
+  // Fallback to preload relative to entrypoint directory
+  return path.join(__dirname, preloadFilename)
+}
+
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
    * License used to distribute electron-chrome-extensions.
@@ -44,6 +70,8 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
    * Path to electron-chrome-extensions module files. Might be needed if
    * JavaScript bundlers like Webpack are used in your build process.
+   *
+   * @deprecated See "Packaging the preload script" in the readme.
    */
   modulePath?: string
 }
@@ -60,7 +88,6 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   private ctx: ExtensionContext
-  private modulePath: string
 
   private api: {
     browserAction: BrowserActionAPI
@@ -78,7 +105,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   constructor(opts: ChromeExtensionOptions) {
     super()
 
-    const { license, session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
+    const { license, session = electronSession.defaultSession, ...impl } = opts || {}
 
     checkVersion()
     checkLicense(license)
@@ -99,8 +126,6 @@ export class ElectronChromeExtensions extends EventEmitter {
       store,
     }
 
-    this.modulePath = modulePath || path.join(__dirname, '../..')
-
     this.api = {
       browserAction: new BrowserActionAPI(this.ctx),
       contextMenus: new ContextMenusAPI(this.ctx),
@@ -115,7 +140,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
 
     this.listenForExtensions()
-    this.prependPreload()
+    this.prependPreload(opts.modulePath)
 
     // Register crx:// protocol in default session for convenience
     if (this.ctx.session !== electronSession.defaultSession) {
@@ -129,10 +154,10 @@ export class ElectronChromeExtensions extends EventEmitter {
     })
   }
 
-  private async prependPreload() {
+  private async prependPreload(modulePath?: string) {
     const { session } = this.ctx
 
-    const preloadPath = path.join(this.modulePath, 'dist/preload.js')
+    const preloadPath = resolvePreloadPath(modulePath)
 
     if ('registerPreloadScript' in session) {
       session.registerPreloadScript({
@@ -150,15 +175,12 @@ export class ElectronChromeExtensions extends EventEmitter {
       session.setPreloads([...session.getPreloads(), preloadPath])
     }
 
-    let preloadExists = false
-    try {
-      const stat = await fs.stat(preloadPath)
-      preloadExists = stat.isFile()
-    } catch {}
-
-    if (!preloadExists) {
+    if (!existsSync(preloadPath)) {
       console.error(
-        `Unable to access electron-chrome-extensions preload file (${preloadPath}). Consider configuring the 'modulePath' constructor option.`,
+        new Error(
+          `electron-chrome-extensions: Preload file not found at "${preloadPath}". ` +
+            'See "Packaging the preload script" in the readme.',
+        ),
       )
     }
   }

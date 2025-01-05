@@ -1,4 +1,3 @@
-const path = require('path')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 
 module.exports = {
@@ -12,18 +11,8 @@ module.exports = {
   plugins: [
     new CopyWebpackPlugin({
       patterns: [
-        {
-          from: path.resolve(__dirname, 'browser/ui'),
-          to: path.resolve(__dirname, '.webpack/main/ui'),
-        },
-        {
-          from: path.resolve(__dirname, '../electron-chrome-extensions/dist'),
-          to: path.resolve(__dirname, '.webpack/main/electron-chrome-extensions/dist'),
-        },
-        {
-          from: path.resolve(__dirname, '../electron-chrome-web-store/dist'),
-          to: path.resolve(__dirname, '.webpack/main/electron-chrome-web-store/dist'),
-        },
+        require.resolve('electron-chrome-extensions/preload'),
+        require.resolve('electron-chrome-web-store/preload'),
       ],
     }),
   ],

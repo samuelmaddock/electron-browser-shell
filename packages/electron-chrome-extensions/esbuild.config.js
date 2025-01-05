@@ -3,7 +3,7 @@ const { createConfig, build, EXTERNAL_BASE } = require('../../build/esbuild/esbu
 
 console.log(`building ${packageJson.name}`)
 
-const external = [...EXTERNAL_BASE]
+const external = [...EXTERNAL_BASE, 'electron-chrome-extensions/preload']
 
 const browserConfig = createConfig({
   entryPoints: ['src/index.ts'],
@@ -25,7 +25,7 @@ build(browserESMConfig)
 
 const preloadConfig = createConfig({
   entryPoints: ['src/preload.ts'],
-  outfile: 'dist/preload.js',
+  outfile: 'dist/chrome-extension-api.preload.js',
   platform: 'browser',
   external,
   sourcemap: false,
