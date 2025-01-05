@@ -25,7 +25,7 @@ build(browserESMConfig)
 
 const preloadConfig = createConfig({
   entryPoints: ['src/preload.ts'],
-  outfile: 'dist/preload.js',
+  outfile: 'dist/chrome-extension-api.preload.js',
   platform: 'browser',
   external,
   sourcemap: false,

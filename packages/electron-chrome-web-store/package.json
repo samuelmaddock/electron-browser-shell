@@ -10,7 +10,8 @@
       "types": "./dist/types/browser/index.d.ts",
       "import": "./dist/esm/browser/index.mjs",
       "require": "./dist/cjs/browser/index.js"
-    }
+    },
+    "./preload": "./web-store.preload.js"
   },
   "scripts": {
     "build": "yarn clean && tsc && node esbuild.config.js",

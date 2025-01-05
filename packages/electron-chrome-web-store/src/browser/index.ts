@@ -1,5 +1,6 @@
 import { app, session as electronSession } from 'electron'
 import * as path from 'node:path'
+import { existsSync } from 'node:fs'
 
 import { registerWebStoreApi } from './api'
 import { loadAllExtensions } from './loader'
@@ -9,6 +10,16 @@ import { initUpdater } from './updater'
 export { updateExtensions } from './updater'
 import { getDefaultExtensionsPath } from './utils'
 import { BeforeInstall, ExtensionId, WebStoreState } from './types'
+
+// TODO: test without linked module
+const getDefaultModulePath = () => {
+  try {
+    return path.dirname(path.resolve(require.resolve('electron-chrome-web-store/preload')))
+  } catch {
+    return __dirname
+  }
+}
+  
 
 interface ElectronChromeWebStoreOptions {
   /**
@@ -73,7 +84,7 @@ interface ElectronChromeWebStoreOptions {
 export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions = {}) {
   const session = opts.session || electronSession.defaultSession
   const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
-  const modulePath = opts.modulePath || __dirname
+  const modulePath = opts.modulePath || getDefaultModulePath()
   const loadExtensions = typeof opts.loadExtensions === 'boolean' ? opts.loadExtensions : true
   const allowUnpackedExtensions =
     typeof opts.allowUnpackedExtensions === 'boolean' ? opts.allowUnpackedExtensions : false
@@ -81,6 +92,13 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const minimumManifestVersion =
     typeof opts.minimumManifestVersion === 'number' ? opts.minimumManifestVersion : 3
   const beforeInstall = typeof opts.beforeInstall === 'function' ? opts.beforeInstall : undefined
+
+  console.log('***webstore', {
+    modulePath,
+    resolve: require.resolve,
+    resolved: require.resolve('electron-chrome-web-store/preload'),
+    resolvedPath: path.resolve(require.resolve('electron-chrome-web-store/preload')),
+  })
 
   const webStoreState: WebStoreState = {
     session,
@@ -93,7 +111,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   }
 
   // Add preload script to session
-  const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
+  const preloadPath = path.join(modulePath, 'web-store.preload.js')
 
   if ('registerPreloadScript' in session) {
     session.registerPreloadScript({
@@ -104,6 +122,14 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   } else {
     // @ts-expect-error Deprecated electron@<35
     session.setPreloads([...session.getPreloads(), preloadPath])
+  }
+
+  if (!existsSync(preloadPath)) {
+    const preloadError = new Error(
+      `electron-chrome-web-store: Preload file not found at "${preloadPath}". ` +
+        'Copy "electron-chrome-web-store/preload" into your build files and/or configure the modulePath option.',
+    )
+    console.error(preloadError)
   }
 
   registerWebStoreApi(webStoreState)
