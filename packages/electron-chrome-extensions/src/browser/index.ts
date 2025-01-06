@@ -1,7 +1,7 @@
 import { session as electronSession } from 'electron'
-import { EventEmitter } from 'events'
-import path from 'path'
-import { promises as fs } from 'fs'
+import { EventEmitter } from 'node:events'
+import path from 'node:path'
+import { promises as fs } from 'node:fs'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'

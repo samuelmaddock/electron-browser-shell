@@ -1,20 +1,9 @@
 const packageJson = require('./package.json')
-const { createConfig, build } = require('../../build/esbuild/esbuild.config.base')
+const { createConfig, build, EXTERNAL_BASE } = require('../../build/esbuild/esbuild.config.base')
 
 console.log(`building ${packageJson.name}`)
 
-const external = [
-  'node:crypto',
-  'node:fs',
-  'node:os',
-  'node:path',
-  'node:stream',
-  'node:stream/promises',
-  'electron',
-  'debug',
-  'adm-zip',
-  'pbf',
-]
+const external = [...EXTERNAL_BASE, 'adm-zip', 'pbf']
 
 const esmOnlyModules = ['pbf']
 

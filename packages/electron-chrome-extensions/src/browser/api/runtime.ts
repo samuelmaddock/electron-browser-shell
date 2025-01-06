@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'node:events'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
 import { getExtensionManifest } from './common'

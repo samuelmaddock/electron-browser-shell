@@ -1,4 +1,4 @@
-import * as path from 'path'
+import * as path from 'node:path'
 import { app, BrowserWindow, session, webContents } from 'electron'
 import { uuid } from './spec-helpers'
 import { ElectronChromeExtensions } from '../dist'

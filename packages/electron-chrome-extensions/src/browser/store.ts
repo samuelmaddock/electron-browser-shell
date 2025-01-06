@@ -1,5 +1,5 @@
 import { BrowserWindow, webContents } from 'electron'
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'node:events'
 import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent } from './router'

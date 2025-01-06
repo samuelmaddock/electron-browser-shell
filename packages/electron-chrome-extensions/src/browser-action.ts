@@ -1,7 +1,9 @@
 import { ipcRenderer, contextBridge, webFrame } from 'electron'
-import { EventEmitter } from 'events'
 
 export const injectBrowserAction = () => {
+  // Load node:events directly from Electron rather than bundling
+  const { EventEmitter } = require('node:events')
+
   const actionMap = new Map<string, any>()
   const internalEmitter = new EventEmitter()
   const observerCounts = new Map<string, number>()

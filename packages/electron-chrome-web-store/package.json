@@ -4,14 +4,14 @@
   "description": "Install and update Chrome extensions from the Chrome Web Store for Electron",
   "main": "./dist/cjs/browser/index.js",
   "module": "./dist/esm/browser/index.mjs",
+  "types": "./dist/types/browser/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/browser/index.d.ts",
       "import": "./dist/esm/browser/index.mjs",
-      "require": "./dist/cjs/browser/index.js",
-      "types": "./dist/types/browser/index.d.ts"
+      "require": "./dist/cjs/browser/index.js"
     }
   },
-  "types": "./dist/types/browser/index.d.ts",
   "scripts": {
     "build": "yarn clean && tsc && node esbuild.config.js",
     "clean": "node ../../scripts/clean.js",

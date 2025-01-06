@@ -1,4 +1,4 @@
-import * as path from 'path'
+import * as path from 'node:path'
 import { expect } from 'chai'
 import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
 

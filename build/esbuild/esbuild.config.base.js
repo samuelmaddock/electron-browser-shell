@@ -9,7 +9,6 @@ function createConfig(opts = {}) {
     sourcemap: !prod,
     minify: false,
     external: [],
-    watch: false,
     loader: {
       '.ts': 'ts',
       '.tsx': 'tsx',
@@ -23,4 +22,16 @@ function build(config) {
   esbuild.build(config).catch(() => process.exit(1))
 }
 
-module.exports = { createConfig, build }
+const EXTERNAL_BASE = [
+  'node:crypto',
+  'node:events',
+  'node:fs',
+  'node:os',
+  'node:path',
+  'node:stream',
+  'node:stream/promises',
+  'electron',
+  'debug',
+]
+
+module.exports = { createConfig, build, EXTERNAL_BASE }

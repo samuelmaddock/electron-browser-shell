@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow, app, Extension, webContents } from 'electron'
 import * as http from 'http'
-import * as path from 'path'
+import * as path from 'node:path'
 import { AddressInfo } from 'net'
 import { ElectronChromeExtensions } from '../dist'
 import { emittedOnce } from './events-helpers'
