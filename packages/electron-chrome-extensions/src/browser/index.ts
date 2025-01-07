@@ -206,8 +206,3 @@ export class ElectronChromeExtensions extends EventEmitter {
     this.api.browserAction.removeActions(extension.id)
   }
 }
-
-/**
- * @deprecated Use `ElectronChromeExtensions` instead.
- */
-export const Extensions = ElectronChromeExtensions
