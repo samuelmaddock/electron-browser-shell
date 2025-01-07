@@ -75,7 +75,9 @@ export const injectBrowserAction = () => {
     const DEFAULT_PARTITION = '_self'
 
     // Access from globalThis to prevent accessing incorrect minified variable.
-    const browserAction: typeof __browserAction__ = (globalThis as any).browserAction
+    // Fallback to `__browserAction__` when context isolation is disabled.
+    const browserAction: typeof __browserAction__ =
+      (globalThis as any).browserAction || __browserAction__
 
     class BrowserActionElement extends HTMLButtonElement {
       private updateId?: number
