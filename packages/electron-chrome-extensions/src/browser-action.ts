@@ -1,5 +1,8 @@
 import { ipcRenderer, contextBridge, webFrame } from 'electron'
 
+/**
+ * Injects `<browser-action>` custom element into the current webpage.
+ */
 export const injectBrowserAction = () => {
   // Load node:events directly from Electron rather than bundling
   const { EventEmitter } = require('node:events')
