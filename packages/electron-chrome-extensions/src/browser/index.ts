@@ -99,9 +99,12 @@ export class ElectronChromeExtensions extends EventEmitter {
       store,
     }
 
-    console.log('***load', {
-      resolve: require.resolve('electron-chrome-extensions/preload'),
-      require: require('electron-chrome-extensions')
+    console.log('***extensions', {
+      modulePath,
+      resolve: require.resolve,
+      resolved: require.resolve('electron-chrome-extensions/preload'),
+      // resolvedPath: path.resolve(globalThis.require.resolve('electron-chrome-extensions/preload')),
+      require: globalThis.require,
     })
     this.modulePath = modulePath || __dirname
 
