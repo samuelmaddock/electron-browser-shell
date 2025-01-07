@@ -2,7 +2,7 @@ import { ipcMain, BrowserWindow, app, Extension, webContents } from 'electron'
 import * as http from 'http'
 import * as path from 'node:path'
 import { AddressInfo } from 'net'
-import { ElectronChromeExtensions } from '../dist'
+import { ElectronChromeExtensions } from '../'
 import { emittedOnce } from './events-helpers'
 import { addCrxPreload, createCrxSession, waitForBackgroundScriptEvaluated } from './crx-helpers'
 

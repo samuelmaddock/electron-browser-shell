@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { session } from 'electron'
-import { ElectronChromeExtensions } from '../dist'
+import { ElectronChromeExtensions } from '../'
 
 describe('Extensions', () => {
   const testSession = session.fromPartition('test-extensions')

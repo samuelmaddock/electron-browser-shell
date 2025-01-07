@@ -85,7 +85,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       store,
     }
 
-    this.modulePath = modulePath || path.join(__dirname, '..')
+    this.modulePath = modulePath || path.join(__dirname, '../..')
 
     this.api = {
       browserAction: new BrowserActionAPI(this.ctx),

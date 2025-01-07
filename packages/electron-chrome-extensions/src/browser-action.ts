@@ -4,12 +4,11 @@ import { ipcRenderer, contextBridge, webFrame } from 'electron'
  * Injects `<browser-action>` custom element into the current webpage.
  */
 export const injectBrowserAction = () => {
-  // Load node:events directly from Electron rather than bundling
-  const { EventEmitter } = require('node:events')
-
   const actionMap = new Map<string, any>()
-  const internalEmitter = new EventEmitter()
   const observerCounts = new Map<string, number>()
+
+  // Reuse `process` to avoid bundling custom EventEmitter
+  const internalEmitter = process as NodeJS.EventEmitter
 
   const invoke = <T>(name: string, partition: string, ...args: any[]): Promise<T> => {
     return ipcRenderer.invoke('crx-msg-remote', partition, name, ...args)
@@ -24,10 +23,10 @@ export const injectBrowserAction = () => {
 
   const __browserAction__ = {
     addEventListener(name: string, listener: (...args: any[]) => void) {
-      internalEmitter.addListener(name, listener)
+      internalEmitter.addListener(`-actions-${name}`, listener)
     },
     removeEventListener(name: string, listener: (...args: any[]) => void) {
-      internalEmitter.removeListener(name, listener)
+      internalEmitter.removeListener(`-actions-${name}`, listener)
     },
 
     getAction(extensionId: string) {
@@ -38,7 +37,7 @@ export const injectBrowserAction = () => {
       for (const action of state.actions) {
         actionMap.set(action.id, action)
       }
-      queueMicrotask(() => internalEmitter.emit('update', state))
+      queueMicrotask(() => internalEmitter.emit('-actions-update', state))
       return state
     },
 
