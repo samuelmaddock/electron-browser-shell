@@ -19,7 +19,6 @@ const getDefaultModulePath = () => {
     return __dirname
   }
 }
-  
 
 interface ElectronChromeWebStoreOptions {
   /**

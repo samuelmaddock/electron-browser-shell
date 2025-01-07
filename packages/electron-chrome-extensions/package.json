@@ -21,7 +21,7 @@
       "import": "./dist/esm/browser-action.mjs",
       "require": "./dist/cjs/browser-action.js"
     },
-    "./preload": "./chrome-extension-api.preload.js"
+    "./preload": "./dist/chrome-extension-api.preload.js"
   },
   "scripts": {
     "build": "yarn clean && tsc && node esbuild.config.js",
