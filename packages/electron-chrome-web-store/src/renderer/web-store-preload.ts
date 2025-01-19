@@ -61,6 +61,21 @@ function updateBranding(appName: string) {
   setTimeout(update, 1000 / 60)
 }
 
+function getUAProductVersion(userAgent: string, product: string) {
+  const regex = new RegExp(`${product}/([\\d.]+)`)
+  return userAgent.match(regex)?.[1]
+}
+
+function overrideUserAgent() {
+  const chromeVersion = getUAProductVersion(navigator.userAgent, 'Chrome') || '133.0.6920.0'
+  const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`
+  webFrame.executeJavaScript(
+    `(${function (userAgent: string) {
+      Object.defineProperty(navigator, 'userAgent', { value: userAgent })
+    }})(${JSON.stringify(userAgent)});`,
+  )
+}
+
 function setupChromeWebStoreApi() {
   let appName: string | undefined
 
@@ -291,6 +306,7 @@ function setupChromeWebStoreApi() {
   electronWebstore.getFullChromeVersion()
 
   // Replace branding
+  overrideUserAgent()
   process.once('document-start', maybeUpdateBranding)
   if ('navigation' in window) {
     ;(window.navigation as any).addEventListener('navigate', maybeUpdateBranding)
