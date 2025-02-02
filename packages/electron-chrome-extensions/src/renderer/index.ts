@@ -129,7 +129,9 @@ export const injectExtensionAPIs = () => {
       set() {}
       get() {}
       clear() {}
-      // onChange: chrome.types.ChromeSettingChangedEvent
+      onChange = {
+        addListener: () => {},
+      }
     }
 
     type DeepPartial<T> = {
@@ -391,6 +393,11 @@ export const injectExtensionAPIs = () => {
             network: {
               networkPredictionEnabled: new ChromeSetting(),
               webRTCIPHandlingPolicy: new ChromeSetting(),
+            },
+            services: {
+              autofillAddressEnabled: new ChromeSetting(),
+              autofillCreditCardEnabled: new ChromeSetting(),
+              passwordSavingEnabled: new ChromeSetting(),
             },
             websites: {
               hyperlinkAuditingEnabled: new ChromeSetting(),
