@@ -124,7 +124,8 @@ export const injectExtensionAPIs = () => {
       }
     }
 
-    class ChromeSetting implements Partial<chrome.types.ChromeSetting> {
+    // chrome.types.ChromeSetting<any>
+    class ChromeSetting {
       set() {}
       get() {}
       clear() {}

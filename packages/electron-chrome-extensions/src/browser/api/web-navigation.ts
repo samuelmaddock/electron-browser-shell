@@ -4,8 +4,10 @@ import { ExtensionEvent } from '../router'
 
 const debug = require('debug')('electron-chrome-extensions:webNavigation')
 
+type DocumentLifecycle = 'prerender' | 'active' | 'cached' | 'pending_deletion'
+
 const getFrame = (frameProcessId: number, frameRoutingId: number) =>
-  electron.webFrameMain.fromId(frameProcessId, frameRoutingId);
+  electron.webFrameMain.fromId(frameProcessId, frameRoutingId)
 
 const getFrameId = (frame: Electron.WebFrameMain) =>
   frame === frame.top ? 0 : frame.frameTreeNodeId
@@ -17,19 +19,24 @@ const getParentFrameId = (frame: Electron.WebFrameMain) => {
 
 // TODO(mv3): fenced_frame getter API needed
 const getFrameType = (frame: Electron.WebFrameMain) =>
-  !frame.parent ? 'outermost_frame' : 'sub_frame';
+  !frame.parent ? 'outermost_frame' : 'sub_frame'
 
 // TODO(mv3): add WebFrameMain API to retrieve this
-const getDocumentLifecycle = (frame: Electron.WebFrameMain): DocumentLifecycle =>
-  'active' as const;
+const getDocumentLifecycle = (frame: Electron.WebFrameMain): DocumentLifecycle => 'active' as const
 
-const getFrameDetails = (frame: Electron.WebFrameMain): chrome.webNavigation.GetFrameResultDetails => ({
+const getFrameDetails = (
+  frame: Electron.WebFrameMain,
+): chrome.webNavigation.GetFrameResultDetails => ({
   // TODO(mv3): implement new properties
   url: frame.url,
   documentId: 'not-implemented',
   documentLifecycle: getDocumentLifecycle(frame),
   errorOccurred: false,
   frameType: getFrameType(frame),
+  // FIXME: frameId is missing from @types/chrome
+  ...{
+    frameId: getFrameId(frame),
+  },
   parentDocumentId: undefined,
   parentFrameId: getParentFrameId(frame),
 })
@@ -161,15 +168,15 @@ export class WebNavigationAPI {
     const frame = getFrame(frameProcessId, frameRoutingId)
     if (!frame) {
       // TODO(mv3): handle null return
-      return;
+      return
     }
-    
+
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails = {
       frameId: getFrameId(frame),
       // NOTE: workaround for property missing in type
-      ...({
+      ...{
         parentFrameId: getParentFrameId(frame),
-      }),
+      },
       frameType: getFrameType(frame),
       transitionType: '', // TODO(mv3)
       transitionQualifiers: [], // TODO(mv3)
@@ -193,9 +200,9 @@ export class WebNavigationAPI {
     const frame = getFrame(frameProcessId, frameRoutingId)
     if (!frame) {
       // TODO(mv3): handle null return
-      return;
+      return
     }
-    
+
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
       parentFrameId: number
     } = {
@@ -241,9 +248,9 @@ export class WebNavigationAPI {
     const frame = getFrame(frameProcessId, frameRoutingId)
     if (!frame) {
       // TODO(mv3): handle null return
-      return;
+      return
     }
-    
+
     const url = tab.getURL()
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),

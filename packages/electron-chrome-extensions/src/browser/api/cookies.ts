@@ -39,7 +39,7 @@ export class CookiesAPI {
 
   private async get(
     event: ExtensionEvent,
-    details: chrome.cookies.Details,
+    details: chrome.cookies.CookieDetails,
   ): Promise<chrome.cookies.Cookie | null> {
     // TODO: storeId
     const cookies = await this.cookies.get({
@@ -81,8 +81,8 @@ export class CookiesAPI {
 
   private async remove(
     event: ExtensionEvent,
-    details: chrome.cookies.Details,
-  ): Promise<chrome.cookies.Details | null> {
+    details: chrome.cookies.CookieDetails,
+  ): Promise<chrome.cookies.CookieDetails | null> {
     try {
       await this.cookies.remove(details.url, details.name)
     } catch {

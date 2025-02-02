@@ -101,6 +101,7 @@ export class TabsAPI {
       autoDiscardable: true,
       discarded: false,
       favIconUrl: tab.favicon || undefined,
+      frozen: false,
       height,
       highlighted: false,
       id: tabId,
