@@ -51,10 +51,42 @@ export const injectExtensionAPIs = () => {
     }
   }
 
+  type ConnectNativeCallback = (connectionId: string, send: (message: any) => void) => void
+  const connectNative = (
+    extensionId: string,
+    application: string,
+    receive: (message: any) => void,
+    disconnect: () => void,
+    callback: ConnectNativeCallback,
+  ) => {
+    const connectionId = (contextBridge as any).executeInMainWorld({
+      func: () => crypto.randomUUID(),
+    })
+    invokeExtension(extensionId, 'runtime.connectNative', {}, connectionId, application)
+    const onMessage = (_event: Electron.IpcRendererEvent, message: any) => {
+      receive(message)
+    }
+    ipcRenderer.on(`crx-native-msg-${connectionId}`, onMessage)
+    ipcRenderer.once(`crx-native-msg-${connectNative}-disconnect`, () => {
+      ipcRenderer.off(`crx-native-msg-${connectionId}`, onMessage)
+      disconnect()
+    })
+    const send = (message: any) => {
+      ipcRenderer.send(`crx-native-msg-${connectionId}`, message)
+    }
+    callback(connectionId, send)
+  }
+
+  const disconnectNative = (extensionId: string, connectionId: string) => {
+    invokeExtension(extensionId, 'runtime.disconnectNative', {}, connectionId)
+  }
+
   const electronContext = {
     invokeExtension,
     addExtensionListener,
     removeExtensionListener,
+    connectNative,
+    disconnectNative,
   }
 
   // Function body to run in the main world.
@@ -132,6 +164,70 @@ export const injectExtensionAPIs = () => {
       onChange = {
         addListener: () => {},
       }
+    }
+
+    class Event<T extends Function> implements Partial<chrome.events.Event<T>> {
+      private listeners: T[] = []
+
+      _emit(...args: any[]) {
+        this.listeners.forEach((listener) => {
+          listener(...args)
+        })
+      }
+
+      addListener(callback: T): void {
+        this.listeners.push(callback)
+      }
+      removeListener(callback: T): void {
+        const index = this.listeners.indexOf(callback)
+        if (index > -1) {
+          this.listeners.splice(index, 1)
+        }
+      }
+    }
+
+    class NativePort implements chrome.runtime.Port {
+      private connectionId: string = ''
+      private connected = false
+      private pending: any[] = []
+
+      name: string = ''
+
+      _init = (connectionId: string, send: (message: any) => void) => {
+        this.connected = true
+        this.connectionId = connectionId
+        this._send = send
+
+        this.pending.forEach((msg) => this.postMessage(msg))
+        this.pending = []
+
+        Object.defineProperty(this, '_init', { value: undefined })
+      }
+
+      _send(message: any) {
+        this.pending.push(message)
+      }
+
+      _receive(message: any) {
+        ;(this.onMessage as any)._emit(message)
+      }
+
+      _disconnect() {
+        this.disconnect()
+      }
+
+      postMessage(message: any) {
+        this._send(message)
+      }
+      disconnect() {
+        if (this.connected) {
+          electron.disconnectNative(extensionId, this.connectionId)
+          ;(this.onDisconnect as any)._emit()
+          this.connected = false
+        }
+      }
+      onMessage: chrome.runtime.PortMessageEvent = new Event() as any
+      onDisconnect: chrome.runtime.PortDisconnectEvent = new Event() as any
     }
 
     type DeepPartial<T> = {
@@ -410,6 +506,16 @@ export const injectExtensionAPIs = () => {
         factory: (base) => {
           return {
             ...base,
+            connectNative: (application: string) => {
+              const port = new NativePort()
+              const receive = port._receive.bind(port)
+              const disconnect = port._disconnect.bind(port)
+              const callback: ConnectNativeCallback = (connectionId, send) => {
+                port._init(connectionId, send)
+              }
+              electron.connectNative(extensionId, application, receive, disconnect, callback)
+              return port
+            },
             openOptionsPage: invokeExtension('runtime.openOptionsPage'),
           }
         },

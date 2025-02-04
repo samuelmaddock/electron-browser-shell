@@ -101,3 +101,10 @@ export async function waitForBackgroundScriptEvaluated(
     backgroundHost.on('console-message', onConsoleMessage)
   })
 }
+
+export async function getExtensionId(name: string) {
+  const extensionPath = path.join(__dirname, 'fixtures', name)
+  const ses = createCrxSession().session
+  const extension = await ses.loadExtension(extensionPath)
+  return extension.id
+}

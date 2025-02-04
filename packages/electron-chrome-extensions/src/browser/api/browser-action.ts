@@ -163,7 +163,7 @@ export class BrowserActionAPI {
     handle(
       'browserAction.addObserver',
       (event) => {
-        const { sender: observer } = event
+        const observer = event.sender as any
         this.observers.add(observer)
         // TODO(mv3): need a destroyed event on workers
         observer.once?.('destroyed', () => {
@@ -371,7 +371,7 @@ export class BrowserActionAPI {
     const { eventType, extensionId, tabId } = details
 
     debug(
-      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender.id}]`,
+      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender!.id}]`,
     )
 
     switch (eventType) {

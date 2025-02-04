@@ -152,8 +152,14 @@ class RoutingDelegate {
   }
 }
 
+export interface ExtensionSender {
+  id: number
+  ipc: Electron.IpcMain
+  send: Electron.WebFrameMain['send']
+}
+
 export interface ExtensionEvent {
-  sender?: any // TODO(mv3): types
+  sender?: ExtensionSender
   extension: Extension
 }
 
@@ -164,6 +170,8 @@ export interface HandlerOptions {
   allowRemote?: boolean
   /** Whether an extension context is required to invoke the handler. */
   extensionContext: boolean
+  /** Required extension permission to run the handler. */
+  permission?: chrome.runtime.ManifestPermissions
 }
 
 interface Handler extends HandlerOptions {
@@ -342,9 +350,18 @@ export class ExtensionRouter {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
 
+    if (handler.permission) {
+      const manifest: chrome.runtime.Manifest = extension?.manifest
+      if (!extension || !manifest.permissions?.includes(handler.permission)) {
+        throw new Error(
+          `${handlerName} requires an extension with ${handler.permission} permissions`,
+        )
+      }
+    }
+
     const extEvent: ExtensionEvent = {
       // TODO(mv3): handle types
-      sender: event.sender || (event as any).worker,
+      sender: event.sender || (event as any).serviceWorker,
       extension: extension!,
     }
 
@@ -355,17 +372,18 @@ export class ExtensionRouter {
     return result
   }
 
-  private handle(name: string, callback: HandlerCallback, opts?: HandlerOptions): void {
+  private handle(name: string, callback: HandlerCallback, opts?: Partial<HandlerOptions>): void {
     this.handlers.set(name, {
       callback,
       extensionContext: typeof opts?.extensionContext === 'boolean' ? opts.extensionContext : true,
       allowRemote: typeof opts?.allowRemote === 'boolean' ? opts.allowRemote : false,
+      permission: typeof opts?.permission === 'string' ? opts.permission : undefined,
     })
   }
 
   /** Returns a callback to register API handlers for the given context. */
   apiHandler() {
-    return (name: string, callback: HandlerCallback, opts?: HandlerOptions) => {
+    return (name: string, callback: HandlerCallback, opts?: Partial<HandlerOptions>) => {
       this.handle(name, callback, opts)
     }
   }

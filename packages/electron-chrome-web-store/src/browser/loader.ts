@@ -131,6 +131,7 @@ export async function loadAllExtensions(
 
   for (const ext of extensions) {
     try {
+      let extension: Electron.Extension | undefined
       if (ext.type === 'store') {
         const existingExt = session.getExtension(ext.id)
         if (existingExt) {
@@ -138,10 +139,20 @@ export async function loadAllExtensions(
           continue
         }
         d('loading extension %s', `${ext.id}@${ext.manifest.version}`)
-        await session.loadExtension(ext.path)
+        extension = await session.loadExtension(ext.path)
       } else if (options.allowUnpacked) {
         d('loading unpacked extension %s', ext.path)
-        await session.loadExtension(ext.path)
+        extension = await session.loadExtension(ext.path)
+      }
+
+      if (
+        extension &&
+        extension.manifest.manifest_version === 3 &&
+        extension.manifest.background?.service_worker
+      ) {
+        // TODO(mv3): electron 35 types
+        const scope = `chrome-extension://${extension.id}`
+        await (session.serviceWorkers as any).startWorkerForScope(scope)
       }
     } catch (error) {
       console.error(`Failed to load extension from ${ext.path}`)

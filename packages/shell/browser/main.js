@@ -224,6 +224,15 @@ class Browser {
       .replace(/\sElectron\/\S+/, '')
       .replace(new RegExp(`\\s${app.getName()}/\\S+`), '')
     this.session.setUserAgent(userAgent)
+
+    if (process.env.SHELL_DEBUG) {
+      this.session.serviceWorkers.once('running-status-changed', () => {
+        const tab = this.windows[0]?.getFocusedTab()
+        if (tab) {
+          tab.webContents.inspectServiceWorker()
+        }
+      })
+    }
   }
 
   createWindow(options) {
