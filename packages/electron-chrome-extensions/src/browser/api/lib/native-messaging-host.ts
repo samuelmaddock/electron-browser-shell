@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import { app } from 'electron'
 import { ExtensionSender } from '../../router'
+import { readRegistryKey } from './winreg'
 
 const d = require('debug')('electron-chrome-extensions:nativeMessaging')
 
@@ -17,21 +18,41 @@ interface NativeConfig {
 async function readNativeMessagingHostConfig(
   application: string,
 ): Promise<NativeConfig | undefined> {
-  let searchPaths = [path.join(app.getPath('userData'), 'NativeMessagingHosts')]
+  let searchPaths: string[]
   switch (process.platform) {
     case 'darwin':
-      searchPaths.push('/Library/Google/Chrome/NativeMessagingHosts')
+      searchPaths = [
+        path.join(app.getPath('userData'), 'NativeMessagingHosts', `${application}.json`),
+        path.join('/Library/Google/Chrome/NativeMessagingHosts', `${application}.json`),
+      ]
       break
+    case 'linux':
+      searchPaths = [
+        path.join(app.getPath('userData'), 'NativeMessagingHosts', `${application}.json`),
+        path.join('/etc/opt/chrome/native-messaging-hosts/', `${application}.json`),
+      ]
+      break
+    case 'win32': {
+      searchPaths = (
+        await Promise.allSettled([
+          readRegistryKey('HKLM', '\\Software\\Google\\Chrome\\NativeMessagingHosts', application),
+          readRegistryKey('HKCU', '\\Software\\Google\\Chrome\\NativeMessagingHosts', application),
+        ])
+      )
+        .map((result) => (result.status === 'fulfilled' ? result.value : undefined))
+        .filter(Boolean) as string[]
+      break
+    }
     default:
       throw new Error('Unsupported platform')
   }
 
-  for (const basePath of searchPaths) {
-    const filePath = path.join(basePath, `${application}.json`)
+  for (const filePath of searchPaths) {
     try {
       const data = await fs.readFile(filePath)
       return JSON.parse(data.toString())
-    } catch {
+    } catch (error) {
+      d('readNativeMessagingHostConfig: unable to read %s', filePath, error)
       continue
     }
   }
