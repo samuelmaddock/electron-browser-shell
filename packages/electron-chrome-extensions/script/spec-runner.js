@@ -55,6 +55,12 @@ async function runMainProcessElectronTests() {
   let exe = require('electron')
   const runnerArgs = ['spec', ...unknownArgs.slice(2)]
 
+  // Fix issue in CI
+  // "The SUID sandbox helper binary was found, but is not configured correctly."
+  if (process.platform === 'linux') {
+    runnerArgs.push('--no-sandbox')
+  }
+
   const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '..'),
     env: process.env,

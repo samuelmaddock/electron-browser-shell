@@ -24,10 +24,15 @@ async function createSEA() {
   }
 
   console.info(`Building ${exeName}…`)
-  await exec(
-    `npx postject ${basePath}${exeName} NODE_SEA_BLOB ${basePath}${seaBlobName} --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --macho-segment-name NODE_SEA`,
-    { cwd: outDir },
-  )
+  const buildCmd = [
+    'npx postject',
+    `${basePath}${exeName}`,
+    'NODE_SEA_BLOB',
+    `${basePath}${seaBlobName}`,
+    '--sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2',
+    ...(process.platform === 'darwin' ? ['--macho-segment-name NODE_SEA'] : []),
+  ]
+  await exec(buildCmd.join(' '), { cwd: outDir })
 
   if (process.platform === 'darwin') {
     await exec(`codesign --sign - ${exeName}`, { cwd: outDir })
