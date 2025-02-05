@@ -517,6 +517,7 @@ export const injectExtensionAPIs = () => {
               return port
             },
             openOptionsPage: invokeExtension('runtime.openOptionsPage'),
+            sendNativeMessage: invokeExtension('runtime.sendNativeMessage'),
           }
         },
       },

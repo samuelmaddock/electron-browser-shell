@@ -42,17 +42,25 @@ export class NativeMessagingHost {
   private connectionId: string
   private connected: boolean = false
   private pending?: any[]
+  private keepAlive: boolean
+  private resolveResponse?: (message: any) => void
+
+  ready?: Promise<void>
 
   constructor(
     extensionId: string,
     sender: ExtensionSender,
     connectionId: string,
     application: string,
+    keepAlive: boolean = true,
   ) {
+    this.keepAlive = keepAlive
     this.sender = sender
-    this.sender.ipc.on(`crx-native-msg-${connectionId}`, this.receiveExtensionMessage)
+    if (keepAlive) {
+      this.sender.ipc.on(`crx-native-msg-${connectionId}`, this.receiveExtensionMessage)
+    }
     this.connectionId = connectionId
-    this.launch(application, extensionId)
+    this.ready = this.launch(application, extensionId)
   }
 
   destroy() {
@@ -62,8 +70,10 @@ export class NativeMessagingHost {
       this.process.kill()
       this.process = undefined
     }
-    this.sender.ipc.off(`crx-native-msg-${this.connectionId}`, this.receiveExtensionMessage)
-    this.sender.send(`crx-native-msg-${this.connectionId}-disconnect`)
+    if (this.keepAlive) {
+      this.sender.ipc.off(`crx-native-msg-${this.connectionId}`, this.receiveExtensionMessage)
+      this.sender.send(`crx-native-msg-${this.connectionId}-disconnect`)
+    }
   }
 
   private async launch(application: string, extensionId: string) {
@@ -127,6 +137,17 @@ export class NativeMessagingHost {
     const length = data.readUInt32LE(0)
     const message = JSON.parse(data.subarray(4, 4 + length).toString())
     d('receive: %s', message)
-    this.sender.send(`crx-native-msg-${this.connectionId}`, message)
+    if (this.keepAlive) {
+      this.sender.send(`crx-native-msg-${this.connectionId}`, message)
+    } else {
+      this.resolveResponse?.(message)
+    }
+  }
+
+  sendAndReceive(message: any) {
+    this.send(message)
+    return new Promise((resolve) => {
+      this.resolveResponse = resolve
+    })
   }
 }

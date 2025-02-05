@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
@@ -14,6 +15,7 @@ export class RuntimeAPI extends EventEmitter {
     handle('runtime.connectNative', this.connectNative, { permission: 'nativeMessaging' })
     handle('runtime.disconnectNative', this.disconnectNative, { permission: 'nativeMessaging' })
     handle('runtime.openOptionsPage', this.openOptionsPage)
+    handle('runtime.sendNativeMessage', this.sendNativeMessage, { permission: 'nativeMessaging' })
   }
 
   private connectNative = async (
@@ -33,6 +35,19 @@ export class RuntimeAPI extends EventEmitter {
   private disconnectNative = (event: ExtensionEvent, connectionId: string) => {
     this.hostMap[connectionId]?.destroy()
     this.hostMap[connectionId] = undefined
+  }
+
+  private sendNativeMessage = async (event: ExtensionEvent, application: string, message: any) => {
+    const connectionId = randomUUID()
+    const host = new NativeMessagingHost(
+      event.extension.id,
+      event.sender!,
+      connectionId,
+      application,
+      false,
+    )
+    await host.ready
+    return await host.sendAndReceive(message)
   }
 
   private openOptionsPage = async ({ extension }: ExtensionEvent) => {

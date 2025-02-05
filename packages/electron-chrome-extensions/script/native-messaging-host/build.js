@@ -74,7 +74,6 @@ async function main() {
   }
 
   const extensionIds = extensionIdsArg.split(',')
-  console.log(extensionIds)
   await createSEA()
   await installConfig(extensionIds)
 }
