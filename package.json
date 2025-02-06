@@ -18,7 +18,7 @@
     "start": "yarn build:context-menu && yarn build:extensions && yarn build:chrome-web-store && yarn --cwd ./packages/shell start",
     "start:debug": "cross-env SHELL_DEBUG=true DEBUG='electron*' yarn start",
     "start:electron-dev": "cross-env ELECTRON_OVERRIDE_DIST_PATH=$(e show out --path) ELECTRON_ENABLE_LOGGING=1 yarn start",
-    "start:electron-dev:debug": "cross-env SHELL_DEBUG=true DEBUG='electron*' yarn start:electron-dev",
+    "start:electron-dev:debug": "cross-env DEBUG='electron*' yarn start:electron-dev",
     "start:electron-dev:trace": "cross-env ELECTRON_OVERRIDE_DIST_PATH=$(e show out --path) ELECTRON_ENABLE_LOGGING=1 yarn --cwd ./packages/shell start:trace",
     "start:skip-build": "cross-env SHELL_DEBUG=true DEBUG='electron-chrome-extensions*' yarn --cwd ./packages/shell start",
     "test": "yarn test:extensions",

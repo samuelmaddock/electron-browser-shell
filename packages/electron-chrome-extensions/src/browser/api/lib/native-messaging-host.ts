@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
+import * as os from 'node:os'
 import * as path from 'node:path'
 import { app } from 'electron'
 import { ExtensionSender } from '../../router'
@@ -22,26 +23,35 @@ function isValidConfig(config: any): config is NativeConfig {
     typeof config.name === 'string' &&
     typeof config.description === 'string' &&
     typeof config.path === 'string' &&
-    config.stdio === 'stdio' &&
+    config.type === 'stdio' &&
     Array.isArray(config.allowed_origins)
   )
 }
 
-async function readNativeMessagingHostConfig(
-  application: string,
-): Promise<NativeConfig | undefined> {
+async function getConfigSearchPaths(application: string) {
+  const appJson = `${application}.json`
   let searchPaths: string[]
   switch (process.platform) {
     case 'darwin':
       searchPaths = [
-        path.join(app.getPath('userData'), 'NativeMessagingHosts', `${application}.json`),
-        path.join('/Library/Google/Chrome/NativeMessagingHosts', `${application}.json`),
+        path.join('/Library/Google/Chrome/NativeMessagingHosts', appJson),
+        // Also look under Chrome's directory since some apps only install their
+        // config there
+        path.join(
+          os.homedir(),
+          'Library',
+          'Application Support',
+          'Google/Chrome/NativeMessagingHosts',
+          appJson,
+        ),
+        path.join(app.getPath('userData'), 'NativeMessagingHosts', appJson),
       ]
       break
     case 'linux':
       searchPaths = [
-        path.join(app.getPath('userData'), 'NativeMessagingHosts', `${application}.json`),
-        path.join('/etc/opt/chrome/native-messaging-hosts/', `${application}.json`),
+        path.join('/etc/opt/chrome/native-messaging-hosts/', appJson),
+        path.join(os.homedir(), '.config/google-chrome/NativeMessagingHosts/', appJson),
+        path.join(app.getPath('userData'), 'NativeMessagingHosts', appJson),
       ]
       break
     case 'win32': {
@@ -58,14 +68,29 @@ async function readNativeMessagingHostConfig(
     default:
       throw new Error('Unsupported platform')
   }
+  return searchPaths
+}
 
+async function readNativeMessagingHostConfig(
+  application: string,
+): Promise<NativeConfig | undefined> {
+  const searchPaths = await getConfigSearchPaths(application)
   for (const filePath of searchPaths) {
     try {
       const data = await fs.readFile(filePath)
       const config = JSON.parse(data.toString())
-      if (isValidConfig(config)) return config
+      if (isValidConfig(config)) {
+        d('read config in %s', filePath, config)
+        return config
+      } else {
+        d('%s contained invalid config', filePath, config)
+      }
     } catch (error) {
-      d('readNativeMessagingHostConfig: unable to read %s', filePath, error)
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        d('unable to read %s', filePath)
+      } else {
+        d('unknown error', error)
+      }
       continue
     }
   }
