@@ -40,7 +40,7 @@ export class CommandsAPI {
     this.commandMap.delete(extension.id)
   }
 
-  getAll({ extension }: ExtensionEvent): chrome.commands.Command[] {
+  private getAll = ({ extension }: ExtensionEvent): chrome.commands.Command[] => {
     return this.commandMap.get(extension.id) || []
   }
 }
