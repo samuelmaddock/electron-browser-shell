@@ -15,6 +15,18 @@ interface NativeConfig {
   allowed_origins: string[]
 }
 
+function isValidConfig(config: any): config is NativeConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    typeof config.name === 'string' &&
+    typeof config.description === 'string' &&
+    typeof config.path === 'string' &&
+    config.stdio === 'stdio' &&
+    Array.isArray(config.allowed_origins)
+  )
+}
+
 async function readNativeMessagingHostConfig(
   application: string,
 ): Promise<NativeConfig | undefined> {
@@ -50,7 +62,8 @@ async function readNativeMessagingHostConfig(
   for (const filePath of searchPaths) {
     try {
       const data = await fs.readFile(filePath)
-      return JSON.parse(data.toString())
+      const config = JSON.parse(data.toString())
+      if (isValidConfig(config)) return config
     } catch (error) {
       d('readNativeMessagingHostConfig: unable to read %s', filePath, error)
       continue
@@ -105,9 +118,28 @@ export class NativeMessagingHost {
       return
     }
 
+    const extensionUrl = `chrome-extension://${extensionId}/`
+    if (!config.allowed_origins?.includes(extensionUrl)) {
+      d('launch: %s not in allowed origins', extensionId)
+      this.destroy()
+      return
+    }
+
+    let isFile = false
+    try {
+      const stat = await fs.stat(config.path)
+      isFile = stat.isFile()
+    } catch (error) {
+      d('launch: unable to find %s', config.path, error)
+    }
+
+    if (!isFile) {
+      this.destroy()
+      return
+    }
+
     d('launch: spawning %s for %s', config.path, extensionId)
-    // TODO: must be a binary executable
-    this.process = spawn(config.path, [`chrome-extension://${extensionId}/`], {
+    this.process = spawn(config.path, [extensionUrl], {
       shell: false,
     })
 
