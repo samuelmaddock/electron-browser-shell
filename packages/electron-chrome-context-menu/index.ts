@@ -212,13 +212,13 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
 
     append({
       label: labels.back,
-      enabled: webContents.canGoBack(),
-      click: () => webContents.goBack(),
+      enabled: webContents.navigationHistory.canGoBack(),
+      click: () => webContents.navigationHistory.goBack(),
     })
     append({
       label: labels.forward,
-      enabled: webContents.canGoForward(),
-      click: () => webContents.goForward(),
+      enabled: webContents.navigationHistory.canGoForward(),
+      click: () => webContents.navigationHistory.goForward(),
     })
     append({
       label: labels.reload,
