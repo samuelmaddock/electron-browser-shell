@@ -115,18 +115,18 @@ export class ElectronChromeExtensions extends EventEmitter {
     const preloadPath = path.join(this.modulePath, 'dist/preload.js')
 
     if ('registerPreloadScript' in session) {
-      // TODO(mv3): remove 'any'
-      ;(session as any).registerPreloadScript({
+      session.registerPreloadScript({
         id: 'crx-mv2-preload',
         type: 'frame',
         filePath: preloadPath,
       })
-      ;(session as any).registerPreloadScript({
+      session.registerPreloadScript({
         id: 'crx-mv3-preload',
         type: 'service-worker',
         filePath: preloadPath,
       })
     } else {
+      // @ts-expect-error Deprecated electron@<35
       session.setPreloads([...session.getPreloads(), preloadPath])
     }
 

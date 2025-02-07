@@ -150,9 +150,8 @@ export async function loadAllExtensions(
         extension.manifest.manifest_version === 3 &&
         extension.manifest.background?.service_worker
       ) {
-        // TODO(mv3): electron 35 types
         const scope = `chrome-extension://${extension.id}`
-        await (session.serviceWorkers as any).startWorkerForScope(scope)
+        await session.serviceWorkers.startWorkerForScope(scope)
       }
     } catch (error) {
       console.error(`Failed to load extension from ${ext.path}`)

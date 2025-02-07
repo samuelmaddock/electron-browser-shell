@@ -44,11 +44,11 @@ describe('chrome.browserAction', () => {
       const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
 
       if ('registerPreloadScript' in otherSession) {
-        // TODO(mv3): remove any
-        ;(browser.session as any).getPreloadScripts().forEach((script: any) => {
-          ;(otherSession as any).registerPreloadScript(script)
+        browser.session.getPreloadScripts().forEach((script: any) => {
+          otherSession.registerPreloadScript(script)
         })
       } else {
+        // @ts-expect-error Deprecated electron@<35
         otherSession.setPreloads(browser.session.getPreloads())
       }
 

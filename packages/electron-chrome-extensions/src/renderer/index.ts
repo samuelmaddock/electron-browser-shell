@@ -244,7 +244,6 @@ export const injectExtensionAPIs = () => {
     }
 
     const browserActionFactory = (base: DeepPartial<typeof globalThis.chrome.browserAction>) => {
-      // TODO(mv3): add new action APIs
       const api = {
         ...base,
 

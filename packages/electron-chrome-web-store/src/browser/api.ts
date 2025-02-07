@@ -180,8 +180,7 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {
         const ext = webStoreState.session.getExtension(details.id)
-        if (ext) {
-          // TODO: use WebFrameMain.isDestroyed
+        if (ext && senderFrame && !senderFrame.isDestroyed()) {
           try {
             senderFrame.send('chrome.management.onInstalled', getExtensionInfo(ext))
           } catch (error) {

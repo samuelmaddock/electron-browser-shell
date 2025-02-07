@@ -412,11 +412,11 @@ export const injectBrowserAction = () => {
 
     // Must execute script in main world to modify custom component registry.
     if ('executeInMainWorld' in contextBridge) {
-      ;(contextBridge as any).executeInMainWorld({
+      contextBridge.executeInMainWorld({
         func: mainWorldScript,
       })
     } else {
-      // TODO(mv3): remove webFrame usage
+      // Deprecated electron@<35
       webFrame.executeJavaScript(`(${mainWorldScript}());`)
     }
   } else {

@@ -15,13 +15,13 @@ export const createCrxSession = () => {
 export const addCrxPreload = (session: Electron.Session) => {
   const preloadPath = path.join(__dirname, 'fixtures', 'crx-test-preload.js')
   if ('registerPreloadScript' in session) {
-    // TODO(mv3): remove any
-    ;(session as any).registerPreloadScript({
+    session.registerPreloadScript({
       id: 'crx-test-preload',
       type: 'frame',
       filePath: preloadPath,
     })
   } else {
+    // @ts-expect-error Deprecated electron@<35
     session.setPreloads([...session.getPreloads(), preloadPath])
   }
 }

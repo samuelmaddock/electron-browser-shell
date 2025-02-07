@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { app } from 'electron'
-import { ExtensionSender } from '../../router'
+import { ExtensionSender, IpcEvent } from '../../router'
 import { readRegistryKey } from './winreg'
 
 const d = require('debug')('electron-chrome-extensions:nativeMessaging')
@@ -190,7 +190,7 @@ export class NativeMessagingHost {
     }
   }
 
-  private receiveExtensionMessage = (_event: Electron.IpcMainEvent, message: any) => {
+  private receiveExtensionMessage = (_event: IpcEvent, message: any) => {
     this.send(message)
   }
 

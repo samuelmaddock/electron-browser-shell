@@ -83,13 +83,13 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const preloadPath = path.join(modulePath, 'dist/renderer/web-store-preload.js')
 
   if ('registerPreloadScript' in session) {
-    ;(session as any).registerPreloadScript({
+    session.registerPreloadScript({
       id: 'electron-chrome-web-store',
       type: 'frame',
       filePath: preloadPath,
     })
   } else {
-    // TODO(mv3): remove
+    // @ts-expect-error Deprecated electron@<35
     session.setPreloads([...session.getPreloads(), preloadPath])
   }
 

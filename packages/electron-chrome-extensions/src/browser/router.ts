@@ -10,7 +10,11 @@ createDebug.formatters.r = (value: any) => {
   return value ? JSON.stringify(value, shortenValues, '  ') : value
 }
 
-const getSessionFromEvent = (event: any): Electron.Session => {
+export type IpcEvent = Electron.IpcMainEvent | Electron.IpcMainServiceWorkerEvent
+export type IpcInvokeEvent = Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent
+export type IpcAnyEvent = IpcEvent | IpcInvokeEvent
+
+const getSessionFromEvent = (event: IpcAnyEvent): Electron.Session => {
   if (event.type === 'service-worker') {
     return event.session
   } else {
@@ -18,11 +22,9 @@ const getSessionFromEvent = (event: any): Electron.Session => {
   }
 }
 
-// TODO(mv3): add types
-const getHostFromEvent = (event: any) => {
+const getHostFromEvent = (event: IpcAnyEvent) => {
   if (event.type === 'service-worker') {
-    const serviceWorker = event.session.serviceWorkers.getWorkerFromVersionID(event.versionId)
-    return serviceWorker && !serviceWorker.isDestroyed() ? serviceWorker : null
+    return event.serviceWorker
   } else {
     return event.sender
   }
@@ -68,8 +70,10 @@ class RoutingDelegate {
   addObserver(observer: RoutingDelegateObserver) {
     this.sessionMap.set(observer.session, observer)
 
-    // TODO(mv3): remove anys
-    const maybeListenForWorkerEvents = ({ runningStatus, versionId }: any) => {
+    const maybeListenForWorkerEvents = ({
+      runningStatus,
+      versionId,
+    }: Electron.Event<Electron.ServiceWorkersRunningStatusChangedEventParams>) => {
       if (runningStatus !== 'starting') return
 
       const serviceWorker = (observer.session as any).serviceWorkers.getWorkerFromVersionID(
@@ -87,7 +91,7 @@ class RoutingDelegate {
         serviceWorker.ipc.on('crx-remove-listener', this.onRemoveListener)
       }
     }
-    observer.session.serviceWorkers.on('running-status-changed' as any, maybeListenForWorkerEvents)
+    observer.session.serviceWorkers.on('running-status-changed', maybeListenForWorkerEvents)
   }
 
   private onRouterMessage = async (
@@ -121,18 +125,19 @@ class RoutingDelegate {
     return observer?.onExtensionMessage(event, undefined, handlerName, ...args)
   }
 
-  private onAddListener = (
-    event: Electron.IpcMainInvokeEvent,
-    extensionId: string,
-    eventName: string,
-  ) => {
+  private onAddListener = (event: IpcAnyEvent, extensionId: string, eventName: string) => {
     const observer = this.sessionMap.get(getSessionFromEvent(event))
-    const host = getHostFromEvent(event)
-    const type = (event as any).type || 'frame'
     const listener: EventListener =
-      type === 'service-worker'
-        ? { extensionId, type: (event as any).type }
-        : { extensionId, type: (event as any).type, host }
+      event.type === 'frame'
+        ? {
+            type: event.type,
+            extensionId,
+            host: event.sender,
+          }
+        : {
+            type: event.type,
+            extensionId,
+          }
     return observer?.addListener(listener, extensionId, eventName)
   }
 
@@ -142,26 +147,31 @@ class RoutingDelegate {
     eventName: string,
   ) => {
     const observer = this.sessionMap.get(getSessionFromEvent(event))
-    const host = getHostFromEvent(event)
-    const type = (event as any).type || 'frame'
     const listener: EventListener =
-      type === 'service-worker'
-        ? { extensionId, type: (event as any).type }
-        : { extensionId, type: (event as any).type, host }
+      event.type === 'frame'
+        ? {
+            type: event.type,
+            extensionId,
+            host: event.sender,
+          }
+        : {
+            type: event.type,
+            extensionId,
+          }
     return observer?.removeListener(listener, extensionId, eventName)
   }
 }
 
-export interface ExtensionSender {
-  id: number
-  ipc: Electron.IpcMain
-  send: Electron.WebFrameMain['send']
-}
+export type ExtensionSender = Electron.WebContents | Electron.ServiceWorkerMain
+// export interface ExtensionSender {
+//   id?: number
+//   ipc: Electron.IpcMain | Electron.IpcMainServiceWorker
+//   send: Electron.WebFrameMain['send']
+// }
 
-export interface ExtensionEvent {
-  sender?: ExtensionSender
-  extension: Extension
-}
+export type ExtensionEvent =
+  | { type: 'frame'; sender: Electron.WebContents; extension: Extension }
+  | { type: 'service-worker'; sender: Electron.ServiceWorkerMain; extension: Extension }
 
 export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => any
 
@@ -183,18 +193,22 @@ type EventName = string
 
 type HandlerMap = Map<EventName, Handler>
 
-interface EventListener {
-  // TODO(mv3): host: Electron.WebContents | Electron.ServiceWorkerMain
-  host?: any
-  type: 'service-worker' | 'frame'
-  extensionId: string
+type FrameEventListener = { type: 'frame'; host: Electron.WebContents; extensionId: string }
+type SWEventListener = { type: 'service-worker'; extensionId: string }
+type EventListener = FrameEventListener | SWEventListener
+
+const getHostId = (host: FrameEventListener['host']) => host.id
+const getHostUrl = (host: FrameEventListener['host']) => host.getURL?.()
+
+const eventListenerEquals = (a: EventListener) => (b: EventListener) => {
+  if (a === b) return true
+  if (a.extensionId !== b.extensionId) return false
+  if (a.type !== b.type) return false
+  if (a.type === 'frame' && b.type === 'frame') {
+    return a.host === b.host
+  }
+  return true
 }
-
-const getHostId = (host: EventListener['host']) => host.id || host.versionId
-const getHostUrl = (host: EventListener['host']) => host.getURL?.() || host.scope
-
-const eventListenerEquals = (eventListener: EventListener) => (other: EventListener) =>
-  other.host === eventListener.host && other.extensionId === eventListener.extensionId
 
 export class ExtensionRouter {
   private handlers: HandlerMap = new Map()
@@ -266,12 +280,12 @@ export class ExtensionRouter {
     }
   }
 
-  private observeListenerHost(host: EventListener['host']) {
+  private observeListenerHost(host: FrameEventListener['host']) {
     const hostId = getHostId(host)
     debug(`observing listener [id:${hostId}, url:'${getHostUrl(host)}']`)
     host.once('destroyed', () => {
       debug(`extension host destroyed [id:${hostId}]`)
-      this.filterListeners((listener) => listener.host !== host)
+      this.filterListeners((listener) => listener.type !== 'frame' || listener.host !== host)
     })
   }
 
@@ -295,7 +309,7 @@ export class ExtensionRouter {
     } else {
       debug(`adding '${eventName}' event listener for ${extensionId}`)
       eventListeners.push(listener)
-      if (listener.host) {
+      if (listener.type === 'frame' && listener.host) {
         this.observeListenerHost(listener.host)
       }
     }
@@ -332,7 +346,7 @@ export class ExtensionRouter {
   }
 
   async onExtensionMessage(
-    event: Electron.IpcMainInvokeEvent,
+    event: IpcInvokeEvent,
     extensionId: string | undefined,
     handlerName: string,
     ...args: any[]
@@ -359,11 +373,10 @@ export class ExtensionRouter {
       }
     }
 
-    const extEvent: ExtensionEvent = {
-      // TODO(mv3): handle types
-      sender: event.sender || (event as any).serviceWorker,
-      extension: extension!,
-    }
+    const extEvent: ExtensionEvent =
+      event.type === 'frame'
+        ? { type: event.type, sender: event.sender, extension: extension! }
+        : { type: event.type, sender: event.serviceWorker, extension: extension! }
 
     const result = await handler.callback(extEvent, ...args)
 
@@ -403,29 +416,30 @@ export class ExtensionRouter {
     }
 
     let sentCount = 0
-    for (const { type, extensionId, host } of eventListeners) {
+    for (const listener of eventListeners) {
+      const { type, extensionId } = listener
+
       if (targetExtensionId && targetExtensionId !== extensionId) {
         continue
       }
 
       if (type === 'service-worker') {
         const scope = `chrome-extension://${extensionId}/`
-        // TODO(mv3): remove any
-        ;(this.session.serviceWorkers as any)
+        this.session.serviceWorkers
           .startWorkerForScope(scope)
-          .then((serviceWorker: any) => {
+          .then((serviceWorker) => {
             serviceWorker.send(ipcName, ...args)
           })
-          .catch((error: any) => {
+          .catch((error) => {
             debug('failed to send %s to %s', eventName, extensionId)
             console.error(error)
           })
       } else {
-        if (host.isDestroyed()) {
+        if (listener.host.isDestroyed()) {
           console.error(`Unable to send '${eventName}' to extension host for ${extensionId}`)
           return
         }
-        host.send(ipcName, ...args)
+        listener.host.send(ipcName, ...args)
       }
 
       sentCount++

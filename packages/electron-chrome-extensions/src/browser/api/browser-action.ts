@@ -69,9 +69,7 @@ export class BrowserActionAPI {
   private actionMap = new Map</* extensionId */ string, ExtensionActionStore>()
   private popup?: PopupView
 
-  // TODO(mv3): support SWs
-  // private observers: Set<Electron.WebContents | Electron.ServiceWorkerMain> = new Set()
-  private observers: Set<any> = new Set()
+  private observers: Set<Electron.WebContents> = new Set()
   private queuedUpdate: boolean = false
 
   constructor(private ctx: ExtensionContext) {
@@ -163,9 +161,9 @@ export class BrowserActionAPI {
     handle(
       'browserAction.addObserver',
       (event) => {
-        const observer = event.sender as any
+        if (event.type != 'frame') return
+        const observer = event.sender
         this.observers.add(observer)
-        // TODO(mv3): need a destroyed event on workers
         observer.once?.('destroyed', () => {
           this.observers.delete(observer)
         })
@@ -175,6 +173,7 @@ export class BrowserActionAPI {
     handle(
       'browserAction.removeObserver',
       (event) => {
+        if (event.type != 'frame') return
         const { sender: observer } = event
         this.observers.delete(observer)
       },
@@ -367,11 +366,12 @@ export class BrowserActionAPI {
     return { activeTabId: activeTab?.id, actions }
   }
 
-  private activate({ sender }: ExtensionEvent, details: ActivateDetails) {
+  private activate({ type, sender }: ExtensionEvent, details: ActivateDetails) {
+    if (type != 'frame') return
     const { eventType, extensionId, tabId } = details
 
     debug(
-      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender!.id}]`,
+      `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender?.id}]`,
     )
 
     switch (eventType) {
@@ -526,7 +526,6 @@ export class BrowserActionAPI {
       debug(`dispatching update to ${this.observers.size} observer(s)`)
       Array.from(this.observers).forEach((observer) => {
         if (!observer.isDestroyed()) {
-          // TODO(mv3): support sending to SWs
           observer.send?.('browserAction.update')
         }
       })

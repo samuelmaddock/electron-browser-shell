@@ -57,8 +57,8 @@ export class WebNavigationAPI {
     tab.on('did-frame-navigate', this.onCommitted.bind(this, tab))
     tab.on('did-navigate-in-page', this.onHistoryStateUpdated.bind(this, tab))
 
-    tab.on('frame-created', (e, { frame }) => {
-      if (frame.top === frame) return
+    tab.on('frame-created', (_e, { frame }) => {
+      if (!frame || frame.top === frame) return
 
       frame.on('dom-ready', () => {
         this.onDOMContentLoaded(tab, frame)
@@ -109,12 +109,9 @@ export class WebNavigationAPI {
 
   private onCreatedNavigationTarget = (
     tab: Electron.WebContents,
-    event: Electron.Event<Electron.WebContentsWillNavigateEventParams>,
-    ...args: any[]
+    { url, frame }: Electron.Event<Electron.WebContentsWillNavigateEventParams>,
   ) => {
-    // Defaults for backwards compat prior to electron@25.0.0
-    const { url = args[0] as string, frame = getFrame(args[3], args[4]) as Electron.WebFrameMain } =
-      event
+    if (!frame) return
 
     const details: chrome.webNavigation.WebNavigationSourceCallbackDetails = {
       sourceTabId: tab.id,
@@ -129,17 +126,14 @@ export class WebNavigationAPI {
 
   private onBeforeNavigate = (
     tab: Electron.WebContents,
-    event: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>,
-    ...args: any[]
+    {
+      url,
+      isSameDocument,
+      frame,
+    }: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>,
   ) => {
-    // Defaults for backwards compat prior to electron@25.0.0
-    const {
-      url = args[0] as string,
-      isSameDocument = args[1] as boolean,
-      frame = getFrame(args[3], args[4]) as Electron.WebFrameMain,
-    } = event
-
     if (isSameDocument) return
+    if (!frame) return
 
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {
       frameId: getFrameId(frame),
@@ -157,19 +151,16 @@ export class WebNavigationAPI {
 
   private onCommitted = (
     tab: Electron.WebContents,
-    event: Electron.Event,
+    _event: Electron.Event,
     url: string,
-    httpResponseCode: number,
-    httpStatusText: string,
-    isMainFrame: boolean,
+    _httpResponseCode: number,
+    _httpStatusText: string,
+    _isMainFrame: boolean,
     frameProcessId: number,
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    if (!frame) {
-      // TODO(mv3): handle null return
-      return
-    }
+    if (!frame) return
 
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails = {
       frameId: getFrameId(frame),
@@ -198,10 +189,7 @@ export class WebNavigationAPI {
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    if (!frame) {
-      // TODO(mv3): handle null return
-      return
-    }
+    if (!frame) return
 
     const details: chrome.webNavigation.WebNavigationTransitionCallbackDetails & {
       parentFrameId: number
@@ -246,10 +234,7 @@ export class WebNavigationAPI {
     frameRoutingId: number,
   ) => {
     const frame = getFrame(frameProcessId, frameRoutingId)
-    if (!frame) {
-      // TODO(mv3): handle null return
-      return
-    }
+    if (!frame) return
 
     const url = tab.getURL()
     const details: chrome.webNavigation.WebNavigationParentedCallbackDetails = {

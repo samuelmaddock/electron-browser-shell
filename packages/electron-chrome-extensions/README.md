@@ -421,8 +421,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 
 ### electron-chrome-extensions
 
-- The latest version of Electron is recommended. Minimum support requires Electron v9.
-- Chrome's Manifest V3 extensions are not yet supported.
+- The latest version of Electron is recommended. Minimum support requires Electron v35.0.0-beta.3.
 - All background scripts are persistent.
 
 ### electron
