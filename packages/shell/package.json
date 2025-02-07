@@ -1,7 +1,7 @@
 {
   "name": "shell",
   "productName": "Shell",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Minimum Viable Browser shell built on Electron.",
   "main": ".webpack/main",
   "scripts": {
@@ -29,6 +29,6 @@
     "@electron-forge/plugin-webpack": "^7.5.0",
     "copy-webpack-plugin": "^11.0.0",
     "cross-env": "^7.0.2",
-    "electron": "33.0.0-beta.4"
+    "electron": "^35.0.0-beta.3"
   }
 }
