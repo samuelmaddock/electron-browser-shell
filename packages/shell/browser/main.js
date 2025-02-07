@@ -225,6 +225,10 @@ class Browser {
       .replace(new RegExp(`\\s${app.getName()}/\\S+`), '')
     this.session.setUserAgent(userAgent)
 
+    this.session.serviceWorkers.on('running-status-changed', (event) => {
+      console.info(`service worker ${event.versionId} ${event.runningStatus}`)
+    })
+
     if (process.env.SHELL_DEBUG) {
       this.session.serviceWorkers.once('running-status-changed', () => {
         const tab = this.windows[0]?.getFocusedTab()
