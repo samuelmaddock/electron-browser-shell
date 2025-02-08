@@ -1,7 +1,6 @@
-import { BrowserWindow } from 'electron'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { matchesPattern, matchesTitlePattern, TabContents } from './common'
+import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
 import { WindowsAPI } from './windows'
 
 const debug = require('debug')('electron-chrome-extensions:tabs')
@@ -357,7 +356,7 @@ export class TabsAPI {
     const windowId = details ? details.windowId : WindowsAPI.WINDOW_ID_NONE
     const win =
       typeof windowId !== 'undefined' && windowId > -1
-        ? BrowserWindow.getAllWindows().find((win) => win.id === windowId)
+        ? getAllWindows().find((win) => win.id === windowId)
         : null
 
     this.ctx.router.broadcastEvent('tabs.onRemoved', tabId, {

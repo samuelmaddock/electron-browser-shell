@@ -1,4 +1,5 @@
-import { BrowserWindow, Session } from 'electron'
+import { BaseWindow, BrowserWindow, Session } from 'electron'
+import { getAllWindows } from './api/common'
 
 const debug = require('debug')('electron-chrome-extensions:popup')
 
@@ -185,7 +186,7 @@ export class PopupView {
     // For extension popups with a login form, the user may need to access a
     // program outside of the app. Closing the popup would then add
     // inconvenience.
-    if (!BrowserWindow.getFocusedWindow()) {
+    if (!getAllWindows().some((win) => win.isFocused())) {
       debug('preventing close due to focus residing outside of the app')
       return
     }
