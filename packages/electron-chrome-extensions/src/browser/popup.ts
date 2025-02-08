@@ -12,7 +12,7 @@ export interface PopupAnchorRect {
 interface PopupViewOptions {
   extensionId: string
   session: Session
-  parent: BrowserWindow
+  parent: Electron.BaseWindow
   url: string
   anchorRect: PopupAnchorRect
 }
@@ -33,7 +33,7 @@ export class PopupView {
   }
 
   browserWindow?: BrowserWindow
-  parent?: BrowserWindow
+  parent?: Electron.BaseWindow
   extensionId: string
 
   private anchorRect: PopupAnchorRect

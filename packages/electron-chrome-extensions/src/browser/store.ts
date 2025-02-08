@@ -11,7 +11,7 @@ export class ExtensionStore extends EventEmitter {
   tabs = new Set<Electron.WebContents>()
 
   /** Windows observed by the extensions system. */
-  windows = new Set<Electron.BrowserWindow>()
+  windows = new Set<Electron.BaseWindow>()
 
   lastFocusedWindowId?: number
 
@@ -21,10 +21,10 @@ export class ExtensionStore extends EventEmitter {
    * It's not possible to access the parent of a BrowserView so we must manage
    * this ourselves.
    */
-  tabToWindow = new WeakMap<Electron.WebContents, Electron.BrowserWindow>()
+  tabToWindow = new WeakMap<Electron.WebContents, Electron.BaseWindow>()
 
   /** Map of windows to their active tab. */
-  private windowToActiveTab = new WeakMap<Electron.BrowserWindow, Electron.WebContents>()
+  private windowToActiveTab = new WeakMap<Electron.BaseWindow, Electron.WebContents>()
 
   tabDetailsCache = new Map<number, Partial<chrome.tabs.Tab>>()
   windowDetailsCache = new Map<number, Partial<chrome.windows.Window>>()
@@ -49,7 +49,7 @@ export class ExtensionStore extends EventEmitter {
     return this.getLastFocusedWindow()
   }
 
-  addWindow(window: Electron.BrowserWindow) {
+  addWindow(window: Electron.BaseWindow) {
     if (this.windows.has(window)) return
 
     this.windows.add(window)
@@ -73,7 +73,7 @@ export class ExtensionStore extends EventEmitter {
     return win
   }
 
-  async removeWindow(window: Electron.BrowserWindow) {
+  async removeWindow(window: Electron.BaseWindow) {
     if (!this.windows.has(window)) return
 
     this.windows.delete(window)
@@ -89,7 +89,7 @@ export class ExtensionStore extends EventEmitter {
     return Array.from(this.tabs).find((tab) => !tab.isDestroyed() && tab.id === tabId)
   }
 
-  addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
+  addTab(tab: Electron.WebContents, window: Electron.BaseWindow) {
     if (this.tabs.has(tab)) return
 
     this.tabs.add(tab)
@@ -157,7 +157,7 @@ export class ExtensionStore extends EventEmitter {
     return tab
   }
 
-  getActiveTabFromWindow(win: Electron.BrowserWindow) {
+  getActiveTabFromWindow(win: Electron.BaseWindow) {
     const activeTab = win && !win.isDestroyed() && this.windowToActiveTab.get(win)
     return (activeTab && !activeTab.isDestroyed() && activeTab) || undefined
   }

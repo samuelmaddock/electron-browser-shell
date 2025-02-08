@@ -1,10 +1,9 @@
-import { BrowserWindow } from 'electron'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
 
 const debug = require('debug')('electron-chrome-extensions:windows')
 
-const getWindowState = (win: BrowserWindow): chrome.windows.Window['state'] => {
+const getWindowState = (win: Electron.BaseWindow): chrome.windows.Window['state'] => {
   if (win.isMaximized()) return 'maximized'
   if (win.isMinimized()) return 'minimized'
   if (win.isFullScreen()) return 'fullscreen'
@@ -47,7 +46,7 @@ export class WindowsAPI {
     debug(`Observing window[${windowId}]`)
   }
 
-  private createWindowDetails(win: BrowserWindow) {
+  private createWindowDetails(win: Electron.BaseWindow) {
     const details: Partial<chrome.windows.Window> = {
       id: win.id,
       focused: win.isFocused(),
@@ -62,7 +61,7 @@ export class WindowsAPI {
         })
         .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
         .filter(Boolean),
-      incognito: !win.webContents.session.isPersistent(),
+      incognito: this.ctx.session.isPersistent(),
       type: 'normal', // TODO
       state: getWindowState(win),
       alwaysOnTop: win.isAlwaysOnTop(),
@@ -73,7 +72,7 @@ export class WindowsAPI {
     return details
   }
 
-  private getWindowDetails(win: BrowserWindow) {
+  private getWindowDetails(win: Electron.BaseWindow) {
     if (this.ctx.store.windowDetailsCache.has(win.id)) {
       return this.ctx.store.windowDetailsCache.get(win.id)
     }
