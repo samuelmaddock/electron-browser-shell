@@ -37,6 +37,7 @@ const browserActionPreloadConfig = createConfig({
   entryPoints: ['src/browser-action.ts'],
   outfile: 'dist/cjs/browser-action.js',
   platform: 'browser',
+  format: 'cjs',
   external,
   sourcemap: false,
 })
