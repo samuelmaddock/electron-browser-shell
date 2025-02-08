@@ -1,7 +1,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import debug from 'debug'
-import { app, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, NativeImage, net } from 'electron'
 
 import {
   ExtensionInstallStatus,
@@ -108,7 +108,11 @@ interface InstallDetails {
   iconUrl: string
 }
 
-async function beginInstall(state: WebStoreState, details: InstallDetails) {
+async function beginInstall(
+  { sender, senderFrame }: Electron.IpcMainInvokeEvent,
+  state: WebStoreState,
+  details: InstallDetails,
+) {
   const extensionId = details.id
 
   try {
@@ -132,6 +136,44 @@ async function beginInstall(state: WebStoreState, details: InstallDetails) {
       default: {
         d('unable to install extension %s with status "%s"', extensionId, installStatus)
         return { result: Result.UNKNOWN_ERROR }
+      }
+    }
+
+    let iconUrl: URL
+    try {
+      iconUrl = new URL(details.iconUrl)
+    } catch {
+      return { result: Result.INVALID_ICON_URL }
+    }
+
+    let icon: NativeImage
+    try {
+      const response = await net.fetch(iconUrl.href)
+      const imageBuffer = Buffer.from(await response.arrayBuffer())
+      icon = nativeImage.createFromBuffer(imageBuffer)
+    } catch {
+      return { result: Result.ICON_ERROR }
+    }
+
+    const browserWindow = BrowserWindow.fromWebContents(sender)
+    if (!senderFrame || senderFrame.isDestroyed()) {
+      return { result: Result.UNKNOWN_ERROR }
+    }
+
+    if (state.beforeInstall) {
+      const result: unknown = await state.beforeInstall({
+        id: extensionId,
+        localizedName: details.localizedName,
+        manifest,
+        icon,
+        frame: senderFrame,
+        browserWindow: browserWindow || undefined,
+      })
+
+      if (typeof result !== 'object' || typeof (result as any).action !== 'string') {
+        return { result: Result.UNKNOWN_ERROR }
+      } else if ((result as any).action !== 'allow') {
+        return { result: Result.USER_CANCELLED }
       }
     }
 
@@ -175,7 +217,7 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
 
     d('beginInstall', details)
 
-    const result = await beginInstall(webStoreState, details)
+    const result = await beginInstall(event, webStoreState, details)
 
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {

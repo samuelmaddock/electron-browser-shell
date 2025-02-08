@@ -1,5 +1,5 @@
 const path = require('path')
-const { app, session, BrowserWindow } = require('electron')
+const { app, session, BrowserWindow, dialog } = require('electron')
 
 const { Tabs } = require('./tabs')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
@@ -206,6 +206,26 @@ class Browser {
     await installChromeWebStore({
       session: this.session,
       modulePath: path.join(__dirname, 'electron-chrome-web-store'),
+      async beforeInstall(details) {
+        if (!details.browserWindow || details.browserWindow.isDestroyed()) return
+
+        const title = `Add “${details.localizedName}”?`
+
+        let message = `${title}`
+        if (details.manifest.permissions) {
+          const permissions = (details.manifest.permissions || []).join(', ')
+          message += `\n\nPermissions: ${permissions}`
+        }
+
+        const returnValue = await dialog.showMessageBox(details.browserWindow, {
+          title,
+          message,
+          icon: details.icon,
+          buttons: ['Cancel', 'Add Extension'],
+        })
+
+        return { action: returnValue.response === 0 ? 'deny' : 'allow' }
+      },
     })
 
     if (!app.isPackaged) {

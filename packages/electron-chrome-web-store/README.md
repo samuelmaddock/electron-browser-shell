@@ -72,6 +72,7 @@ Installs Chrome Web Store support in the specified session.
   - `allowUnpackedExtensions`: A boolean indicating whether to allow loading unpacked extensions. Only loads if `loadExtensions` is also enabled. Defaults to false.
   - `allowlist`: An array of allowed extension IDs to install.
   - `denylist`: An array of denied extension IDs to install.
+  - `beforeInstall`: A function which receives install details and returns a promise. Allows for prompting prior to install.
 
 ### `installExtension`
 

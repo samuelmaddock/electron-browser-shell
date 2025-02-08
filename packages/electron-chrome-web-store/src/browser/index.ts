@@ -8,7 +8,7 @@ export { installExtension, downloadExtension } from './installer'
 import { initUpdater } from './updater'
 export { updateExtensions } from './updater'
 import { getDefaultExtensionsPath } from './utils'
-import { ExtensionId, WebStoreState } from './types'
+import { BeforeInstall, ExtensionId, WebStoreState } from './types'
 
 interface ElectronChromeWebStoreOptions {
   /**
@@ -55,6 +55,8 @@ interface ElectronChromeWebStoreOptions {
    * Whether extensions should auto-update.
    */
   autoUpdate?: boolean
+
+  beforeInstall?: BeforeInstall
 }
 
 /**
@@ -70,6 +72,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const allowUnpackedExtensions =
     typeof opts.allowUnpackedExtensions === 'boolean' ? opts.allowUnpackedExtensions : false
   const autoUpdate = typeof opts.autoUpdate === 'boolean' ? opts.autoUpdate : true
+  const beforeInstall = typeof opts.beforeInstall === 'function' ? opts.beforeInstall : undefined
 
   const webStoreState: WebStoreState = {
     session,
@@ -77,6 +80,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
     installing: new Set(),
     allowlist: opts.allowlist ? new Set(opts.allowlist) : undefined,
     denylist: opts.denylist ? new Set(opts.denylist) : undefined,
+    beforeInstall,
   }
 
   // Add preload script to session
