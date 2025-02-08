@@ -40,7 +40,7 @@ Load unpacked extensions into `./extensions` then launch the browser.
 - [x] .CRX extension loader
 - [x] [Chrome Web Store](https://chromewebstore.google.com) extension installer
 - [x] Automatic extension updates
-- [ ] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support—pending [electron/electron#44411](https://github.com/electron/electron/pull/44411)
+- [x] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support—pending [electron/electron#44411](https://github.com/electron/electron/pull/44411)
 - [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
 - [ ] Robust extension popup support
 - [ ] Respect extension manifest permissions
