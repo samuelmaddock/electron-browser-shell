@@ -1,6 +1,6 @@
 {
   "name": "electron-chrome-extensions",
-  "version": "4.2.2",
+  "version": "4.2.3",
   "description": "Chrome extension support for Electron",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.mjs",
