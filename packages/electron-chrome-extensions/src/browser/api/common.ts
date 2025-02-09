@@ -36,8 +36,14 @@ export const getExtensionUrl = (extension: Electron.Extension, uri: string) => {
   } catch {}
 }
 
-export const resolveExtensionPath = (extension: Electron.Extension, uri: string) => {
-  const resPath = path.join(extension.path, uri)
+export const resolveExtensionPath = (
+  extension: Electron.Extension,
+  uri: string,
+  requestPath?: string,
+) => {
+  // Resolve any relative paths.
+  const relativePath = path.resolve(requestPath || '/', uri)
+  const resPath = path.join(extension.path, relativePath)
 
   // prevent any parent traversals
   if (!resPath.startsWith(extension.path)) return

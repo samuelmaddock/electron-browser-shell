@@ -11,7 +11,7 @@ import {
   ResizeType,
 } from './common'
 
-const debug = require('debug')('electron-chrome-extensions:browserAction')
+const d = require('debug')('electron-chrome-extensions:browserAction')
 
 if (!app.isReady()) {
   protocol.registerSchemesAsPrivileged([{ scheme: 'crx', privileges: { bypassCSP: true } }])
@@ -147,6 +147,8 @@ export class BrowserActionAPI {
     handle(
       'browserAction.setIcon',
       (event, { tabId, ...details }: chrome.browserAction.TabIconDetails) => {
+        // TODO: icon paths need to be resolved relative to the sender url. In
+        // the case of service workers, we need an API to get the script url.
         setDetails(event, { tabId, icon: details }, 'icon')
         setDetails(event, { tabId, iconModified: Date.now() }, 'iconModified')
       },
@@ -206,16 +208,11 @@ export class BrowserActionAPI {
       this.removeActions(extension.id)
     })
 
-    session.protocol.registerBufferProtocol('crx', this.handleCrxRequest)
+    session.protocol.handle('crx', this.handleCrxRequest)
   }
 
-  private handleCrxRequest = (
-    request: Electron.ProtocolRequest,
-    callback: (response: Electron.ProtocolResponse) => void,
-  ) => {
-    debug('%s', request.url)
-
-    let response: Electron.ProtocolResponse
+  private handleCrxRequest = (request: GlobalRequest): GlobalResponse => {
+    d('%s', request.url)
 
     try {
       const url = new URL(request.url)
@@ -255,33 +252,33 @@ export class BrowserActionAPI {
               const imageData = matchSize(iconDetails.imageData as any, imageSize, resizeType)
               iconImage = imageData ? nativeImage.createFromDataURL(imageData) : undefined
             }
+
+            if (iconImage?.isEmpty()) {
+              d('crx: icon image is empty', iconDetails)
+            }
           }
 
           if (iconImage) {
-            response = {
-              statusCode: 200,
-              mimeType: 'image/png',
-              data: iconImage.toPNG(),
-            }
-          } else {
-            response = { statusCode: 400 }
+            return new Response(iconImage.toPNG(), {
+              status: 200,
+              headers: {
+                'Content-Type': 'image/png',
+              },
+            })
           }
 
-          break
+          d('crx: no icon image for %s', extensionId)
+          return new Response(null, { status: 400 })
         }
         default: {
-          response = { statusCode: 400 }
+          d('crx: invalid request %s', requestType)
+          return new Response(null, { status: 400 })
         }
       }
     } catch (e) {
       console.error(e)
-
-      response = {
-        statusCode: 500,
-      }
+      return new Response(null, { status: 500 })
     }
-
-    callback(response)
   }
 
   private getAction(extensionId: string) {
@@ -370,7 +367,7 @@ export class BrowserActionAPI {
     if (type != 'frame') return
     const { eventType, extensionId, tabId } = details
 
-    debug(
+    d(
       `activate [eventType: ${eventType}, extensionId: '${extensionId}', tabId: ${tabId}, senderId: ${sender?.id}]`,
     )
 
@@ -394,7 +391,7 @@ export class BrowserActionAPI {
       this.popup.destroy()
       this.popup = undefined
       if (toggleExtension) {
-        debug('skipping activate to close popup')
+        d('skipping activate to close popup')
         return
       }
     }
@@ -421,11 +418,11 @@ export class BrowserActionAPI {
         anchorRect,
       })
 
-      debug(`opened popup: ${popupUrl}`)
+      d(`opened popup: ${popupUrl}`)
 
       this.ctx.emit('browser-action-popup-created', this.popup)
     } else {
-      debug(`dispatching onClicked for ${extensionId}`)
+      d(`dispatching onClicked for ${extensionId}`)
 
       const tabDetails = this.ctx.store.tabDetailsCache.get(tab.id)
       this.ctx.router.sendEvent(extensionId, 'browserAction.onClicked', tabDetails)
@@ -481,7 +478,7 @@ export class BrowserActionAPI {
       append({
         label: 'Remove extension',
         click: () => {
-          debug(`removing extension "${extension.name}" (${extension.id})`)
+          d(`removing extension "${extension.name}" (${extension.id})`)
           this.ctx.session.removeExtension(extension.id)
         },
       })
@@ -499,7 +496,7 @@ export class BrowserActionAPI {
         ? this.ctx.store.getWindowById(options.windowId)
         : this.ctx.store.getCurrentWindow()
     if (!window || window.isDestroyed()) {
-      debug('openPopup: window %d destroyed', window?.id)
+      d('openPopup: window %d destroyed', window?.id)
       return
     }
 
@@ -523,7 +520,8 @@ export class BrowserActionAPI {
     this.queuedUpdate = true
     queueMicrotask(() => {
       this.queuedUpdate = false
-      debug(`dispatching update to ${this.observers.size} observer(s)`)
+      if (this.observers.size === 0) return
+      d(`dispatching update to ${this.observers.size} observer(s)`)
       Array.from(this.observers).forEach((observer) => {
         if (!observer.isDestroyed()) {
           observer.send?.('browserAction.update')
