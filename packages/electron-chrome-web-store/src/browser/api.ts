@@ -1,7 +1,8 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import debug from 'debug'
-import { app, BrowserWindow, ipcMain, nativeImage, NativeImage, net } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, NativeImage } from 'electron'
+import { fetch } from './utils'
 
 import {
   ExtensionInstallStatus,
@@ -148,7 +149,7 @@ async function beginInstall(
 
     let icon: NativeImage
     try {
-      const response = await net.fetch(iconUrl.href)
+      const response = await fetch(iconUrl.href)
       const imageBuffer = Buffer.from(await response.arrayBuffer())
       icon = nativeImage.createFromBuffer(imageBuffer)
     } catch {
