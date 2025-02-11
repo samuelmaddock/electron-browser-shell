@@ -1,11 +1,12 @@
 import * as path from 'node:path'
 import { expect } from 'chai'
-import { BrowserView, Extension, ipcMain, session, WebContents } from 'electron'
+import { BrowserView, Extension, ipcMain, session, WebContents, WebContentsView } from 'electron'
 
 import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
 import { useExtensionBrowser, useServer } from './hooks'
 import { createCrxRemoteWindow } from './crx-helpers'
+import { once } from 'node:events'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -227,6 +228,44 @@ describe('chrome.browserAction', () => {
 
       const extensionIds = await getExtensionActionIds()
       expect(extensionIds).to.have.lengthOf(0)
+    })
+  })
+
+  describe('crx:// protocol', () => {
+    const browser = useExtensionBrowser({
+      url: server.getUrl,
+      extensionName: 'chrome-browserAction-popup',
+    })
+
+    it('supports cross-session requests', async () => {
+      const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
+      browser.extensions.handleCRXProtocol(otherSession)
+
+      browser.session.getPreloadScripts().forEach((script) => {
+        otherSession.registerPreloadScript(script)
+      })
+
+      const view = new WebContentsView({
+        webPreferences: { session: otherSession, nodeIntegration: false, contextIsolation: true },
+      })
+      browser.window.contentView.addChildView(view)
+      await view.webContents.loadURL(server.getUrl())
+
+      const result = await view.webContents.executeJavaScript(
+        `(${function (extensionId: any, tabId: any) {
+          const img = document.createElement('img')
+          const src = `crx://extension-icon/${extensionId}/32/2?tabId=-1&t=${Date.now()}`
+          return new Promise((resolve, reject) => {
+            img.onload = () => resolve('success')
+            img.onerror = () => {
+              reject(new Error('error loading img, check devtools console'))
+            }
+            img.src = src
+          })
+        }})(${JSON.stringify(browser.extension.id)}, ${browser.webContents.id});`,
+      )
+
+      expect(result).to.equal('success')
     })
   })
 })

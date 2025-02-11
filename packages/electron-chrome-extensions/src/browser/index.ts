@@ -101,6 +101,11 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     this.listenForExtensions()
     this.prependPreload()
+
+    // Register crx:// protocol in default session for convenience
+    if (this.ctx.session !== electronSession.defaultSession) {
+      this.handleCRXProtocol(electronSession.defaultSession)
+    }
   }
 
   private listenForExtensions() {
@@ -144,7 +149,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   /** Add webContents to be tracked as a tab. */
-  addTab(tab: Electron.WebContents, window: Electron.BrowserWindow) {
+  addTab(tab: Electron.WebContents, window: Electron.BaseWindow) {
     this.ctx.store.addTab(tab, window)
   }
 
@@ -184,6 +189,13 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   getURLOverrides(): Record<string, string> {
     return this.ctx.store.urlOverrides
+  }
+
+  /**
+   * Handles the 'crx://' protocol in the session.
+   */
+  handleCRXProtocol(session: Electron.Session) {
+    this.api.browserAction.handleCRXProtocol(session)
   }
 
   /**

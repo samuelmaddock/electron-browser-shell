@@ -208,7 +208,13 @@ export class BrowserActionAPI {
       this.removeActions(extension.id)
     })
 
-    session.protocol.handle('crx', this.handleCrxRequest)
+    this.handleCRXProtocol(session)
+  }
+
+  handleCRXProtocol(session: Electron.Session) {
+    if (!session.protocol.isProtocolHandled('crx')) {
+      session.protocol.handle('crx', this.handleCrxRequest)
+    }
   }
 
   private handleCrxRequest = (request: GlobalRequest): GlobalResponse => {
