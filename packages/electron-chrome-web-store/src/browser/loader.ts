@@ -151,7 +151,9 @@ export async function loadAllExtensions(
         extension.manifest.background?.service_worker
       ) {
         const scope = `chrome-extension://${extension.id}`
-        await session.serviceWorkers.startWorkerForScope(scope)
+        await session.serviceWorkers.startWorkerForScope(scope).catch(() => {
+          console.error(`Failed to start worker for extension ${extension.id}`)
+        })
       }
     } catch (error) {
       console.error(`Failed to load extension from ${ext.path}`)
