@@ -88,6 +88,10 @@ class Browser {
   }
 
   constructor() {
+    this.ready = new Promise((resolve) => {
+      this.resolveReady = resolve
+    })
+
     app.whenReady().then(this.init.bind(this))
 
     app.on('window-all-closed', () => {
@@ -149,7 +153,9 @@ class Browser {
       session: this.session,
       modulePath: path.join(__dirname, 'electron-chrome-extensions'),
 
-      createTab: (details) => {
+      createTab: async (details) => {
+        await this.ready
+
         const win =
           typeof details.windowId === 'number' &&
           this.windows.find((w) => w.id === details.windowId)
@@ -174,7 +180,9 @@ class Browser {
         win?.tabs.remove(tab.id)
       },
 
-      createWindow: (details) => {
+      createWindow: async (details) => {
+        await this.ready
+
         const win = this.createWindow({
           initialUrl: details.url,
         })
@@ -232,7 +240,17 @@ class Browser {
       await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, true)
     }
 
+    await Promise.all(
+      this.session.getAllExtensions().map(async (extension) => {
+        const manifest = extension.manifest
+        if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
+          await this.session.serviceWorkers.startWorkerForScope(extension.url)
+        }
+      }),
+    )
+
     this.createInitialWindow()
+    this.resolveReady()
   }
 
   initSession() {
