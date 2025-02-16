@@ -14,4 +14,9 @@ export interface ChromeExtensionImpl {
 
   createWindow?(details: chrome.windows.CreateData): Promise<Electron.BaseWindow>
   removeWindow?(window: Electron.BaseWindow): void
+
+  requestPermissions?(
+    extension: Electron.Extension,
+    permissions: chrome.permissions.Permissions,
+  ): Promise<boolean>
 }

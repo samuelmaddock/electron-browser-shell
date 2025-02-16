@@ -18,6 +18,7 @@ import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
 import { checkLicense, License } from './license'
 import { readLoadedExtensionManifest } from './manifest'
+import { PermissionsAPI } from './api/permissions'
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
@@ -56,6 +57,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     commands: CommandsAPI
     cookies: CookiesAPI
     notifications: NotificationsAPI
+    permissions: PermissionsAPI
     runtime: RuntimeAPI
     tabs: TabsAPI
     webNavigation: WebNavigationAPI
@@ -93,6 +95,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       commands: new CommandsAPI(this.ctx),
       cookies: new CookiesAPI(this.ctx),
       notifications: new NotificationsAPI(this.ctx),
+      permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),
       webNavigation: new WebNavigationAPI(this.ctx),

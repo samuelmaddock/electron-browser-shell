@@ -470,11 +470,10 @@ export const injectExtensionAPIs = () => {
         factory: (base) => {
           return {
             ...base,
-            // TODO(mv3): implement
-            contains: () => Promise.resolve(true),
-            getAll: () => Promise.resolve({ permissions: [], origins: [] }),
-            remove: () => Promise.resolve(true),
-            request: () => Promise.resolve(true),
+            contains: invokeExtension('permissions.contains'),
+            getAll: invokeExtension('permissions.getAll'),
+            remove: invokeExtension('permissions.remove'),
+            request: invokeExtension('permissions.request'),
             onAdded: new ExtensionEvent('permissions.onAdded'),
             onRemoved: new ExtensionEvent('permissions.onRemoved'),
           }

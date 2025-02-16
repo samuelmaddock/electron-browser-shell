@@ -196,4 +196,16 @@ export class ExtensionStore extends EventEmitter {
     // This function is overwritten by ContextMenusAPI
     return []
   }
+
+  async requestPermissions(
+    extension: Electron.Extension,
+    permissions: chrome.permissions.Permissions,
+  ) {
+    if (typeof this.impl.requestPermissions !== 'function') {
+      // Default to allowed.
+      return true
+    }
+    const result: unknown = await this.impl.requestPermissions(extension, permissions)
+    return typeof result === 'boolean' ? result : false
+  }
 }
