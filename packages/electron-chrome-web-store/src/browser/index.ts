@@ -56,6 +56,12 @@ interface ElectronChromeWebStoreOptions {
    */
   autoUpdate?: boolean
 
+  /**
+   * Minimum supported version of Chrome extensions.
+   * Defaults to 3.
+   */
+  minimumManifestVersion?: number
+
   beforeInstall?: BeforeInstall
 }
 
@@ -72,6 +78,8 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const allowUnpackedExtensions =
     typeof opts.allowUnpackedExtensions === 'boolean' ? opts.allowUnpackedExtensions : false
   const autoUpdate = typeof opts.autoUpdate === 'boolean' ? opts.autoUpdate : true
+  const minimumManifestVersion =
+    typeof opts.minimumManifestVersion === 'number' ? opts.minimumManifestVersion : 3
   const beforeInstall = typeof opts.beforeInstall === 'function' ? opts.beforeInstall : undefined
 
   const webStoreState: WebStoreState = {
@@ -80,6 +88,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
     installing: new Set(),
     allowlist: opts.allowlist ? new Set(opts.allowlist) : undefined,
     denylist: opts.denylist ? new Set(opts.denylist) : undefined,
+    minimumManifestVersion,
     beforeInstall,
   }
 

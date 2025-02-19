@@ -59,7 +59,7 @@ function getExtensionInstallStatus(
   }
 
   if (manifest) {
-    if (manifest.manifest_version < 2) {
+    if (manifest.manifest_version < state.minimumManifestVersion) {
       return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
     }
   }
@@ -268,7 +268,9 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
   })
 
   handle('chromeWebstore.getMV2DeprecationStatus', async () => {
-    return MV2DeprecationStatus.INACTIVE
+    return webStoreState.minimumManifestVersion > 2
+      ? MV2DeprecationStatus.SOFT_DISABLE
+      : MV2DeprecationStatus.INACTIVE
   })
 
   handle('chromeWebstore.getReferrerChain', async () => {

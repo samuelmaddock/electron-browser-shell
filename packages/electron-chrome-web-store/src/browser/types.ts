@@ -19,5 +19,6 @@ export interface WebStoreState {
   installing: Set<ExtensionId>
   allowlist?: Set<ExtensionId>
   denylist?: Set<ExtensionId>
+  minimumManifestVersion: number
   beforeInstall?: BeforeInstall
 }
