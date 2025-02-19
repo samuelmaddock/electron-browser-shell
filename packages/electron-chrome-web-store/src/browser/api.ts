@@ -50,18 +50,16 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
+  if (manifest && manifest.manifest_version < state.minimumManifestVersion) {
+    return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
+  }
+
   if (state.denylist?.has(extensionId)) {
     return ExtensionInstallStatus.BLOCKED_BY_POLICY
   }
 
   if (state.allowlist && !state.allowlist.has(extensionId)) {
     return ExtensionInstallStatus.BLOCKED_BY_POLICY
-  }
-
-  if (manifest) {
-    if (manifest.manifest_version < state.minimumManifestVersion) {
-      return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
-    }
   }
 
   const extensions = state.session.getAllExtensions()
