@@ -20,6 +20,13 @@ import { checkLicense, License } from './license'
 import { readLoadedExtensionManifest } from './manifest'
 import { PermissionsAPI } from './api/permissions'
 
+function checkVersion() {
+  const electronVersion = process.versions.electron
+  if (electronVersion && parseInt(electronVersion.split('.')[0], 10) < 35) {
+    console.warn('electron-chrome-extensions requires electron@>=35.0.0')
+  }
+}
+
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
    * License used to distribute electron-chrome-extensions.
@@ -73,6 +80,7 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     const { license, session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
 
+    checkVersion()
     checkLicense(license)
 
     if (sessionMap.has(session)) {
