@@ -28,6 +28,10 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
    */
   license: License
 
+  /**
+   * Session to add Chrome extension support in.
+   * Defaults to `session.defaultSession`.
+   */
   session?: Electron.Session
 
   /**
@@ -151,13 +155,23 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
   }
 
+  private checkWebContentsArgument(wc: Electron.WebContents) {
+    if (this.ctx.session !== wc.session) {
+      throw new TypeError(
+        'Invalid WebContents argument. Its session must match the session provided to ElectronChromeExtensions constructor options.',
+      )
+    }
+  }
+
   /** Add webContents to be tracked as a tab. */
   addTab(tab: Electron.WebContents, window: Electron.BaseWindow) {
+    this.checkWebContentsArgument(tab)
     this.ctx.store.addTab(tab, window)
   }
 
   /** Notify extension system that the active tab has changed. */
   selectTab(tab: Electron.WebContents) {
+    this.checkWebContentsArgument(tab)
     if (this.ctx.store.tabs.has(tab)) {
       this.api.tabs.onActivated(tab.id)
     }
@@ -182,6 +196,7 @@ export class ElectronChromeExtensions extends EventEmitter {
    * @see https://developer.chrome.com/extensions/contextMenus
    */
   getContextMenuItems(webContents: Electron.WebContents, params: Electron.ContextMenuParams) {
+    this.checkWebContentsArgument(webContents)
     return this.api.contextMenus.buildMenuItemsForParams(webContents, params)
   }
 
