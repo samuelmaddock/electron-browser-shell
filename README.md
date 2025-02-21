@@ -27,7 +27,9 @@ yarn start
 
 ### Install extensions
 
-Load unpacked extensions into `./extensions` then launch the browser.
+Navigate to the [Chrome Web Store](https://chromewebstore.google.com/) and install an extension.
+
+To test local unpacked extensions, include them in `./extensions` then launch the browser.
 
 ## Roadmap
 

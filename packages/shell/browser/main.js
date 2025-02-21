@@ -237,7 +237,9 @@ class Browser {
     })
 
     if (!app.isPackaged) {
-      await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, true)
+      await loadAllExtensions(this.session, PATHS.LOCAL_EXTENSIONS, {
+        allowUnpacked: true,
+      })
     }
 
     await Promise.all(
