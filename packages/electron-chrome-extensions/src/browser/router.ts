@@ -1,4 +1,4 @@
-import { app, Extension, ipcMain, session, Session, WebContents } from 'electron'
+import { app, ipcMain, session, Session, WebContents } from 'electron'
 
 const createDebug = require('debug')
 
@@ -169,9 +169,13 @@ export type ExtensionSender = Electron.WebContents | Electron.ServiceWorkerMain
 //   send: Electron.WebFrameMain['send']
 // }
 
+type ExtendedExtension = Omit<Electron.Extension, 'manifest'> & {
+  manifest: chrome.runtime.Manifest
+}
+
 export type ExtensionEvent =
-  | { type: 'frame'; sender: Electron.WebContents; extension: Extension }
-  | { type: 'service-worker'; sender: Electron.ServiceWorkerMain; extension: Extension }
+  | { type: 'frame'; sender: Electron.WebContents; extension: ExtendedExtension }
+  | { type: 'service-worker'; sender: Electron.ServiceWorkerMain; extension: ExtendedExtension }
 
 export type HandlerCallback = (event: ExtensionEvent, ...args: any[]) => any
 

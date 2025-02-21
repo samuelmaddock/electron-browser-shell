@@ -36,7 +36,7 @@ export class PermissionsAPI {
     const manifest: chrome.runtime.Manifest = extension.manifest
     this.permissionMap.set(extension.id, {
       permissions: (manifest.permissions || []) as chrome.runtime.ManifestPermissions[],
-      origins: [],
+      origins: manifest.host_permissions || [],
     })
   }
 
@@ -69,6 +69,15 @@ export class PermissionsAPI {
     { extension }: ExtensionEvent,
     request: chrome.permissions.Permissions,
   ) => {
+    const declaredPermissions = new Set([
+      ...(extension.manifest.permissions || []),
+      ...(extension.manifest.optional_permissions || []),
+    ])
+
+    if (request.permissions && !request.permissions.every((p) => declaredPermissions.has(p))) {
+      throw new Error('Permissions request includes undeclared permission')
+    }
+
     const granted = await this.ctx.store.requestPermissions(extension, request)
     if (!granted) return false
 
