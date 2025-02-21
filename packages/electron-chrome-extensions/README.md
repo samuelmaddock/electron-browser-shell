@@ -26,20 +26,20 @@ Simple browser using Electron's [default session](https://www.electronjs.org/doc
 
 ```js
 const { app, BrowserWindow } = require('electron')
-const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
-  (async function main() {
-    await app.whenReady()
+const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
-    const extensions = new ElectronChromeExtensions()
-    const browserWindow = new BrowserWindow()
+app.whenReady().then(async () => {
+  await app.whenReady()
 
-    // Adds the active tab of the browser
-    extensions.addTab(browserWindow.webContents, browserWindow)
+  const extensions = new ElectronChromeExtensions()
+  const browserWindow = new BrowserWindow()
 
-    browserWindow.loadURL('https://samuelmaddock.com')
-    browserWindow.show()
-  })(),
-)
+  // Adds the active tab of the browser
+  extensions.addTab(browserWindow.webContents, browserWindow)
+
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
+})
 ```
 
 ### Advanced
@@ -51,44 +51,50 @@ Multi-tab browser with full support for Chrome extension APIs.
 ```js
 const { app, session, BrowserWindow } = require('electron')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
-  (async function main() {
-    await app.whenReady()
 
-    const browserSession = session.fromPartition('persist:custom')
+app.whenReady().then(async () => {
+  await app.whenReady()
 
-    const extensions = new ElectronChromeExtensions({
+  const browserSession = session.fromPartition('persist:custom')
+
+  const extensions = new ElectronChromeExtensions({
+    session: browserSession,
+    createTab(details) {
+      // Optionally implemented for chrome.tabs.create support
+    },
+    selectTab(tab, browserWindow) {
+      // Optionally implemented for chrome.tabs.update support
+    },
+    removeTab(tab, browserWindow) {
+      // Optionally implemented for chrome.tabs.remove support
+    },
+    createWindow(details) {
+      // Optionally implemented for chrome.windows.create support
+    },
+    removeWindow(browserWindow) {
+      // Optionally implemented for chrome.windows.remove support
+    },
+    requestPermissions(extension, permissions) {
+      // Optionally implemented for chrome.permissions.request support
+    },
+  })
+
+  const browserWindow = new BrowserWindow({
+    webPreferences: {
+      // Same session given to Extensions class
       session: browserSession,
-      createTab(details) {
-        // Optionally implemented for chrome.tabs.create support
-      },
-      selectTab(tab, browserWindow) {
-        // Optionally implemented for chrome.tabs.update support
-      },
-      removeTab(tab, browserWindow) {
-        // Optionally implemented for chrome.tabs.remove support
-      },
-      createWindow(details) {
-        // Optionally implemented for chrome.windows.create support
-      },
-    })
+      // Recommended options for loading remote content
+      sandbox: true,
+      contextIsolation: true,
+    },
+  })
 
-    const browserWindow = new BrowserWindow({
-      webPreferences: {
-        // Same session given to Extensions class
-        session: browserSession,
-        // Recommended options for loading remote content
-        sandbox: true,
-        contextIsolation: true,
-      },
-    })
+  // Adds the active tab of the browser
+  extensions.addTab(browserWindow.webContents, browserWindow)
 
-    // Adds the active tab of the browser
-    extensions.addTab(browserWindow.webContents, browserWindow)
-
-    browserWindow.loadURL('https://samuelmaddock.com')
-    browserWindow.show()
-  })(),
-)
+  browserWindow.loadURL('https://samuelmaddock.com')
+  browserWindow.show()
+})
 ```
 
 ## API
@@ -176,7 +182,7 @@ supported URL types.
 
 Example:
 
-```
+```js
 {
   newtab: 'chrome-extension://<id>/newtab.html'
 }
@@ -421,7 +427,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 
 ### electron-chrome-extensions
 
-- The latest version of Electron is recommended. Minimum support requires Electron v35.0.0-beta.3.
+- The latest version of Electron is recommended. Minimum support requires Electron v35.0.0-beta.8.
 - All background scripts are persistent.
 
 ### electron
