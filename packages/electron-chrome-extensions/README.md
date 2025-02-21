@@ -28,9 +28,7 @@ Simple browser using Electron's [default session](https://www.electronjs.org/doc
 const { app, BrowserWindow } = require('electron')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 
-app.whenReady().then(async () => {
-  await app.whenReady()
-
+app.whenReady().then(() => {
   const extensions = new ElectronChromeExtensions()
   const browserWindow = new BrowserWindow()
 
@@ -52,9 +50,7 @@ Multi-tab browser with full support for Chrome extension APIs.
 const { app, session, BrowserWindow } = require('electron')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')(
 
-app.whenReady().then(async () => {
-  await app.whenReady()
-
+app.whenReady().then(() => {
   const browserSession = session.fromPartition('persist:custom')
 
   const extensions = new ElectronChromeExtensions({
