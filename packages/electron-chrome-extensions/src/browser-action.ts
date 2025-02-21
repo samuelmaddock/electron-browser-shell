@@ -200,13 +200,24 @@ export const injectBrowserAction = () => {
         const bgImage = `url(${iconUrl})`
 
         if (this.pendingIcon) {
+          this.pendingIcon.onload = this.pendingIcon.onerror = () => {}
           this.pendingIcon = undefined
         }
 
         // Preload icon to prevent it from blinking
         const img = (this.pendingIcon = new Image())
+        img.onerror = () => {
+          if (this.isConnected) {
+            this.classList.toggle('no-icon', true)
+            if (this.title) {
+              this.dataset.letter = this.title.charAt(0)
+            }
+            this.pendingIcon = undefined
+          }
+        }
         img.onload = () => {
           if (this.isConnected) {
+            this.classList.toggle('no-icon', false)
             this.style.backgroundImage = bgImage
             this.pendingIcon = undefined
           }
@@ -302,6 +313,25 @@ export const injectBrowserAction = () => {
 
 .action:hover {
   background-color: var(--browser-action-hover-bg, rgba(255, 255, 255, 0.3));
+}
+
+.action.no-icon::after {
+  content: attr(data-letter);
+  text-transform: uppercase;
+  font-size: .7rem;
+  background-color: #757575;
+  color: white;
+  border-radius: 4px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
 }
 
 .badge {
