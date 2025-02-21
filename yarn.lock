@@ -2349,6 +2349,15 @@ electron@^35.0.0-beta.3:
     "@types/node" "^22.7.7"
     extract-zip "^2.0.1"
 
+electron@^35.0.0-beta.8:
+  version "35.0.0-beta.8"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.8.tgz#acf936b42a063071d29e6cb7a85c02ac507c3edc"
+  integrity sha512-ehYTjZAwT4al6wJkj28WMn+ESas5kyK3DYp2AXz10jBGytspLkSd5Pgi8gJCZtF7Z5unHkCE1H3F/2aEFPDeYg==
+  dependencies:
+    "@electron/get" "^2.0.0"
+    "@types/node" "^22.7.7"
+    extract-zip "^2.0.1"
+
 emoji-regex@^10.3.0:
   version "10.4.0"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-10.4.0.tgz#03553afea80b3975749cfcb36f776ca268e413d4"
