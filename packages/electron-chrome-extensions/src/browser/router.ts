@@ -411,7 +411,7 @@ export class ExtensionRouter {
     const ipcName = `crx-${eventName}`
 
     if (!eventListeners || eventListeners.length === 0) {
-      debug(`ignoring '${eventName}' event with no listeners`)
+      // Ignore events with no listeners
       return
     }
 
