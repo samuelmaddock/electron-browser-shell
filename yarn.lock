@@ -2294,16 +2294,6 @@ ee-first@1.1.1:
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
-electron-chrome-web-store@^0.7.0:
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/electron-chrome-web-store/-/electron-chrome-web-store-0.7.0.tgz#21a217ff780328e0b7fb37e33dc745515fc2fca3"
-  integrity sha512-fU/UIEZKVnidvhMyPdS/LM+UymHFy7ntAJuvkdcw/Vu0dvgym5uU8ciZd2GXMfUFOCgVVP1h8QEYxBB2ewFLzw==
-  dependencies:
-    "@types/chrome" "^0.0.287"
-    adm-zip "^0.5.16"
-    debug "^4.3.7"
-    pbf "^4.0.1"
-
 electron-installer-dmg@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/electron-installer-dmg/-/electron-installer-dmg-5.0.1.tgz#309662eccce4a8585a79fe4bce79c23976a950f0"

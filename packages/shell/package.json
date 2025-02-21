@@ -1,7 +1,7 @@
 {
   "name": "shell",
   "productName": "Shell",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Minimum Viable Browser shell built on Electron.",
   "main": ".webpack/main",
   "scripts": {
@@ -16,8 +16,8 @@
   "private": true,
   "dependencies": {
     "electron-chrome-context-menu": "^1.1.0",
-    "electron-chrome-extensions": "^4.2.0",
-    "electron-chrome-web-store": "^0.7.0",
+    "electron-chrome-extensions": "^4.4.0",
+    "electron-chrome-web-store": "^0.9.0",
     "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {
