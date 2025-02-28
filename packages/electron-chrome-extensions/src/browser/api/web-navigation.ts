@@ -1,8 +1,9 @@
 import * as electron from 'electron'
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
+import debug from 'debug'
 
-const debug = require('debug')('electron-chrome-extensions:webNavigation')
+const d = debug('electron-chrome-extensions:webNavigation')
 
 type DocumentLifecycle = 'prerender' | 'active' | 'cached' | 'pending_deletion'
 
@@ -103,7 +104,7 @@ export class WebNavigationAPI {
   }
 
   private sendNavigationEvent = (eventName: string, details: { url: string }) => {
-    debug(`${eventName} [url: ${details.url}]`)
+    d(`${eventName} [url: ${details.url}]`)
     this.ctx.router.broadcastEvent(`webNavigation.${eventName}`, details)
   }
 

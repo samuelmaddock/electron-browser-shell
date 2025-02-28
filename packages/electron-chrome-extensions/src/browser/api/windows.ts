@@ -1,7 +1,8 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
+import debug from 'debug'
 
-const debug = require('debug')('electron-chrome-extensions:windows')
+const d = debug('electron-chrome-extensions:windows')
 
 const getWindowState = (win: Electron.BaseWindow): chrome.windows.Window['state'] => {
   if (win.isMaximized()) return 'maximized'
@@ -43,7 +44,7 @@ export class WindowsAPI {
 
     this.onCreated(windowId)
 
-    debug(`Observing window[${windowId}]`)
+    d(`Observing window[${windowId}]`)
   }
 
   private createWindowDetails(win: Electron.BaseWindow) {

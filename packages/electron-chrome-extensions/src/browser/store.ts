@@ -4,8 +4,6 @@ import { ContextMenuType } from './api/common'
 import { ChromeExtensionImpl } from './impl'
 import { ExtensionEvent } from './router'
 
-const debug = require('debug')('electron-chrome-extensions:store')
-
 export class ExtensionStore extends EventEmitter {
   /** Tabs observed by the extensions system. */
   tabs = new Set<Electron.WebContents>()

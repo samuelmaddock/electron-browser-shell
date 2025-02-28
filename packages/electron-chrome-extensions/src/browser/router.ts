@@ -1,12 +1,11 @@
 import { app, ipcMain, session, Session, WebContents } from 'electron'
-
-const createDebug = require('debug')
+import debug from 'debug'
 
 // Shorten base64 encoded icons
 const shortenValues = (k: string, v: any) =>
   typeof v === 'string' && v.length > 128 ? v.substr(0, 128) + '...' : v
 
-createDebug.formatters.r = (value: any) => {
+debug.formatters.r = (value: any) => {
   return value ? JSON.stringify(value, shortenValues, '  ') : value
 }
 
@@ -30,7 +29,7 @@ const getHostFromEvent = (event: IpcAnyEvent) => {
   }
 }
 
-const debug = createDebug('electron-chrome-extensions:router')
+const d = debug('electron-chrome-extensions:router')
 
 const DEFAULT_SESSION = '_self'
 
@@ -83,7 +82,7 @@ class RoutingDelegate {
         serviceWorker?.scope?.startsWith('chrome-extension://') &&
         !this.workers.has(serviceWorker)
       ) {
-        debug(`listening to service worker [versionId:${versionId}, scope:${serviceWorker.scope}]`)
+        d(`listening to service worker [versionId:${versionId}, scope:${serviceWorker.scope}]`)
         this.workers.add(serviceWorker)
         serviceWorker.ipc.handle('crx-msg', this.onRouterMessage)
         serviceWorker.ipc.handle('crx-msg-remote', this.onRemoteMessage)
@@ -100,7 +99,7 @@ class RoutingDelegate {
     handlerName: string,
     ...args: any[]
   ) => {
-    debug(`received '${handlerName}'`, args)
+    d(`received '${handlerName}'`, args)
 
     const observer = this.sessionMap.get(getSessionFromEvent(event))
 
@@ -113,7 +112,7 @@ class RoutingDelegate {
     handlerName: string,
     ...args: any[]
   ) => {
-    debug(`received remote '${handlerName}' for '${sessionPartition}'`, args)
+    d(`received remote '${handlerName}' for '${sessionPartition}'`, args)
 
     const ses =
       sessionPartition === DEFAULT_SESSION
@@ -241,7 +240,7 @@ export class ExtensionRouter {
 
     app.on('web-contents-created', (event, webContents) => {
       if (webContents.session === this.session && webContents.getType() === 'backgroundPage') {
-        debug(`storing reference to background host [url:'${webContents.getURL()}']`)
+        d(`storing reference to background host [url:'${webContents.getURL()}']`)
         this.extensionHosts.add(webContents)
       }
     })
@@ -258,9 +257,9 @@ export class ExtensionRouter {
         if (!scope.startsWith('chrome-extension:')) return
 
         if (this.extensionHosts.has(serviceWorker)) {
-          debug('%s running status changed to %s', scope, runningStatus)
+          d('%s running status changed to %s', scope, runningStatus)
         } else {
-          debug(`storing reference to background service worker [url:'${scope}']`)
+          d(`storing reference to background service worker [url:'${scope}']`)
           this.extensionWorkers.add(serviceWorker)
         }
       },
@@ -279,16 +278,16 @@ export class ExtensionRouter {
       }
 
       if (delta > 0) {
-        debug(`removed ${delta} listener(s) for '${eventName}'`)
+        d(`removed ${delta} listener(s) for '${eventName}'`)
       }
     }
   }
 
   private observeListenerHost(host: FrameEventListener['host']) {
     const hostId = getHostId(host)
-    debug(`observing listener [id:${hostId}, url:'${getHostUrl(host)}']`)
+    d(`observing listener [id:${hostId}, url:'${getHostUrl(host)}']`)
     host.once('destroyed', () => {
-      debug(`extension host destroyed [id:${hostId}]`)
+      d(`extension host destroyed [id:${hostId}]`)
       this.filterListeners((listener) => listener.type !== 'frame' || listener.host !== host)
     })
   }
@@ -309,9 +308,9 @@ export class ExtensionRouter {
     const existingEventListener = eventListeners.find(eventListenerEquals(listener))
 
     if (existingEventListener) {
-      debug(`ignoring existing '${eventName}' event listener for ${extensionId}`)
+      d(`ignoring existing '${eventName}' event listener for ${extensionId}`)
     } else {
-      debug(`adding '${eventName}' event listener for ${extensionId}`)
+      d(`adding '${eventName}' event listener for ${extensionId}`)
       eventListeners.push(listener)
       if (listener.type === 'frame' && listener.host) {
         this.observeListenerHost(listener.host)
@@ -331,7 +330,7 @@ export class ExtensionRouter {
     const index = eventListeners.findIndex(eventListenerEquals(listener))
 
     if (index >= 0) {
-      debug(`removing '${eventName}' event listener for ${extensionId}`)
+      d(`removing '${eventName}' event listener for ${extensionId}`)
       eventListeners.splice(index, 1)
     }
 
@@ -384,7 +383,7 @@ export class ExtensionRouter {
 
     const result = await handler.callback(extEvent, ...args)
 
-    debug(`${handlerName} result: %r`, result)
+    d(`${handlerName} result: %r`, result)
 
     return result
   }
@@ -435,7 +434,7 @@ export class ExtensionRouter {
             serviceWorker.send(ipcName, ...args)
           })
           .catch((error) => {
-            debug('failed to send %s to %s', eventName, extensionId)
+            d('failed to send %s to %s', eventName, extensionId)
             console.error(error)
           })
       } else {
@@ -449,7 +448,7 @@ export class ExtensionRouter {
       sentCount++
     }
 
-    debug(`sent '${eventName}' event to ${sentCount} listeners`)
+    d(`sent '${eventName}' event to ${sentCount} listeners`)
   }
 
   /** Broadcasts extension event to all extension hosts listening for it. */

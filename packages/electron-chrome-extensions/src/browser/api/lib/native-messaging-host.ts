@@ -3,10 +3,11 @@ import { promises as fs } from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { app } from 'electron'
+import debug from 'debug'
 import { ExtensionSender, IpcEvent } from '../../router'
 import { readRegistryKey } from './winreg'
 
-const d = require('debug')('electron-chrome-extensions:nativeMessaging')
+const d = debug('electron-chrome-extensions:nativeMessaging')
 
 interface NativeConfig {
   name: string

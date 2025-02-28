@@ -10,8 +10,9 @@ import {
   matchSize,
   ResizeType,
 } from './common'
+import debug from 'debug'
 
-const d = require('debug')('electron-chrome-extensions:browserAction')
+const d = debug('electron-chrome-extensions:browserAction')
 
 if (!app.isReady()) {
   protocol.registerSchemesAsPrivileged([{ scheme: 'crx', privileges: { bypassCSP: true } }])

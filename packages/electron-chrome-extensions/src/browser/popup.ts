@@ -1,7 +1,8 @@
-import { BaseWindow, BrowserWindow, Session } from 'electron'
+import { BrowserWindow, Session } from 'electron'
 import { getAllWindows } from './api/common'
+import debug from 'debug'
 
-const debug = require('debug')('electron-chrome-extensions:popup')
+const d = debug('electron-chrome-extensions:popup')
 
 export interface PopupAnchorRect {
   x: number
@@ -122,7 +123,7 @@ export class PopupView {
 
     this.destroyed = true
 
-    debug(`destroying ${this.extensionId}`)
+    d(`destroying ${this.extensionId}`)
 
     if (this.parent) {
       if (!this.parent.isDestroyed()) {
@@ -167,7 +168,7 @@ export class PopupView {
       Math.min(PopupView.BOUNDS.maxHeight, Math.max(rect.height || 0, PopupView.BOUNDS.minHeight)),
     )
 
-    debug(`setSize`, { width, height })
+    d(`setSize`, { width, height })
 
     this.browserWindow?.setBounds({
       ...this.browserWindow.getBounds(),
@@ -179,7 +180,7 @@ export class PopupView {
   private maybeClose = () => {
     // Keep open if webContents is being inspected
     if (!this.browserWindow?.isDestroyed() && this.browserWindow?.webContents.isDevToolsOpened()) {
-      debug('preventing close due to DevTools being open')
+      d('preventing close due to DevTools being open')
       return
     }
 
@@ -187,7 +188,7 @@ export class PopupView {
     // program outside of the app. Closing the popup would then add
     // inconvenience.
     if (!getAllWindows().some((win) => win.isFocused())) {
-      debug('preventing close due to focus residing outside of the app')
+      d('preventing close due to focus residing outside of the app')
       return
     }
 
@@ -208,7 +209,7 @@ export class PopupView {
     x = Math.floor(x)
     y = Math.floor(y)
 
-    debug(`updatePosition`, { x, y })
+    d(`updatePosition`, { x, y })
 
     this.browserWindow.setBounds({
       ...this.browserWindow.getBounds(),
@@ -235,7 +236,7 @@ export class PopupView {
   }
 
   private updatePreferredSize = (event: Electron.Event, size: Electron.Size) => {
-    debug('updatePreferredSize', size)
+    d('updatePreferredSize', size)
     this.usingPreferredSize = true
     this.setSize(size)
     this.updatePosition()

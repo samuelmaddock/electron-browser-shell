@@ -2,8 +2,9 @@ import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
 import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
 import { WindowsAPI } from './windows'
+import debug from 'debug'
 
-const debug = require('debug')('electron-chrome-extensions:tabs')
+const d = debug('electron-chrome-extensions:tabs')
 
 const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
   // Convert relative URLs to absolute if needed
@@ -84,7 +85,7 @@ export class TabsAPI {
     this.onCreated(tabId)
     this.onActivated(tabId)
 
-    debug(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
+    d(`Observing tab[${tabId}][${tab.getType()}] ${tab.getURL()}`)
   }
 
   private createTabDetails(tab: TabContents) {
