@@ -23,6 +23,10 @@ function createConfig(opts = {}) {
       '.tsx': 'tsx',
       '.css': 'css',
     },
+    define: {
+      ...opts.define,
+      OUTPUT_FORMAT: JSON.stringify(opts.format || ''),
+    },
     ...opts,
     define,
   }

@@ -2,6 +2,7 @@ import { session as electronSession } from 'electron'
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
@@ -27,6 +28,37 @@ function checkVersion() {
   }
 }
 
+function resolvePreloadPath(modulePath?: string) {
+  // Attempt to resolve using ESM import.meta or CJS require
+  // @ts-ignore
+  const importMeta = import.meta
+  const esm = typeof importMeta.resolve !== 'undefined'
+  try {
+    const preloadModule = 'electron-chrome-extensions/preload'
+    const resolved = esm
+      ? importMeta.resolve(preloadModule)
+      : // @ts-expect-error
+        __non_webpack_require__.resolve(preloadModule)
+    return resolved
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(error)
+    }
+  }
+
+  const preloadFilename = 'chrome-extension-api.preload.js'
+
+  // Deprecated: use modulePath if provided
+  if (modulePath) {
+    return path.join(modulePath, 'dist', preloadFilename)
+  }
+
+  // Check for preload relative to entrypoint directory
+  const dirname = esm ? importMeta.dirname : __dirname
+  const relativePreload = path.join(dirname, preloadFilename)
+  return relativePreload
+}
+
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
    * License used to distribute electron-chrome-extensions.
@@ -44,6 +76,9 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
   /**
    * Path to electron-chrome-extensions module files. Might be needed if
    * JavaScript bundlers like Webpack are used in your build process.
+   *
+   * @deprecated No longer needed if `node_modules` are packaged in the
+   * app. Otherwise, copy preload scripts next to the entrypoint.
    */
   modulePath?: string
 }
@@ -60,7 +95,6 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   private ctx: ExtensionContext
-  private modulePath: string
 
   private api: {
     browserAction: BrowserActionAPI
@@ -78,7 +112,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   constructor(opts: ChromeExtensionOptions) {
     super()
 
-    const { license, session = electronSession.defaultSession, modulePath, ...impl } = opts || {}
+    const { license, session = electronSession.defaultSession, ...impl } = opts || {}
 
     checkVersion()
     checkLicense(license)
@@ -99,15 +133,6 @@ export class ElectronChromeExtensions extends EventEmitter {
       store,
     }
 
-    console.log('***extensions', {
-      modulePath,
-      resolve: require.resolve,
-      resolved: require.resolve('electron-chrome-extensions/preload'),
-      // resolvedPath: path.resolve(globalThis.require.resolve('electron-chrome-extensions/preload')),
-      require: globalThis.require,
-    })
-    this.modulePath = modulePath || __dirname
-
     this.api = {
       browserAction: new BrowserActionAPI(this.ctx),
       contextMenus: new ContextMenusAPI(this.ctx),
@@ -122,7 +147,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
 
     this.listenForExtensions()
-    this.prependPreload()
+    this.prependPreload(opts.modulePath)
 
     // Register crx:// protocol in default session for convenience
     if (this.ctx.session !== electronSession.defaultSession) {
@@ -136,10 +161,11 @@ export class ElectronChromeExtensions extends EventEmitter {
     })
   }
 
-  private async prependPreload() {
+  private async prependPreload(modulePath?: string) {
     const { session } = this.ctx
 
-    const preloadPath = path.join(this.modulePath, 'chrome-extension-api.preload.js')
+    const preloadPath = resolvePreloadPath(modulePath)
+    console.log('***preloadpath', preloadPath)
 
     if ('registerPreloadScript' in session) {
       session.registerPreloadScript({

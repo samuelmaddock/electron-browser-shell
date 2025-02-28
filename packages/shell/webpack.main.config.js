@@ -1,5 +1,5 @@
 // const path = require('path')
-// const CopyWebpackPlugin = require('copy-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 
 module.exports = {
   entry: './index.js',
@@ -10,11 +10,11 @@ module.exports = {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
   },
   plugins: [
-    // new CopyWebpackPlugin({
-    //   patterns: [
-    //     require.resolve('electron-chrome-extensions/preload'),
-    //     require.resolve('electron-chrome-web-store/preload'),
-    //   ],
-    // }),
+    new CopyWebpackPlugin({
+      patterns: [
+        require.resolve('electron-chrome-extensions/preload'),
+        require.resolve('electron-chrome-web-store/preload'),
+      ],
+    }),
   ],
 }
