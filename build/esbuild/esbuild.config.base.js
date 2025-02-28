@@ -2,6 +2,15 @@ const esbuild = require('esbuild')
 
 function createConfig(opts = {}) {
   const prod = process.env.NODE_ENV === 'production'
+  const define =
+    opts.format === 'esm'
+      ? {
+          ...opts.define,
+          __dirname: 'import.meta.dirname',
+        }
+      : {
+          ...opts.define,
+        }
   return {
     bundle: true,
     platform: opts.platform || 'node',
@@ -15,6 +24,7 @@ function createConfig(opts = {}) {
       '.css': 'css',
     },
     ...opts,
+    define,
   }
 }
 
