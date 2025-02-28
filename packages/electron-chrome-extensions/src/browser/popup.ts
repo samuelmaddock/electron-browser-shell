@@ -16,6 +16,7 @@ interface PopupViewOptions {
   parent: Electron.BaseWindow
   url: string
   anchorRect: PopupAnchorRect
+  alignment?: string
 }
 
 const supportsPreferredSize = () => {
@@ -40,6 +41,7 @@ export class PopupView {
   private anchorRect: PopupAnchorRect
   private destroyed: boolean = false
   private hidden: boolean = true
+  private alignment?: string
 
   /** Preferred size changes are only received in Electron v12+ */
   private usingPreferredSize = supportsPreferredSize()
@@ -50,6 +52,7 @@ export class PopupView {
     this.parent = opts.parent
     this.extensionId = opts.extensionId
     this.anchorRect = opts.anchorRect
+    this.alignment = opts.alignment
 
     this.browserWindow = new BrowserWindow({
       show: false,
@@ -200,9 +203,13 @@ export class PopupView {
     const winBounds = this.parent.getBounds()
     const viewBounds = this.browserWindow.getBounds()
 
-    // TODO: support more orientations than just top-right
     let x = winBounds.x + this.anchorRect.x + this.anchorRect.width - viewBounds.width
     let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
+
+    // If aligned to a differently then we need to offset the popup position
+    if (this.alignment?.includes('left')) x = winBounds.x + this.anchorRect.x
+    if (this.alignment?.includes('bottom'))
+      y = winBounds.y - viewBounds.height + this.anchorRect.y - PopupView.POSITION_PADDING
 
     // Convert to ints
     x = Math.floor(x)
