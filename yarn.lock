@@ -2330,19 +2330,19 @@ electron-winstaller@^5.3.0:
   optionalDependencies:
     "@electron/windows-sign" "^1.1.2"
 
-electron@^35.0.0-beta.3:
-  version "35.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.3.tgz#395b246d1767be73ff39ee834f9025756c12a7de"
-  integrity sha512-huZMU1He5WdWcdIw41sAHQbbpf+WAs+NBrFP4e8nFovysqvjN49edsttkf23cD9wYDsYgarRdr26m1kDyz+/Ug==
+electron@35.0.0-beta.6:
+  version "35.0.0-beta.6"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.6.tgz#1b39a50ba7a7ba15b3d0fa5175f013a34390b28f"
+  integrity sha512-Qgp7mFpfCmYsWwGkIbsix64xka9cCLPikTHitn7Jgc31ZnJQAGGxcfXa06v7j09PJZmb/KcCegkwksN/fFQENQ==
   dependencies:
     "@electron/get" "^2.0.0"
     "@types/node" "^22.7.7"
     extract-zip "^2.0.1"
 
-electron@^35.0.0-beta.8:
-  version "35.0.0-beta.8"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.8.tgz#acf936b42a063071d29e6cb7a85c02ac507c3edc"
-  integrity sha512-ehYTjZAwT4al6wJkj28WMn+ESas5kyK3DYp2AXz10jBGytspLkSd5Pgi8gJCZtF7Z5unHkCE1H3F/2aEFPDeYg==
+electron@^35.0.0-beta.3:
+  version "35.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.3.tgz#395b246d1767be73ff39ee834f9025756c12a7de"
+  integrity sha512-huZMU1He5WdWcdIw41sAHQbbpf+WAs+NBrFP4e8nFovysqvjN49edsttkf23cD9wYDsYgarRdr26m1kDyz+/Ug==
   dependencies:
     "@electron/get" "^2.0.0"
     "@types/node" "^22.7.7"
