@@ -19,6 +19,7 @@ export const injectBrowserAction = () => {
     extensionId: string
     tabId: number
     anchorRect: { x: number; y: number; width: number; height: number }
+    alignment?: string
   }
 
   const __browserAction__ = {
@@ -115,8 +116,16 @@ export const injectBrowserAction = () => {
         }
       }
 
+      get alignment(): string {
+        return this.getAttribute('alignment') || ''
+      }
+
+      set alignment(alignment: string) {
+        this.setAttribute('alignment', alignment)
+      }
+
       static get observedAttributes() {
-        return ['id', 'tab', 'partition']
+        return ['id', 'tab', 'partition', 'alignment']
       }
 
       constructor() {
@@ -156,6 +165,7 @@ export const injectBrowserAction = () => {
           eventType: event.type,
           extensionId: this.id,
           tabId: this.tab,
+          alignment: this.alignment,
           anchorRect: {
             x: rect.left,
             y: rect.top,
@@ -280,8 +290,16 @@ export const injectBrowserAction = () => {
         }
       }
 
+      get alignment(): string {
+        return this.getAttribute('alignment') || ''
+      }
+
+      set alignment(alignment: string) {
+        this.setAttribute('alignment', alignment)
+      }
+
       static get observedAttributes() {
-        return ['tab', 'partition']
+        return ['tab', 'partition', 'alignment']
       }
 
       constructor() {
@@ -413,12 +431,14 @@ export const injectBrowserAction = () => {
             }) as BrowserActionElement
             node.id = action.id
             node.className = 'action'
+            ;(node as any).alignment = this.alignment
             ;(node as any).part = 'action'
             browserActionNode = node
             this.shadowRoot?.appendChild(browserActionNode)
           }
 
           if (this.partition) browserActionNode.partition = this.partition
+          if (this.alignment) browserActionNode.alignment = this.alignment
           browserActionNode.tab = tabId
         }
 

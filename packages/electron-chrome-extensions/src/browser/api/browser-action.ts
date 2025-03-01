@@ -35,6 +35,7 @@ interface ActivateDetails {
   extensionId: string
   tabId: number
   anchorRect: { x: number; y: number; width: number; height: number }
+  alignment?: string
 }
 
 const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionAction | undefined => {
@@ -391,7 +392,7 @@ export class BrowserActionAPI {
   }
 
   private activateClick(details: ActivateDetails) {
-    const { extensionId, tabId, anchorRect } = details
+    const { extensionId, tabId, anchorRect, alignment } = details
 
     if (this.popup) {
       const toggleExtension = !this.popup.isDestroyed() && this.popup.extensionId === extensionId
@@ -423,6 +424,7 @@ export class BrowserActionAPI {
         parent: win,
         url: popupUrl,
         anchorRect,
+        alignment,
       })
 
       d(`opened popup: ${popupUrl}`)
