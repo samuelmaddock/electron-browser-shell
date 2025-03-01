@@ -207,8 +207,8 @@ export class PopupView {
     let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
 
     // If aligned to a differently then we need to offset the popup position
-    if (this.alignment?.includes('left')) x = winBounds.x + this.anchorRect.x
-    if (this.alignment?.includes('bottom'))
+    if (this.alignment?.includes('right')) x = winBounds.x + this.anchorRect.x
+    if (this.alignment?.includes('top'))
       y = winBounds.y - viewBounds.height + this.anchorRect.y - PopupView.POSITION_PADDING
 
     // Convert to ints
