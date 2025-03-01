@@ -160,7 +160,6 @@ export const injectBrowserAction = () => {
 
       private activate(event: Event) {
         const rect = this.getBoundingClientRect()
-        console.log('Thing has been clicked', this)
 
         browserAction.activate(this.partition || DEFAULT_PARTITION, {
           eventType: event.type,

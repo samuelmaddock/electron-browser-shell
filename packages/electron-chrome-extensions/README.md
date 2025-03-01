@@ -219,7 +219,7 @@ To enable the element on a webpage, you must define a preload script which injec
 - `partition` string (optional) - The `Electron.Session` partition which extensions are loaded in. Defaults to the session in which `<browser-action-list>` lives.
 - `tab` string (optional) - The tab's `Electron.WebContents` ID to use for displaying
   the relevant browser action state. Defaults to the active tab of the current browser window.
-- `popup` string (optional) - Where the popup window should show in relation to the `<browser-action-list>` element. Defaults to `bottom left`. Use any assortment of `top`, `bottom`, `left`, and `right` to describe where the popup should be opened.
+- `alignment` string (optional) - How the popup window should be aligned relative to the extension action. Defaults to `bottom left`. Use any assortment of `top`, `bottom`, `left`, and `right`.
 
 #### Browser action example
 
@@ -252,7 +252,8 @@ Add the `<browser-action-list>` element with attributes appropriate for your app
 <!-- Show actions for custom session and a specific tab of current window. -->
 <browser-action-list partition="persist:custom" tab="1"></browser-action-list>
 
-<!-- If you show extensions in the bottom left of the browser then you can align the popups to the top right of the component -->
+<!-- If extensions are displayed in the bottom left of your browser UI, then
+     you can align the popup to the top right of the extension action. -->
 <browser-action-list alignment="top right"></browser-action-list>
 ```
 
