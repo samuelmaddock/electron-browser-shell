@@ -43,7 +43,7 @@ To test local unpacked extensions, include them in `./extensions` then launch th
 - [x] [Chrome Web Store](https://chromewebstore.google.com) extension installer
 - [x] Automatic extension updates
 - [x] [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) support—pending [electron/electron#44411](https://github.com/electron/electron/pull/44411)
-- [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
+- [ ] Support for common [`chrome.*` extension APIs](https://developer.chrome.com/docs/extensions/reference/api)
 - [ ] Robust extension popup support
 - [ ] Respect extension manifest permissions
 
@@ -52,7 +52,7 @@ To test local unpacked extensions, include them in `./extensions` then launch th
 - [ ] Extension management (enable/disable/uninstall)
 - [ ] Installation prompt UX
 - [ ] [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) extension installer
-- [ ] Full support of [`chrome.*` extension APIs](https://developer.chrome.com/extensions/devguide)
+- [ ] Full support of [`chrome.*` extension APIs](https://developer.chrome.com/docs/extensions/reference/api)
 
 ### 🤔 Considering
 
