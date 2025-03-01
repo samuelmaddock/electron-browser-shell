@@ -42,7 +42,7 @@ class TabbedBrowserWindow {
     this.id = this.window.id
     this.webContents = this.window.webContents
 
-    const webuiUrl = path.join('chrome-extension://', webuiExtensionId, '/webui.html')
+    const webuiUrl = `chrome-extension://${webuiExtensionId}/webui.html`
     this.webContents.loadURL(webuiUrl)
 
     this.tabs = new Tabs(this.window)
