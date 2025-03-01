@@ -1,4 +1,7 @@
 import { spawn } from 'child_process'
+import debug from 'debug'
+
+const d = debug('electron-chrome-extensions:winreg')
 
 export function readRegistryKey(hive: string, path: string, key?: string) {
   if (process.platform !== 'win32') {
@@ -6,7 +9,9 @@ export function readRegistryKey(hive: string, path: string, key?: string) {
   }
 
   return new Promise<string | null>((resolve, reject) => {
-    const child = spawn('reg', ['query', `${hive}\\${path}`, ...(key ? ['/v', key] : [])])
+    const args = ['query', `${hive}\\${path}`, ...(key ? ['/v', key] : [])]
+    d('reg %s', args.join(' '))
+    const child = spawn('reg', args)
 
     let output = ''
     let error = ''

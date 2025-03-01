@@ -58,8 +58,8 @@ async function getConfigSearchPaths(application: string) {
     case 'win32': {
       searchPaths = (
         await Promise.allSettled([
-          readRegistryKey('HKLM', '\\Software\\Google\\Chrome\\NativeMessagingHosts', application),
-          readRegistryKey('HKCU', '\\Software\\Google\\Chrome\\NativeMessagingHosts', application),
+          readRegistryKey('HKLM', `Software\\Google\\Chrome\\NativeMessagingHosts\\${application}`),
+          readRegistryKey('HKCU', `Software\\Google\\Chrome\\NativeMessagingHosts\\${application}`),
         ])
       )
         .map((result) => (result.status === 'fulfilled' ? result.value : undefined))
@@ -76,6 +76,7 @@ async function readNativeMessagingHostConfig(
   application: string,
 ): Promise<NativeConfig | undefined> {
   const searchPaths = await getConfigSearchPaths(application)
+  d('searching', searchPaths)
   for (const filePath of searchPaths) {
     try {
       const data = await fs.readFile(filePath)

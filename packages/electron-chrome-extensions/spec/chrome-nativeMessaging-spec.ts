@@ -8,7 +8,7 @@ const exec = promisify(cp.exec)
 import { useExtensionBrowser, useServer } from './hooks'
 import { getExtensionId } from './crx-helpers'
 
-// TODO: figure out why CI can't connect to native host
+// TODO: build crxtesthost on Linux (see script/native-messaging-host/build.js)
 if (process.platform !== 'linux') {
   describe('nativeMessaging', () => {
     const server = useServer()
@@ -21,7 +21,8 @@ if (process.platform !== 'linux') {
     before(async () => {
       const extensionId = await getExtensionId('rpc')
       const nativeMessagingPath = path.join(__dirname, '..', 'script', 'native-messaging-host')
-      await exec(`${path.join(nativeMessagingPath, 'build.js')} ${extensionId}`)
+      const buildScript = path.join(nativeMessagingPath, 'build.js')
+      await exec(`node ${buildScript} ${extensionId}`)
     })
 
     describe('sendNativeMessage()', () => {

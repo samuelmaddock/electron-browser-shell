@@ -42,28 +42,48 @@ async function createSEA() {
 async function installConfig(extensionIds) {
   console.info(`Installing config…`)
 
-  const name = 'com.crx.test'
-  const config = {
-    name,
+  const hostName = 'com.crx.test'
+  const manifest = {
+    name: hostName,
     description: 'electron-chrome-extensions test',
     path: path.join(outDir, exeName),
     type: 'stdio',
     allowed_origins: extensionIds.map((id) => `chrome-extension://${id}/`),
   }
 
+  const writeManifest = async (manifestPath) => {
+    await fs.mkdir(manifestPath, { recursive: true })
+    const filePath = path.join(manifestPath, `${hostName}.json`)
+    const data = Buffer.from(JSON.stringify(manifest, null, 2))
+    await fs.writeFile(filePath, data)
+    return filePath
+  }
+
   switch (process.platform) {
     case 'darwin': {
-      const configPath = path.join(
+      const manifestDir = path.join(
         os.homedir(),
         'Library',
         'Application Support',
         'Electron',
         'NativeMessagingHosts',
       )
-      await fs.mkdir(configPath, { recursive: true })
-      const filePath = path.join(configPath, `${name}.json`)
-      const data = Buffer.from(JSON.stringify(config, null, 2))
-      await fs.writeFile(filePath, data)
+      await writeManifest(manifestDir)
+      break
+    }
+    case 'win32': {
+      const manifestDir = path.join(
+        os.homedir(),
+        'AppData',
+        'Roaming',
+        'Electron',
+        'NativeMessagingHosts',
+      )
+      const manifestPath = await writeManifest(manifestDir)
+      const registryKey = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${hostName}`
+      await exec(`reg add "${registryKey}" /ve /t REG_SZ /d "${manifestPath}" /f`, {
+        stdio: 'inherit',
+      })
       break
     }
     default:
