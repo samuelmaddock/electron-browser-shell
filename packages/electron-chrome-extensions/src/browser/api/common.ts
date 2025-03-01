@@ -42,7 +42,7 @@ export const resolveExtensionPath = (
   requestPath?: string,
 ) => {
   // Resolve any relative paths.
-  const relativePath = path.resolve(requestPath || '/', uri)
+  const relativePath = path.join(requestPath || '/', uri)
   const resPath = path.join(extension.path, relativePath)
 
   // prevent any parent traversals
