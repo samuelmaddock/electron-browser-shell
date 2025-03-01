@@ -18,7 +18,8 @@ if (process.platform !== 'linux') {
     })
     const hostApplication = 'com.crx.test'
 
-    before(async () => {
+    before(async function () {
+      this.timeout(60e3)
       const extensionId = await getExtensionId('rpc')
       const nativeMessagingPath = path.join(__dirname, '..', 'script', 'native-messaging-host')
       const buildScript = path.join(nativeMessagingPath, 'build.js')
