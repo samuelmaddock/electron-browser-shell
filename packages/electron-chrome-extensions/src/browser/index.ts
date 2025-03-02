@@ -71,8 +71,7 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
    * Path to electron-chrome-extensions module files. Might be needed if
    * JavaScript bundlers like Webpack are used in your build process.
    *
-   * @deprecated No longer needed if `node_modules` are packaged in the
-   * app. Otherwise, copy preload scripts next to the entrypoint.
+   * @deprecated See "Packaging the preload script" in the readme.
    */
   modulePath?: string
 }

@@ -14,7 +14,7 @@ function createConfig(opts = {}) {
   return {
     bundle: true,
     platform: opts.platform || 'node',
-    target: 'esnext',
+    target: 'es2020',
     sourcemap: !prod,
     minify: false,
     external: [],
@@ -22,10 +22,6 @@ function createConfig(opts = {}) {
       '.ts': 'ts',
       '.tsx': 'tsx',
       '.css': 'css',
-    },
-    define: {
-      ...opts.define,
-      OUTPUT_FORMAT: JSON.stringify(opts.format || ''),
     },
     ...opts,
     define,

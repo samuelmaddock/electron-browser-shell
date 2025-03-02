@@ -46,6 +46,8 @@ interface ElectronChromeWebStoreOptions {
 
   /**
    * Path to the 'electron-chrome-web-store' module.
+   *
+   * @deprecated See "Packaging the preload script" in the readme.
    */
   modulePath?: string
 
