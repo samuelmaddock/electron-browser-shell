@@ -26,8 +26,8 @@ build(browserConfig)
 build(browserESMConfig)
 
 const preloadConfig = createConfig({
-  entryPoints: ['src/renderer/web-store.preload.ts'],
-  outfile: 'dist/web-store.preload.js',
+  entryPoints: ['src/renderer/chrome-web-store.preload.ts'],
+  outfile: 'dist/chrome-web-store.preload.js',
   platform: 'browser',
   external,
   sourcemap: false,

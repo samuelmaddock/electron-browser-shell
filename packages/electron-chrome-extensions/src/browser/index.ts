@@ -29,17 +29,9 @@ function checkVersion() {
 }
 
 function resolvePreloadPath(modulePath?: string) {
-  // Attempt to resolve using ESM import.meta or CJS require
-  // @ts-ignore
-  const importMeta = import.meta
-  const esm = typeof importMeta.resolve !== 'undefined'
+  // Attempt to resolve preload path from module exports
   try {
-    const preloadModule = 'electron-chrome-extensions/preload'
-    const resolved = esm
-      ? importMeta.resolve(preloadModule)
-      : // @ts-expect-error
-        __non_webpack_require__.resolve(preloadModule)
-    return resolved
+    return createRequire(__dirname).resolve('electron-chrome-extensions/preload')
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error(error)
@@ -50,13 +42,15 @@ function resolvePreloadPath(modulePath?: string) {
 
   // Deprecated: use modulePath if provided
   if (modulePath) {
+    process.emitWarning(
+      'electron-chrome-extensions: "modulePath" is deprecated and will be removed in future versions.',
+      { type: 'DeprecationWarning' },
+    )
     return path.join(modulePath, 'dist', preloadFilename)
   }
 
-  // Check for preload relative to entrypoint directory
-  const dirname = esm ? importMeta.dirname : __dirname
-  const relativePreload = path.join(dirname, preloadFilename)
-  return relativePreload
+  // Fallback to preload relative to entrypoint directory
+  return path.join(__dirname, preloadFilename)
 }
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
@@ -165,7 +159,6 @@ export class ElectronChromeExtensions extends EventEmitter {
     const { session } = this.ctx
 
     const preloadPath = resolvePreloadPath(modulePath)
-    console.log('***preloadpath', preloadPath)
 
     if ('registerPreloadScript' in session) {
       session.registerPreloadScript({
@@ -184,11 +177,12 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
 
     if (!existsSync(preloadPath)) {
-      const preloadError = new Error(
-        `electron-chrome-extensions: Preload file not found at "${preloadPath}". ` +
-          'Copy "electron-chrome-extensions/preload" into your build files and/or configure the modulePath option.',
+      console.error(
+        new Error(
+          `electron-chrome-extensions: Preload file not found at "${preloadPath}". ` +
+            'See "Packaging the preload script" in the readme.',
+        ),
       )
-      console.error(preloadError)
     }
   }
 

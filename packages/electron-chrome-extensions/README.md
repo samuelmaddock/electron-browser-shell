@@ -93,29 +93,32 @@ app.whenReady().then(() => {
 })
 ```
 
-### Including the preload script
+### Packaging the preload script
 
-This module requires including its preload script. Be sure to copy it next to your app's entry
-point script so it works in your packaged app.
+This module uses a [preload script](https://www.electronjs.org/docs/latest/tutorial/tutorial-preload#what-is-a-preload-script).
+When packaging your application, it's required that the preload script is included. This can be
+handled in two ways:
 
-```js
-const fs = require('node:fs')
-const path = require('node:path')
+1. Include `node_modules` in your packaged app. This allows `electron-chrome-extensions/preload` to
+   be resolved.
+2. In the case of using JavaScript bundlers, you may need to copy the preload script next to your
+   app's entry point script. You can try using
+   [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin),
+   [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy),
+   or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy) depending on your app's
+   configuration.
 
-const preloadPath = require.resolve('electron-chrome-extensions/preload')
-const buildPath = './path/to/entry/point'
-
-fs.cp(preloadPath, path.join(buildPath, path.basename(preloadPath)))
-```
-
-For bundlers, you can try using [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin), [vite-plugin-static-copy](https://github.com/sapphi-red/vite-plugin-static-copy), or [rollup-plugin-copy](https://github.com/vladshcherbin/rollup-plugin-copy).
-
-The `modulePath` option can be used for loading the preload from elsewhere.
+Here's an example for webpack configurations:
 
 ```js
-new ElectronChromeExtensions({
-  modulePath: path.resolve('./out', 'node_modules', 'electron-chrome-extensions'),
-})
+module.exports = {
+  entry: './index.js',
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [require.resolve('electron-chrome-extensions/preload')],
+    }),
+  ],
+}
 ```
 
 ## API
