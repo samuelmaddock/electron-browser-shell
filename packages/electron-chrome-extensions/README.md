@@ -132,7 +132,6 @@ module.exports = {
 - `options` Object
   - `license` String - Distribution license compatible with your application. See LICENSE.md for more details. \
      Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
-  - `modulePath` String (optional) - Path to electron-chrome-extensions module files. Might be needed if JavaScript bundlers like Webpack are used in your build process.
   - `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
   - `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -

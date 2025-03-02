@@ -93,7 +93,6 @@ Installs Chrome Web Store support in the specified session.
 
 - `options`
   - `session`: The Electron session to enable the Chrome Web Store in. Defaults to `session.defaultSession`.
-  - `modulePath`: The path to the 'electron-chrome-web-store' module.
   - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
   - `autoUpdate`: Whether to auto-update web store extensions at startup and once every 5 hours. Defaults to true.
   - `loadExtensions`: A boolean indicating whether to load extensions installed by Chrome Web Store. Defaults to true.
