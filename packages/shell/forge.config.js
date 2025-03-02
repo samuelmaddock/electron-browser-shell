@@ -1,7 +1,7 @@
 module.exports = {
   packagerConfig: {
     name: 'Shell',
-    asar: false,
+    asar: true,
     extraResource: ['browser/ui'],
   },
   rebuildConfig: {},
