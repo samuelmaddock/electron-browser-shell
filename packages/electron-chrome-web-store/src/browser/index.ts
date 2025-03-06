@@ -91,6 +91,11 @@ interface ElectronChromeWebStoreOptions {
    */
   minimumManifestVersion?: number
 
+  /**
+   * Called prior to installing an extension. If implemented, return a Promise
+   * which resolves with `{ action: 'allow' | 'deny' }` depending on the action
+   * to be taken.
+   */
   beforeInstall?: BeforeInstall
 }
 
