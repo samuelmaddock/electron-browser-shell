@@ -111,6 +111,15 @@ Installs Chrome extension from the Chrome Web Store.
   - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
   - `loadExtensionOptions`: Extension options passed into `session.loadExtension`.
 
+### `uninstallExtension`
+
+Uninstalls Chrome Web Store extension.
+
+- `extensionId`: The Chrome Web Store extension ID to uninstall.
+- `options`
+  - `session`: The Electron session where extensions are loaded. Defaults to `session.defaultSession`.
+  - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
+
 ### `updateExtensions`
 
 Checks loaded extensions for updates and installs any if available.

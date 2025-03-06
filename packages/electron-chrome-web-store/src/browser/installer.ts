@@ -187,17 +187,23 @@ export async function downloadExtension(
   return await downloadExtensionFromURL(url, extensionsDir, extensionId)
 }
 
-interface InstallExtensionOptions {
+interface CommonExtensionOptions {
   /** Session to load extensions into. */
   session?: Electron.Session
+
   /**
-   * Directory to install extensions.
+   * Directory where web store extensions will be installed.
    * Defaults to `Extensions` under the app's `userData` directory.
    */
   extensionsPath?: string
+}
+
+interface InstallExtensionOptions extends CommonExtensionOptions {
   /** Options for loading the extension. */
   loadExtensionOptions?: Electron.LoadExtensionOptions
 }
+
+interface UninstallExtensionOptions extends CommonExtensionOptions {}
 
 /**
  * Install extension from the web store.
@@ -231,4 +237,35 @@ export async function installExtension(
   d('installed %s', extensionId)
 
   return extension
+}
+
+/**
+ * Uninstall extension from the web store.
+ */
+export async function uninstallExtension(
+  extensionId: string,
+  opts: UninstallExtensionOptions = {},
+) {
+  d('uninstalling %s', extensionId)
+
+  const session = opts.session || electronSession.defaultSession
+  const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
+
+  const extensions = session.getAllExtensions()
+  const existingExt = extensions.find((ext) => ext.id === extensionId)
+  if (existingExt) {
+    session.removeExtension(extensionId)
+  }
+
+  const extensionDir = path.join(extensionsPath, extensionId)
+  try {
+    const stat = await fs.promises.stat(extensionDir)
+    if (stat.isDirectory()) {
+      await fs.promises.rm(extensionDir, { recursive: true, force: true })
+    }
+  } catch (error: any) {
+    if (error?.code !== 'ENOENT') {
+      throw error
+    }
+  }
 }

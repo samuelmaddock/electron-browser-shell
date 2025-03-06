@@ -10,7 +10,7 @@ import {
   Result,
   WebGlStatus,
 } from '../common/constants'
-import { installExtension } from './installer'
+import { installExtension, uninstallExtension } from './installer'
 import { ExtensionId, WebStoreState } from './types'
 
 const d = debug('electron-chrome-web-store:api')
@@ -74,29 +74,6 @@ function getExtensionInstallStatus(
   }
 
   return ExtensionInstallStatus.ENABLED
-}
-
-async function uninstallExtension(
-  { session, extensionsPath }: WebStoreState,
-  extensionId: ExtensionId,
-) {
-  const extensions = session.getAllExtensions()
-  const existingExt = extensions.find((ext) => ext.id === extensionId)
-  if (existingExt) {
-    await session.removeExtension(extensionId)
-  }
-
-  const extensionDir = path.join(extensionsPath, extensionId)
-  try {
-    const stat = await fs.promises.stat(extensionDir)
-    if (stat.isDirectory()) {
-      await fs.promises.rm(extensionDir, { recursive: true, force: true })
-    }
-  } catch (error: any) {
-    if (error?.code !== 'ENOENT') {
-      console.error(error)
-    }
-  }
 }
 
 interface InstallDetails {
@@ -332,7 +309,7 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
       }
 
       try {
-        await uninstallExtension(webStoreState, id)
+        await uninstallExtension(id, webStoreState)
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
         })
