@@ -199,6 +199,12 @@ export class ElectronChromeExtensions extends EventEmitter {
     this.ctx.store.addTab(tab, window)
   }
 
+  /** Remove webContents from being tracked as a tab. */
+  removeTab(tab: Electron.WebContents) {
+    this.checkWebContentsArgument(tab)
+    this.ctx.store.removeTab(tab)
+  }
+
   /** Notify extension system that the active tab has changed. */
   selectTab(tab: Electron.WebContents) {
     this.checkWebContentsArgument(tab)
