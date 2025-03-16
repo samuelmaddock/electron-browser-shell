@@ -1,5 +1,5 @@
 {
-  "name": "electron-chrome-web-store",
+  "name": "@iamevan/electron-chrome-web-store",
   "version": "0.10.0",
   "description": "Install and update Chrome extensions from the Chrome Web Store for Electron",
   "main": "./dist/cjs/browser/index.js",

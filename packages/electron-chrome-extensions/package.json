@@ -1,5 +1,5 @@
 {
-  "name": "electron-chrome-extensions",
+  "name": "@iamevan/electron-chrome-extensions",
   "version": "4.6.0",
   "description": "Chrome extension support for Electron",
   "main": "./dist/cjs/index.js",
@@ -26,7 +26,7 @@
   "scripts": {
     "build": "bun clean && tsc && node esbuild.config.js",
     "clean": "node ../../scripts/clean.js",
-    "prepublishOnly": "NODE_ENV=production bun build",
+    "prepublishOnly": "NODE_ENV=production bun run build",
     "pretest": "esbuild spec/fixtures/crx-test-preload.ts --bundle --external:electron --outfile=spec/fixtures/crx-test-preload.js --platform=node",
     "test": "node ./script/spec-runner.js"
   },
