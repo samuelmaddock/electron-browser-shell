@@ -26,17 +26,17 @@ jobs:
           node-version: '20.x'
 
       - name: Install dependencies
-        run: yarn install
+        run: bun install
 
       - name: Build
-        run: yarn build
+        run: bun build
 
       - name: Run tests (Linux)
         if: runner.os == 'Linux'
         uses: GabrielBB/xvfb-action@v1
         with:
-          run: yarn test
+          run: bun test
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        run: yarn test
+        run: bun test

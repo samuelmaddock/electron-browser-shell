@@ -24,9 +24,9 @@
     "./preload": "./dist/chrome-extension-api.preload.js"
   },
   "scripts": {
-    "build": "yarn clean && tsc && node esbuild.config.js",
+    "build": "bun clean && tsc && node esbuild.config.js",
     "clean": "node ../../scripts/clean.js",
-    "prepublishOnly": "NODE_ENV=production yarn build",
+    "prepublishOnly": "NODE_ENV=production bun build",
     "pretest": "esbuild spec/fixtures/crx-test-preload.ts --bundle --external:electron --outfile=spec/fixtures/crx-test-preload.js --platform=node",
     "test": "node ./script/spec-runner.js"
   },

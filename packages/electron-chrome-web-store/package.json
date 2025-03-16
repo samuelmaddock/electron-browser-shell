@@ -14,9 +14,9 @@
     "./preload": "./dist/chrome-web-store.preload.js"
   },
   "scripts": {
-    "build": "yarn clean && tsc && node esbuild.config.js",
+    "build": "bun clean && tsc && node esbuild.config.js",
     "clean": "node ../../scripts/clean.js",
-    "prepublish": "NODE_ENV=production yarn build"
+    "prepublish": "NODE_ENV=production bun build"
   },
   "keywords": [
     "electron",
