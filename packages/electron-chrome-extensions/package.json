@@ -1,6 +1,6 @@
 {
   "name": "@iamevan/electron-chrome-extensions",
-  "version": "4.6.0",
+  "version": "4.6.1",
   "description": "Chrome extension support for Electron",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.mjs",
