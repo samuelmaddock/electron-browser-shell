@@ -1,6 +1,6 @@
 {
   "name": "@iamevan/electron-chrome-extensions",
-  "version": "4.6.1",
+  "version": "4.6.5",
   "description": "Chrome extension support for Electron",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.mjs",
@@ -20,6 +20,16 @@
       "types": "./dist/types/browser-action.d.ts",
       "import": "./dist/esm/browser-action.mjs",
       "require": "./dist/cjs/browser-action.js"
+    },
+    "./extension-apis": {
+      "types": "./dist/types/extension-apis.d.ts",
+      "import": "./dist/esm/extension-apis.mjs",
+      "require": "./dist/cjs/extension-apis.js"
+    },
+    "./dist/extension-apis": {
+      "types": "./dist/types/extension-apis.d.ts",
+      "import": "./dist/esm/extension-apis.mjs",
+      "require": "./dist/cjs/extension-apis.js"
     },
     "./preload": "./dist/chrome-extension-api.preload.js"
   },

@@ -53,3 +53,25 @@ const browserActionESMPreloadConfig = createConfig({
 
 build(browserActionPreloadConfig)
 build(browserActionESMPreloadConfig)
+
+// Add configurations for extension-apis.ts
+const extensionApisConfig = createConfig({
+  entryPoints: ['src/extension-apis.ts'],
+  outfile: 'dist/cjs/extension-apis.js',
+  platform: 'browser',
+  format: 'cjs',
+  external,
+  sourcemap: false,
+})
+
+const extensionApisESMConfig = createConfig({
+  entryPoints: ['src/extension-apis.ts'],
+  outfile: 'dist/esm/extension-apis.mjs',
+  platform: 'browser',
+  external,
+  sourcemap: false,
+  format: 'esm',
+})
+
+build(extensionApisConfig)
+build(extensionApisESMConfig)
