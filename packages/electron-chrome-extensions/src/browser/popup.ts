@@ -57,15 +57,16 @@ export class PopupView {
 
     this.browserWindow = new BrowserWindow({
       show: false,
-      frame: false,
+      frame: true,
       parent: opts.parent,
-      movable: false,
+      movable: true,
       maximizable: false,
       minimizable: false,
       resizable: false,
       skipTaskbar: true,
       backgroundColor: '#ffffff',
-      roundedCorners: false,
+      roundedCorners: true,
+      useContentSize: true,
       webPreferences: {
         session: opts.session,
         sandbox: true,
@@ -173,8 +174,8 @@ export class PopupView {
 
     d(`setSize`, { width, height })
 
-    this.browserWindow?.setBounds({
-      ...this.browserWindow.getBounds(),
+    this.browserWindow?.setContentBounds({
+      ...this.browserWindow.getContentBounds(),
       width,
       height,
     })
@@ -218,8 +219,8 @@ export class PopupView {
 
     d(`updatePosition`, { x, y })
 
-    this.browserWindow.setBounds({
-      ...this.browserWindow.getBounds(),
+    this.browserWindow.setContentBounds({
+      ...this.browserWindow.getContentBounds(),
       x,
       y,
     })
@@ -246,7 +247,9 @@ export class PopupView {
     d('updatePreferredSize', size)
     this.usingPreferredSize = true
     this.setSize(size)
-    this.updatePosition()
+
+    // Movable popup, so we don't need to update position
+    // this.updatePosition()
 
     // Wait to reveal popup until it's sized and positioned correctly
     if (this.hidden) this.show()
