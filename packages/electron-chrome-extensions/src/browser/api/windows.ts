@@ -36,6 +36,10 @@ export class WindowsAPI {
       this.onFocusChanged(windowId)
     })
 
+    window.on('resized', () => {
+      this.onBoundsChanged(windowId)
+    })
+
     window.once('closed', () => {
       this.ctx.store.windowDetailsCache.delete(windowId)
       this.ctx.store.removeWindow(window)
@@ -163,5 +167,12 @@ export class WindowsAPI {
 
     this.ctx.store.lastFocusedWindowId = windowId
     this.ctx.router.broadcastEvent('windows.onFocusChanged', windowId)
+  }
+
+  onBoundsChanged(windowId: number) {
+    const window = this.ctx.store.getWindowById(windowId)
+    if (!window) return
+    const windowDetails = this.getWindowDetails(window)
+    this.ctx.router.broadcastEvent('windows.onBoundsChanged', windowDetails)
   }
 }

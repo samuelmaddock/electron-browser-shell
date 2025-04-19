@@ -636,6 +636,7 @@ export const injectExtensionAPIs = () => {
             onCreated: new ExtensionEvent('windows.onCreated'),
             onRemoved: new ExtensionEvent('windows.onRemoved'),
             onFocusChanged: new ExtensionEvent('windows.onFocusChanged'),
+            onBoundsChanged: new ExtensionEvent('windows.onBoundsChanged'),
           }
         },
       },
