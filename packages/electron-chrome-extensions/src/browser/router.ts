@@ -45,6 +45,12 @@ interface RoutingDelegateObserver {
   removeListener(listener: EventListener, extensionId: string, eventName: string): void
 }
 
+type PartitionSessionGrabber = (partition: string) => Electron.Session
+let getSessionFromPartition: PartitionSessionGrabber = session.fromPartition
+export function setPartitionSessionGrabber(handler: PartitionSessionGrabber) {
+  getSessionFromPartition = handler
+}
+
 let gRoutingDelegate: RoutingDelegate
 
 /**
@@ -117,7 +123,7 @@ class RoutingDelegate {
     const ses =
       sessionPartition === DEFAULT_SESSION
         ? getSessionFromEvent(event)
-        : session.fromPartition(sessionPartition)
+        : getSessionFromPartition(sessionPartition)
 
     const observer = this.sessionMap.get(ses)
 
