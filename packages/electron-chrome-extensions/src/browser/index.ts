@@ -213,6 +213,19 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
   }
 
+  windowUpdated(window: Electron.BaseWindow) {
+    return this.api.windows.updateWindowDetails(window)
+  }
+
+  tabUpdated(tab: Electron.WebContents) {
+    this.checkWebContentsArgument(tab)
+    if (this.ctx.store.tabs.has(tab)) {
+      this.api.tabs.onUpdated(tab.id)
+      return true
+    }
+    return false
+  }
+
   /**
    * Add webContents to be tracked as an extension host which will receive
    * extension events when a chrome-extension:// resource is loaded.

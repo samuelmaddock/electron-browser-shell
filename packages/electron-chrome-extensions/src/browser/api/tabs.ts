@@ -123,6 +123,12 @@ export class TabsAPI {
     }
 
     this.ctx.store.tabDetailsCache.set(tab.id, details)
+
+    // Update the window's tab cache
+    if (win) {
+      this.ctx.store.updateWindowDetails(win)
+    }
+
     return details
   }
 

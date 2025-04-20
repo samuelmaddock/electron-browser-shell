@@ -27,6 +27,7 @@ export class WindowsAPI {
     handle('windows.remove', this.remove.bind(this))
 
     this.ctx.store.on('window-added', this.observeWindow.bind(this))
+    this.ctx.store.on('update-window-details', this.updateWindowDetails.bind(this))
   }
 
   private observeWindow(window: Electron.BrowserWindow) {
@@ -62,7 +63,7 @@ export class WindowsAPI {
         })
         .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
         .filter(Boolean),
-      incognito: this.ctx.session.isPersistent(),
+      incognito: !this.ctx.session.isPersistent(),
       type: 'normal', // TODO
       state: getWindowState(win),
       alwaysOnTop: win.isAlwaysOnTop(),
@@ -77,6 +78,11 @@ export class WindowsAPI {
     if (this.ctx.store.windowDetailsCache.has(win.id)) {
       return this.ctx.store.windowDetailsCache.get(win.id)
     }
+    const details = this.createWindowDetails(win)
+    return details
+  }
+
+  public updateWindowDetails(win: Electron.BaseWindow) {
     const details = this.createWindowDetails(win)
     return details
   }
