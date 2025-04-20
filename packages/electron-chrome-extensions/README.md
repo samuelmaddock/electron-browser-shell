@@ -20,6 +20,9 @@ npm install electron-chrome-extensions
 
 ## Usage
 
+> [!IMPORTANT]  
+> You must initialize the `ElectronChromeExtensions` class before installing any extensions, otherwise it might not work as expected.
+
 ### Basic
 
 Simple browser using Electron's [default session](https://www.electronjs.org/docs/api/session#sessiondefaultsession) and one tab.
