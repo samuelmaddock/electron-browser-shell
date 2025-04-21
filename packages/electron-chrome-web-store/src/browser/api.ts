@@ -316,6 +316,9 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
 
   handle('chrome.management.setEnabled', async (event, id, enabled) => {
     // TODO: Implement enabling/disabling extension
+    if (webStoreState.customSetExtensionEnabled) {
+      await webStoreState.customSetExtensionEnabled(webStoreState, id, enabled)
+    }
     return true
   })
 

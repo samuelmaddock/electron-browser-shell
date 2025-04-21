@@ -17,6 +17,7 @@ import {
   WebStoreState,
   OverrideExtensionInstallStatus,
   AfterUninstall,
+  CustomSetExtensionEnabled,
 } from './types'
 import { ExtensionInstallStatus } from '../common/constants'
 export { ExtensionInstallStatus }
@@ -108,6 +109,11 @@ interface ElectronChromeWebStoreOptions {
   beforeInstall?: BeforeInstall
 
   /**
+   * Called when setting the enabled status of an extension.
+   */
+  customSetExtensionEnabled?: CustomSetExtensionEnabled
+
+  /**
    * Called when determining the install status of an extension.
    */
   overrideExtensionInstallStatus?: OverrideExtensionInstallStatus
@@ -137,9 +143,16 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const autoUpdate = typeof opts.autoUpdate === 'boolean' ? opts.autoUpdate : true
   const minimumManifestVersion =
     typeof opts.minimumManifestVersion === 'number' ? opts.minimumManifestVersion : 3
+
   const beforeInstall = typeof opts.beforeInstall === 'function' ? opts.beforeInstall : undefined
   const afterInstall = typeof opts.afterInstall === 'function' ? opts.afterInstall : undefined
   const afterUninstall = typeof opts.afterUninstall === 'function' ? opts.afterUninstall : undefined
+
+  const customSetExtensionEnabled =
+    typeof opts.customSetExtensionEnabled === 'function'
+      ? opts.customSetExtensionEnabled
+      : undefined
+
   const overrideExtensionInstallStatus =
     typeof opts.overrideExtensionInstallStatus === 'function'
       ? opts.overrideExtensionInstallStatus
@@ -155,6 +168,7 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
     beforeInstall,
     afterInstall,
     afterUninstall,
+    customSetExtensionEnabled,
     overrideExtensionInstallStatus,
   }
 

@@ -21,6 +21,12 @@ export type AfterUninstall = (details: {
   manifest?: chrome.runtime.Manifest
 }) => Promise<void>
 
+export type CustomSetExtensionEnabled = (
+  state: WebStoreState,
+  extensionId: ExtensionId,
+  enabled: boolean,
+) => Promise<void>
+
 export type OverrideExtensionInstallStatus = (
   state: WebStoreState,
   extensionId: ExtensionId,
@@ -37,5 +43,6 @@ export interface WebStoreState {
   beforeInstall?: BeforeInstall
   afterInstall?: AfterInstall
   afterUninstall?: AfterUninstall
+  customSetExtensionEnabled?: CustomSetExtensionEnabled
   overrideExtensionInstallStatus?: OverrideExtensionInstallStatus
 }
