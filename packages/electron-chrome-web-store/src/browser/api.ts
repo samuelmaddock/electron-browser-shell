@@ -50,6 +50,11 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
+  const customStatus = state.overrideExtensionInstallStatus?.(state, extensionId, manifest)
+  if (customStatus) {
+    return customStatus
+  }
+
   if (manifest && manifest.manifest_version < state.minimumManifestVersion) {
     return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
   }
@@ -155,6 +160,19 @@ async function beginInstall(
 
     state.installing.add(extensionId)
     await installExtension(extensionId, state)
+
+    if (state.afterInstall) {
+      // Doesn't need to await, just a callback
+      state.afterInstall({
+        id: extensionId,
+        localizedName: details.localizedName,
+        manifest,
+        icon,
+        frame: senderFrame,
+        browserWindow: browserWindow || undefined,
+      })
+    }
+
     return { result: Result.SUCCESS }
   } catch (error) {
     console.error('Extension installation failed:', error)

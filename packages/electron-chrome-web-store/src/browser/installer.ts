@@ -13,7 +13,7 @@ import { readCrxFileHeader, readSignedData } from './crx3'
 import { convertHexadecimalToIDAlphabet, generateId } from './id'
 import { fetch, getChromeVersion, getDefaultExtensionsPath } from './utils'
 import { findExtensionInstall } from './loader'
-import { ExtensionId } from './types'
+import { AfterUninstall, ExtensionId } from './types'
 
 const d = debug('electron-chrome-web-store:installer')
 
@@ -203,7 +203,10 @@ interface InstallExtensionOptions extends CommonExtensionOptions {
   loadExtensionOptions?: Electron.LoadExtensionOptions
 }
 
-interface UninstallExtensionOptions extends CommonExtensionOptions {}
+interface UninstallExtensionOptions extends CommonExtensionOptions {
+  /** Called after an extension is uninstalled. */
+  afterUninstall?: AfterUninstall
+}
 
 /**
  * Install extension from the web store.
@@ -255,6 +258,14 @@ export async function uninstallExtension(
   const existingExt = extensions.find((ext) => ext.id === extensionId)
   if (existingExt) {
     session.removeExtension(extensionId)
+  }
+
+  if (opts.afterUninstall) {
+    await opts.afterUninstall({
+      id: extensionId,
+      extension: existingExt,
+      manifest: existingExt?.manifest,
+    })
   }
 
   const extensionDir = path.join(extensionsPath, extensionId)
