@@ -172,7 +172,7 @@ export class WindowsAPI {
   onBoundsChanged(windowId: number) {
     const window = this.ctx.store.getWindowById(windowId)
     if (!window) return
-    const windowDetails = this.getWindowDetails(window)
+    const windowDetails = this.createWindowDetails(window)
     this.ctx.router.broadcastEvent('windows.onBoundsChanged', windowDetails)
   }
 }
