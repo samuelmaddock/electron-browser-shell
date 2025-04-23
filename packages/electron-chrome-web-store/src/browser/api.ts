@@ -50,8 +50,8 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
-  const customStatus = state.overrideExtensionInstallStatus?.(state, extensionId, manifest)
-  if (customStatus) {
+  const customStatus: unknown = state.overrideExtensionInstallStatus?.(state, extensionId, manifest)
+  if (typeof customStatus === 'string') {
     return customStatus
   }
 
