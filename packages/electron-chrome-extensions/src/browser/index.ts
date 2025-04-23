@@ -74,6 +74,12 @@ export interface ChromeExtensionOptions extends ChromeExtensionImpl {
    * @deprecated See "Packaging the preload script" in the readme.
    */
   modulePath?: string
+
+  /**
+   * Whether to register the 'crx://' protocol in the default session.
+   * Defaults to `true`.
+   */
+  registerCrxProtocolInDefaultSession?: boolean
 }
 
 const sessionMap = new WeakMap<Electron.Session, ElectronChromeExtensions>()
@@ -143,7 +149,10 @@ export class ElectronChromeExtensions extends EventEmitter {
     this.prependPreload(opts.modulePath)
 
     // Register crx:// protocol in default session for convenience
-    if (this.ctx.session !== electronSession.defaultSession) {
+    if (
+      opts.registerCrxProtocolInDefaultSession !== false &&
+      this.ctx.session !== electronSession.defaultSession
+    ) {
       this.handleCRXProtocol(electronSession.defaultSession)
     }
   }
@@ -250,6 +259,13 @@ export class ElectronChromeExtensions extends EventEmitter {
    */
   handleCRXProtocol(session: Electron.Session) {
     this.api.browserAction.handleCRXProtocol(session)
+  }
+
+  /**
+   * Handles the 'crx://' protocol in the session.
+   */
+  handleCrxRequest(request: GlobalRequest): GlobalResponse {
+    return this.api.browserAction.handleCrxRequest(request)
   }
 
   /**

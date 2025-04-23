@@ -20,6 +20,9 @@ npm install electron-chrome-extensions
 
 ## Usage
 
+> [!IMPORTANT]  
+> You must initialize the `ElectronChromeExtensions` class before installing any extensions, otherwise it might not work as expected.
+
 ### Basic
 
 Simple browser using Electron's [default session](https://www.electronjs.org/docs/api/session#sessiondefaultsession) and one tab.
@@ -134,6 +137,7 @@ module.exports = {
      Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
   - `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
+  - `registerCrxProtocolInDefaultSession` Boolean (optional) - Whether to register the 'crx://' protocol in the default session. Defaults to `true`.
   - `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
     Called when `chrome.tabs.create` is invoked by an extension. Allows the
     application to handle how tabs are created.
@@ -210,6 +214,14 @@ Example:
   newtab: 'chrome-extension://<id>/newtab.html'
 }
 ```
+
+##### `extensions.handleCrxRequest(request)`
+
+- `request` GlobalRequest
+
+Handle a request to the 'crx://' protocol.
+
+Returns `GlobalResponse`
 
 #### Instance Events
 

@@ -219,7 +219,7 @@ export class BrowserActionAPI {
     }
   }
 
-  private handleCrxRequest = (request: GlobalRequest): GlobalResponse => {
+  handleCrxRequest = (request: GlobalRequest): GlobalResponse => {
     d('%s', request.url)
 
     try {
