@@ -205,8 +205,14 @@ export const injectBrowserAction = () => {
       private updateIcon(info: any) {
         const iconSize = 32
         const resizeType = 2
-        const timeParam = info.iconModified ? `&t=${info.iconModified}` : ''
-        const iconUrl = `crx://extension-icon/${this.id}/${iconSize}/${resizeType}?tabId=${this.tab}${timeParam}`
+        const searchParams = new URLSearchParams({
+          tabId: `${this.tab}`,
+          partition: `${this.partition || DEFAULT_PARTITION}`,
+        })
+        if (info.iconModified) {
+          searchParams.append('t', info.iconModified)
+        }
+        const iconUrl = `crx://extension-icon/${this.id}/${iconSize}/${resizeType}?${searchParams.toString()}`
         const bgImage = `url(${iconUrl})`
 
         if (this.pendingIcon) {

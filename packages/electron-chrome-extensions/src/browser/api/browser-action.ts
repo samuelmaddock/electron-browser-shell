@@ -209,17 +209,9 @@ export class BrowserActionAPI {
     session.on('extension-unloaded', (event, extension) => {
       this.removeActions(extension.id)
     })
-
-    this.handleCRXProtocol(session)
   }
 
-  handleCRXProtocol(session: Electron.Session) {
-    if (!session.protocol.isProtocolHandled('crx')) {
-      session.protocol.handle('crx', this.handleCrxRequest)
-    }
-  }
-
-  private handleCrxRequest = (request: GlobalRequest): GlobalResponse => {
+  handleCRXRequest(request: GlobalRequest): GlobalResponse {
     d('%s', request.url)
 
     try {

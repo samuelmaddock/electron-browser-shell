@@ -197,6 +197,9 @@ class Browser {
       },
     })
 
+    // Display <browser-action-list> extension icons.
+    ElectronChromeExtensions.handleCRXProtocol(this.session)
+
     this.extensions.on('browser-action-popup-created', (popup) => {
       this.popup = popup
     })

@@ -6,7 +6,7 @@ import { emittedOnce } from './events-helpers'
 import { uuid } from './spec-helpers'
 import { useExtensionBrowser, useServer } from './hooks'
 import { createCrxRemoteWindow } from './crx-helpers'
-import { once } from 'node:events'
+import { ElectronChromeExtensions } from '../'
 
 describe('chrome.browserAction', () => {
   const server = useServer()
@@ -237,9 +237,39 @@ describe('chrome.browserAction', () => {
       extensionName: 'chrome-browserAction-popup',
     })
 
+    it('supports same-session requests', async () => {
+      ElectronChromeExtensions.handleCRXProtocol(browser.session)
+
+      // Load again now that crx protocol is handled
+      await browser.webContents.loadURL(server.getUrl())
+
+      const result = await browser.webContents.executeJavaScript(
+        `(${function (extensionId: any, tabId: any) {
+          const img = document.createElement('img')
+          const params = new URLSearchParams({
+            tabId: `${tabId}`,
+            t: `${Date.now()}`,
+          })
+          const src = `crx://extension-icon/${extensionId}/32/2?${params.toString()}`
+          return new Promise((resolve, reject) => {
+            img.onload = () => resolve('success')
+            img.onerror = () => {
+              reject(new Error('error loading img, check devtools console' + src))
+            }
+            img.src = src
+          })
+        }})(${[browser.extension.id, browser.webContents.id]
+          .map((v) => JSON.stringify(v))
+          .join(', ')});`,
+      )
+
+      expect(result).to.equal('success')
+    })
+
     it('supports cross-session requests', async () => {
+      const extensionsPartition = browser.partition
       const otherSession = session.fromPartition(`persist:crx-${uuid()}`)
-      browser.extensions.handleCRXProtocol(otherSession)
+      ElectronChromeExtensions.handleCRXProtocol(otherSession)
 
       browser.session.getPreloadScripts().forEach((script) => {
         otherSession.registerPreloadScript(script)
@@ -252,9 +282,14 @@ describe('chrome.browserAction', () => {
       await view.webContents.loadURL(server.getUrl())
 
       const result = await view.webContents.executeJavaScript(
-        `(${function (extensionId: any, tabId: any) {
+        `(${function (extensionId: any, tabId: any, partition: any) {
           const img = document.createElement('img')
-          const src = `crx://extension-icon/${extensionId}/32/2?tabId=-1&t=${Date.now()}`
+          const params = new URLSearchParams({
+            tabId: `${tabId}`,
+            partition,
+            t: `${Date.now()}`,
+          })
+          const src = `crx://extension-icon/${extensionId}/32/2?${params.toString()}`
           return new Promise((resolve, reject) => {
             img.onload = () => resolve('success')
             img.onerror = () => {
@@ -262,7 +297,9 @@ describe('chrome.browserAction', () => {
             }
             img.src = src
           })
-        }})(${JSON.stringify(browser.extension.id)}, ${browser.webContents.id});`,
+        }})(${[browser.extension.id, browser.webContents.id, extensionsPartition]
+          .map((v) => JSON.stringify(v))
+          .join(', ')});`,
       )
 
       expect(result).to.equal('success')

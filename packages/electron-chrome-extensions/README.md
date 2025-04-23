@@ -280,6 +280,22 @@ Add the `<browser-action-list>` element with attributes appropriate for your app
 <browser-action-list alignment="top right"></browser-action-list>
 ```
 
+##### Main process
+
+For extension icons to appear in the list, the `crx://` protocol needs to be handled in the Session
+where it's intended to be displayed.
+
+```js
+import { app, session } from 'electron'
+import { ElectronChromeExtensions } from 'electron-chrome-extensions'
+
+app.whenReady().then(() => {
+  // Provide the session where your app will display <browser-action-list>
+  const appSession = session.defaultSession
+  ElectronChromeExtensions.handleCRXProtocol(appSession)
+})
+```
+
 ##### Custom CSS
 
 The `<browser-action-list>` element is a [Web Component](https://developer.mozilla.org/en-US/docs/Web/Web_Components). Its styles are encapsulated within a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM). However, it's still possible to customize its appearance using the [CSS shadow parts](https://developer.mozilla.org/en-US/docs/Web/CSS/::part) selector `::part(name)`.

@@ -87,6 +87,37 @@ export class ElectronChromeExtensions extends EventEmitter {
     return sessionMap.get(session)
   }
 
+  /**
+   * Handles the 'crx://' protocol in the session.
+   *
+   * This is required to display <browser-action-list> extension icons.
+   */
+  static handleCRXProtocol(session: Electron.Session) {
+    if (session.protocol.isProtocolHandled('crx')) {
+      session.protocol.unhandle('crx')
+    }
+    session.protocol.handle('crx', function handleCRXRequest(request) {
+      let url
+      try {
+        url = new URL(request.url)
+      } catch {
+        return new Response('Invalid URL', { status: 404 })
+      }
+
+      const partition = url?.searchParams.get('partition') || '_self'
+      const remoteSession =
+        partition === '_self' ? session : electronSession.fromPartition(partition)
+      const extensions = ElectronChromeExtensions.fromSession(remoteSession)
+      if (!extensions) {
+        return new Response(`ElectronChromeExtensions not found for "${partition}"`, {
+          status: 404,
+        })
+      }
+
+      return extensions.api.browserAction.handleCRXRequest(request)
+    })
+  }
+
   private ctx: ExtensionContext
 
   private api: {
@@ -141,11 +172,6 @@ export class ElectronChromeExtensions extends EventEmitter {
 
     this.listenForExtensions()
     this.prependPreload(opts.modulePath)
-
-    // Register crx:// protocol in default session for convenience
-    if (this.ctx.session !== electronSession.defaultSession) {
-      this.handleCRXProtocol(electronSession.defaultSession)
-    }
   }
 
   private listenForExtensions() {
@@ -247,9 +273,16 @@ export class ElectronChromeExtensions extends EventEmitter {
 
   /**
    * Handles the 'crx://' protocol in the session.
+   *
+   * @deprecated Call `ElectronChromeExtensions.handleCRXProtocol(session)`
+   * instead. The CRX protocol is no longer one-to-one with
+   * ElectronChromeExtensions instances. Instead, it should now be handled only
+   * on the sessions where <browser-action-list> extension icons will be shown.
    */
   handleCRXProtocol(session: Electron.Session) {
-    this.api.browserAction.handleCRXProtocol(session)
+    throw new Error(
+      'extensions.handleCRXProtocol(session) is deprecated, call ElectronChromeExtensions.handleCRXProtocol(session) instead.',
+    )
   }
 
   /**
