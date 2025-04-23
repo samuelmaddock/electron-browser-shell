@@ -1,7 +1,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import debug from 'debug'
-import { app, BrowserWindow, ipcMain, nativeImage, NativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, NativeImage, Session } from 'electron'
 import { fetch } from './utils'
 
 import {
@@ -167,25 +167,47 @@ async function beginInstall(
   }
 }
 
+type IPCChannelHandler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
+const handledIpcChannels = new Map<string, Map<Session, IPCChannelHandler>>()
+
 export function registerWebStoreApi(webStoreState: WebStoreState) {
   /** Handle IPCs from the Chrome Web Store. */
   const handle = (
     channel: string,
     handle: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any,
   ) => {
-    ipcMain.handle(channel, async function handleWebStoreIpc(event, ...args) {
-      d('received %s', channel)
+    let handlersMap = handledIpcChannels.get(channel)
 
-      const senderOrigin = event.senderFrame?.origin
-      if (!senderOrigin || !senderOrigin.startsWith(WEBSTORE_URL)) {
-        d('ignoring webstore request from %s', senderOrigin)
-        return
-      }
+    // Handle each channel only once
+    if (!handlersMap) {
+      handlersMap = new Map<Session, IPCChannelHandler>()
+      handledIpcChannels.set(channel, handlersMap)
 
-      const result = await handle(event, ...args)
-      d('%s result', channel, result)
-      return result
-    })
+      ipcMain.handle(channel, async function handleWebStoreIpc(event, ...args) {
+        d('received %s', channel)
+
+        const senderOrigin = event.senderFrame?.origin
+        if (!senderOrigin || !senderOrigin.startsWith(WEBSTORE_URL)) {
+          d('ignoring webstore request from %s', senderOrigin)
+          return
+        }
+
+        const session = event.sender.session
+
+        const handler = handlersMap?.get(session)
+        if (!handler) {
+          d('no handler for session %s', session.storagePath)
+          return
+        }
+
+        const result = await handler(event, ...args)
+        d('%s result', channel, result)
+        return result
+      })
+    }
+
+    // Add handler
+    handlersMap.set(webStoreState.session, handle)
   }
 
   handle('chromeWebstore.beginInstall', async (event, details: InstallDetails) => {
