@@ -11,7 +11,7 @@ import {
   WebGlStatus,
 } from '../common/constants'
 import { installExtension, uninstallExtension } from './installer'
-import { ExtensionId, WebStoreState } from './types'
+import { ExtensionId, ExtensionStatusDetails, WebStoreState } from './types'
 
 const d = debug('electron-chrome-web-store:api')
 
@@ -50,9 +50,21 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
-  const customStatus: unknown = state.overrideExtensionInstallStatus?.(state, extensionId, manifest)
-  if (typeof customStatus === 'string') {
-    return customStatus
+  if (state.overrideExtensionInstallStatus) {
+    const details: ExtensionStatusDetails = {
+      session: state.session,
+      extensionsPath: state.extensionsPath,
+    }
+
+    const customStatus: unknown = state.overrideExtensionInstallStatus?.(
+      extensionId,
+      details,
+      manifest,
+    )
+
+    if (typeof customStatus === 'string') {
+      return customStatus
+    }
   }
 
   if (manifest && manifest.manifest_version < state.minimumManifestVersion) {
@@ -317,7 +329,11 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
   handle('chrome.management.setEnabled', async (event, id, enabled) => {
     // TODO: Implement enabling/disabling extension
     if (webStoreState.customSetExtensionEnabled) {
-      await webStoreState.customSetExtensionEnabled(webStoreState, id, enabled)
+      const details: ExtensionStatusDetails = {
+        session: webStoreState.session,
+        extensionsPath: webStoreState.extensionsPath,
+      }
+      await webStoreState.customSetExtensionEnabled(id, details, enabled)
     }
     return true
   })

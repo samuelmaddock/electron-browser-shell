@@ -17,15 +17,20 @@ export type AfterInstall = (details: ExtensionInstallDetails) => Promise<void>
 
 export type AfterUninstall = (details: { id: ExtensionId }) => Promise<void>
 
+export type ExtensionStatusDetails = {
+  session: Electron.Session
+  extensionsPath: string
+}
+
 export type CustomSetExtensionEnabled = (
-  state: WebStoreState,
   extensionId: ExtensionId,
+  details: ExtensionStatusDetails,
   enabled: boolean,
 ) => Promise<void>
 
 export type OverrideExtensionInstallStatus = (
-  state: WebStoreState,
   extensionId: ExtensionId,
+  details: ExtensionStatusDetails,
   manifest?: chrome.runtime.Manifest,
 ) => string | undefined
 
