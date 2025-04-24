@@ -262,13 +262,6 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   /**
-   * Handles the 'crx://' protocol in the session.
-   */
-  handleCrxRequest(request: GlobalRequest): GlobalResponse {
-    return this.api.browserAction.handleCrxRequest(request)
-  }
-
-  /**
    * Add extensions to be visible as an extension action button.
    *
    * @deprecated Not needed in Electron >=12.
