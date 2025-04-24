@@ -331,9 +331,17 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
 
       try {
         await uninstallExtension(id, webStoreState)
+
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
         })
+
+        if (webStoreState.afterUninstall) {
+          queueMicrotask(() => {
+            webStoreState.afterUninstall?.({ id })
+          })
+        }
+
         return Result.SUCCESS
       } catch (error) {
         console.error(error)

@@ -101,7 +101,7 @@ Installs Chrome Web Store support in the specified session.
   - `denylist`: An array of denied extension IDs to install.
   - `beforeInstall`: A function which receives install details and returns a promise. Allows for prompting prior to install.
   - `afterInstall`: A function which receives install details. Allows for additional actions after install.
-  - `afterUninstall`: A function which receives extension ID, extension, and manifest. Allows for additional actions after uninstall.
+  - `afterUninstall`: A function which receives extension ID. Allows for additional actions after uninstall.
   - `overrideExtensionInstallStatus`: A function which receives the current state, extension ID, and manifest. Returns a string indicating the install status of the extension, or returns undefined to fallback to the default install status.
 
 ### `installExtension`

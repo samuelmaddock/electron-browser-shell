@@ -203,11 +203,6 @@ interface InstallExtensionOptions extends CommonExtensionOptions {
   loadExtensionOptions?: Electron.LoadExtensionOptions
 }
 
-interface UninstallExtensionOptions extends CommonExtensionOptions {
-  /** Called after an extension is uninstalled. */
-  afterUninstall?: AfterUninstall
-}
-
 /**
  * Install extension from the web store.
  */
@@ -245,10 +240,7 @@ export async function installExtension(
 /**
  * Uninstall extension from the web store.
  */
-export async function uninstallExtension(
-  extensionId: string,
-  opts: UninstallExtensionOptions = {},
-) {
+export async function uninstallExtension(extensionId: string, opts: CommonExtensionOptions = {}) {
   d('uninstalling %s', extensionId)
 
   const session = opts.session || electronSession.defaultSession
@@ -258,14 +250,6 @@ export async function uninstallExtension(
   const existingExt = extensions.find((ext) => ext.id === extensionId)
   if (existingExt) {
     session.removeExtension(extensionId)
-  }
-
-  if (opts.afterUninstall) {
-    await opts.afterUninstall({
-      id: extensionId,
-      extension: existingExt,
-      manifest: existingExt?.manifest,
-    })
   }
 
   const extensionDir = path.join(extensionsPath, extensionId)

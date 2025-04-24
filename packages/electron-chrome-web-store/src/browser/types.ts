@@ -15,11 +15,7 @@ export type BeforeInstall = (
 
 export type AfterInstall = (details: ExtensionInstallDetails) => Promise<void>
 
-export type AfterUninstall = (details: {
-  id: ExtensionId
-  extension?: Electron.Extension
-  manifest?: chrome.runtime.Manifest
-}) => Promise<void>
+export type AfterUninstall = (details: { id: ExtensionId }) => Promise<void>
 
 export type CustomSetExtensionEnabled = (
   state: WebStoreState,
