@@ -45,6 +45,19 @@ interface RoutingDelegateObserver {
   removeListener(listener: EventListener, extensionId: string, eventName: string): void
 }
 
+type SessionPartitionResolver = (partition: string) => Electron.Session
+let getSessionFromPartition: SessionPartitionResolver = session.fromPartition
+
+/**
+ * Overrides the default `session.fromPartition()` behavior for retrieving Electron Sessions.
+ * This allows using custom identifiers (e.g., profile IDs) to find sessions, enabling features like
+ * `<browser-actions>` to work with non-standard session management schemes.
+ * @param handler A function that receives a string identifier and returns the corresponding Electron `Session`.
+ */
+export function setSessionPartitionResolver(handler: SessionPartitionResolver) {
+  getSessionFromPartition = handler
+}
+
 let gRoutingDelegate: RoutingDelegate
 
 /**
@@ -117,7 +130,7 @@ class RoutingDelegate {
     const ses =
       sessionPartition === DEFAULT_SESSION
         ? getSessionFromEvent(event)
-        : session.fromPartition(sessionPartition)
+        : getSessionFromPartition(sessionPartition)
 
     const observer = this.sessionMap.get(ses)
 
