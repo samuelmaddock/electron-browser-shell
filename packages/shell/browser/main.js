@@ -247,7 +247,9 @@ class Browser {
       this.session.getAllExtensions().map(async (extension) => {
         const manifest = extension.manifest
         if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
-          await this.session.serviceWorkers.startWorkerForScope(extension.url)
+          await this.session.serviceWorkers.startWorkerForScope(extension.url).catch((error) => {
+            console.error(error)
+          })
         }
       }),
     )
