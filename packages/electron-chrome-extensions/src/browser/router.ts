@@ -45,8 +45,8 @@ interface RoutingDelegateObserver {
   removeListener(listener: EventListener, extensionId: string, eventName: string): void
 }
 
-type PartitionSessionGrabber = (partition: string) => Electron.Session
-let getSessionFromPartition: PartitionSessionGrabber = session.fromPartition
+type SessionPartitionResolver = (partition: string) => Electron.Session
+let getSessionFromPartition: SessionPartitionResolver = session.fromPartition
 
 /**
  * Overrides the default `session.fromPartition()` behavior for retrieving Electron Sessions.
@@ -54,7 +54,7 @@ let getSessionFromPartition: PartitionSessionGrabber = session.fromPartition
  * `<browser-actions>` to work with non-standard session management schemes.
  * @param handler A function that receives a string identifier and returns the corresponding Electron `Session`.
  */
-export function setSessionPartitionResolver(handler: PartitionSessionGrabber) {
+export function setSessionPartitionResolver(handler: SessionPartitionResolver) {
   getSessionFromPartition = handler
 }
 
