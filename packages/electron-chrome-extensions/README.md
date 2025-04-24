@@ -211,6 +211,18 @@ Example:
 }
 ```
 
+##### `extensions.windowUpdated(window)`
+
+- `window` Electron.BrowserWindow
+
+Update the details of a window from the main process.
+
+##### `extensions.tabUpdated(tab)`
+
+- `tab` Electron.WebContents
+
+Update the details of a tab from the main process.
+
 #### Instance Events
 
 ##### Event: 'browser-action-popup-created'

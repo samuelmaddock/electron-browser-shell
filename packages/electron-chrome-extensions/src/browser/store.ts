@@ -206,4 +206,8 @@ export class ExtensionStore extends EventEmitter {
     const result: unknown = await this.impl.requestPermissions(extension, permissions)
     return typeof result === 'boolean' ? result : false
   }
+
+  updateWindowDetails(win: Electron.BaseWindow) {
+    this.emit('update-window-details', win)
+  }
 }
