@@ -62,6 +62,7 @@ export const injectBrowserAction = () => {
 
       if (count === 0) {
         invoke('browserAction.removeObserver', partition)
+        observerCounts.delete(partition)
       }
     },
   }
