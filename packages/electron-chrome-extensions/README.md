@@ -153,6 +153,11 @@ module.exports = {
   - `removeWindow(browserWindow) => Promise<Electron.BrowserWindow>`
     (optional) - Called when `chrome.windows.remove` is invoked by an extension.
     - `browserWindow` Electron.BrowserWindow
+  - `assignTabDetails(details, webContents) => void` (optional) - Called when `chrome.tabs` creates
+    an object for tab details to be sent to an extension background script. Provide this function to
+    assign custom details such as `discarded`, `frozen`, or `groupId`.
+    - `details` [chrome.tabs.Tab](https://developer.chrome.com/docs/extensions/reference/api/tabs#type-Tab)
+    - `webContents` Electron.WebContents - The tab for which details are being created.
 
 ```ts
 new ElectronChromeExtensions({
@@ -437,6 +442,13 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 - [x] chrome.tabs.onRemoved
 - [ ] chrome.tabs.onReplaced
 - [x] chrome.tabs.onZoomChange
+
+> [!NOTE]
+> Electron does not provide tab functionality such as discarded, frozen, or group IDs. If an
+> application developer wishes to implement this functionality, emit a `"tab-updated"` event on the
+> tab's WebContents for `chrome.tabs.onUpdated` to be made aware of changes. Tab properties can be
+> assigned using the `assignTabDetails` option provided to the `ElectronChromeExtensions`
+> constructor.
 
 ### [`chrome.webNavigation`](https://developer.chrome.com/extensions/webNavigation)
 

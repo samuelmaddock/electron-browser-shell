@@ -56,6 +56,12 @@ export class TabsAPI {
       'did-start-navigation', // url
       'did-redirect-navigation', // url
       'did-navigate-in-page', // url
+
+      // Listen for 'tab-updated' to handle all other cases which don't have
+      // an official Electron API such as discarded tabs. App developers can
+      // emit this event to trigger chrome.tabs.onUpdated if a property has
+      // changed.
+      'tab-updated',
     ]
 
     const updateHandler = () => {
