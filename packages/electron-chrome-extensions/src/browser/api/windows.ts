@@ -66,7 +66,7 @@ export class WindowsAPI {
         })
         .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
         .filter(Boolean),
-      incognito: this.ctx.session.isPersistent(),
+      incognito: !this.ctx.session.isPersistent(),
       type: 'normal', // TODO
       state: getWindowState(win),
       alwaysOnTop: win.isAlwaysOnTop(),
