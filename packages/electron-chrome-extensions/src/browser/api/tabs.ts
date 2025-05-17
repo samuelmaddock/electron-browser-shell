@@ -336,7 +336,6 @@ export class TabsAPI {
       'favIconUrl',
       'frozen',
       'groupId',
-      'mutedInfo',
       'pinned',
       'status',
       'title',
@@ -351,6 +350,11 @@ export class TabsAPI {
         ;(changeInfo as any)[prop] = details[prop]
         didUpdate = true
       }
+    }
+
+    if (details.mutedInfo?.muted !== prevDetails.mutedInfo?.muted) {
+      changeInfo.mutedInfo = details.mutedInfo
+      didUpdate = true
     }
 
     if (!didUpdate) return
