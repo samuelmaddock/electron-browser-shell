@@ -197,6 +197,8 @@ export class TabsAPI {
           return false
         // if (isSet(info.currentWindow)) return false
         // if (isSet(info.lastFocusedWindow)) return false
+        if (isSet(info.frozen) && info.frozen !== tab.frozen) return false
+        if (isSet(info.groupId) && info.groupId !== tab.groupId) return false
         if (isSet(info.status) && info.status !== tab.status) return false
         if (isSet(info.title) && typeof info.title === 'string' && typeof tab.title === 'string') {
           if (!matchesTitlePattern(info.title, tab.title)) return false
@@ -322,15 +324,17 @@ export class TabsAPI {
     const details = this.createTabDetails(tab)
 
     const compareProps: (keyof chrome.tabs.Tab)[] = [
-      'status',
-      'url',
-      'pinned',
       'audible',
-      'discarded',
       'autoDiscardable',
-      'mutedInfo',
+      'discarded',
       'favIconUrl',
+      'frozen',
+      'groupId',
+      'mutedInfo',
+      'pinned',
+      'status',
       'title',
+      'url',
     ]
 
     let didUpdate = false
