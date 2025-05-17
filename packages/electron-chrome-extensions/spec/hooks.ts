@@ -5,6 +5,7 @@ import { AddressInfo } from 'net'
 import { ElectronChromeExtensions } from '../'
 import { emittedOnce } from './events-helpers'
 import { addCrxPreload, createCrxSession, waitForBackgroundScriptEvaluated } from './crx-helpers'
+import { ChromeExtensionImpl } from '../dist/types/browser/impl'
 
 export const useServer = () => {
   const emptyPage = `<!DOCTYPE html>
@@ -49,6 +50,7 @@ export const useExtensionBrowser = (opts: {
   file?: string
   extensionName: string
   openDevTools?: boolean
+  assignTabDetails?: ChromeExtensionImpl['assignTabDetails']
 }) => {
   let w: Electron.BrowserWindow
   let extensions: ElectronChromeExtensions
@@ -71,6 +73,9 @@ export const useExtensionBrowser = (opts: {
         const tab = (webContents as any).create({ sandbox: true })
         if (details.url) await tab.loadURL(details.url)
         return [tab, w!]
+      },
+      assignTabDetails(details, tab) {
+        opts.assignTabDetails?.(details, tab)
       },
     })
 

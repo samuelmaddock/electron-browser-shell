@@ -3,12 +3,22 @@ import { app, BrowserWindow } from 'electron'
 import { emittedOnce } from './events-helpers'
 
 import { useExtensionBrowser, useServer } from './hooks'
+import { ChromeExtensionImpl } from '../dist/types/browser/impl'
 
 describe('chrome.tabs', () => {
+  let assignTabDetails: ChromeExtensionImpl['assignTabDetails']
+
   const server = useServer()
   const browser = useExtensionBrowser({
     url: server.getUrl,
     extensionName: 'rpc',
+    assignTabDetails(details, tab) {
+      assignTabDetails?.(details, tab)
+    },
+  })
+
+  afterEach(() => {
+    assignTabDetails = undefined
   })
 
   describe('get()', () => {
@@ -263,6 +273,27 @@ describe('chrome.tabs', () => {
       expect(tabDetails.id).to.equal(secondTab.id)
       expect(tabDetails.windowId).to.equal(secondWindow.id)
       expect(tabDetails.url).to.equal(secondTab.getURL())
+    })
+  })
+
+  describe('onUpdated', () => {
+    it('emits on "tab-updated" event', async () => {
+      const p = browser.crx.eventOnce('tabs.onUpdated')
+
+      // Wait for tabs.onUpdated listener to be set
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      assignTabDetails = (details) => {
+        details.discarded = true
+      }
+
+      browser.webContents.emit('tab-updated')
+
+      const [_tabId, changeInfo, _tabDetails] = await p
+      expect(changeInfo).to.be.an('object')
+      expect(Object.keys(changeInfo)).to.have.lengthOf(1)
+      expect(changeInfo).to.haveOwnProperty('discarded')
+      expect(changeInfo.discarded).to.equal(true)
     })
   })
 })
