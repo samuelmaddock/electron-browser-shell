@@ -20,6 +20,7 @@ import { ExtensionRouter } from './router'
 import { checkLicense, License } from './license'
 import { readLoadedExtensionManifest } from './manifest'
 import { PermissionsAPI } from './api/permissions'
+import { resolvePartition } from './partition'
 
 function checkVersion() {
   const electronVersion = process.versions.electron
@@ -105,8 +106,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       }
 
       const partition = url?.searchParams.get('partition') || '_self'
-      const remoteSession =
-        partition === '_self' ? session : electronSession.fromPartition(partition)
+      const remoteSession = partition === '_self' ? session : resolvePartition(partition)
       const extensions = ElectronChromeExtensions.fromSession(remoteSession)
       if (!extensions) {
         return new Response(`ElectronChromeExtensions not found for "${partition}"`, {

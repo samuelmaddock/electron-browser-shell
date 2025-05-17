@@ -1,5 +1,7 @@
-import { app, ipcMain, session, Session, WebContents } from 'electron'
+import { app, ipcMain, Session } from 'electron'
 import debug from 'debug'
+
+import { resolvePartition } from './partition'
 
 // Shorten base64 encoded icons
 const shortenValues = (k: string, v: any) =>
@@ -117,7 +119,7 @@ class RoutingDelegate {
     const ses =
       sessionPartition === DEFAULT_SESSION
         ? getSessionFromEvent(event)
-        : session.fromPartition(sessionPartition)
+        : resolvePartition(sessionPartition)
 
     const observer = this.sessionMap.get(ses)
 
