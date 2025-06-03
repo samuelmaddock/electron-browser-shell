@@ -18,6 +18,7 @@ interface PopupViewOptions {
   url: string
   anchorRect: PopupAnchorRect
   alignment?: string
+  offset?: string
 }
 
 const supportsPreferredSize = () => {
@@ -43,6 +44,7 @@ export class PopupView {
   private destroyed: boolean = false
   private hidden: boolean = true
   private alignment?: string
+  private offset: number
 
   /** Preferred size changes are only received in Electron v12+ */
   private usingPreferredSize = supportsPreferredSize()
@@ -54,6 +56,7 @@ export class PopupView {
     this.extensionId = opts.extensionId
     this.anchorRect = opts.anchorRect
     this.alignment = opts.alignment
+    this.offset = opts.offset ? parseInt(opts.offset) : PopupView.POSITION_PADDING
 
     this.browserWindow = new BrowserWindow({
       show: false,
@@ -205,12 +208,12 @@ export class PopupView {
     const viewBounds = this.browserWindow.getBounds()
 
     let x = winBounds.x + this.anchorRect.x + this.anchorRect.width - viewBounds.width
-    let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
+    let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + this.offset
 
     // If aligned to a differently then we need to offset the popup position
     if (this.alignment?.includes('right')) x = winBounds.x + this.anchorRect.x
     if (this.alignment?.includes('top'))
-      y = winBounds.y - viewBounds.height + this.anchorRect.y - PopupView.POSITION_PADDING
+      y = winBounds.y - viewBounds.height + this.anchorRect.y - this.offset
 
     // Convert to ints
     x = Math.floor(x)

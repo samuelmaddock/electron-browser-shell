@@ -248,6 +248,7 @@ To enable the element on a webpage, you must define a preload script which injec
 - `tab` string (optional) - The tab's `Electron.WebContents` ID to use for displaying
   the relevant browser action state. Defaults to the active tab of the current browser window.
 - `alignment` string (optional) - How the popup window should be aligned relative to the extension action. Defaults to `bottom left`. Use any assortment of `top`, `bottom`, `left`, and `right`.
+- `offset` string (optional) - How far the popup window should be positioned from the extension action in the alignments direction. Defaults to 5.
 
 #### Browser action example
 

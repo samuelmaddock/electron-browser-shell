@@ -20,6 +20,7 @@ export const injectBrowserAction = () => {
     tabId: number
     anchorRect: { x: number; y: number; width: number; height: number }
     alignment?: string
+    offset?: string
   }
 
   const __browserAction__ = {
@@ -125,8 +126,16 @@ export const injectBrowserAction = () => {
         this.setAttribute('alignment', alignment)
       }
 
+      get offset(): string {
+        return this.getAttribute('offset') || ''
+      }
+
+      set offset(offset: string) {
+        this.setAttribute('offset', offset)
+      }
+
       static get observedAttributes() {
-        return ['id', 'tab', 'partition', 'alignment']
+        return ['id', 'tab', 'partition', 'alignment', 'offset']
       }
 
       constructor() {
@@ -167,6 +176,7 @@ export const injectBrowserAction = () => {
           extensionId: this.id,
           tabId: this.tab,
           alignment: this.alignment,
+          offset: this.offset,
           anchorRect: {
             x: rect.left,
             y: rect.top,
@@ -305,8 +315,16 @@ export const injectBrowserAction = () => {
         this.setAttribute('alignment', alignment)
       }
 
+      get offset(): string {
+        return this.getAttribute('offset') || ''
+      }
+
+      set offset(offset: string) {
+        this.setAttribute('offset', offset)
+      }
+
       static get observedAttributes() {
-        return ['tab', 'partition', 'alignment']
+        return ['tab', 'partition', 'alignment', 'offset']
       }
 
       constructor() {
@@ -446,6 +464,7 @@ export const injectBrowserAction = () => {
 
           if (this.partition) browserActionNode.partition = this.partition
           if (this.alignment) browserActionNode.alignment = this.alignment
+          if (this.offset) browserActionNode.offset = this.offset
           browserActionNode.tab = tabId
         }
 
