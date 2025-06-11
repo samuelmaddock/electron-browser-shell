@@ -1,6 +1,7 @@
 class WebUI {
   windowId = -1
   activeTabId = -1
+  /** @type {chrome.tabs.Tab[]} */
   tabList = []
 
   constructor() {
@@ -119,7 +120,10 @@ class WebUI {
         this.renderTab(tab)
         this.renderToolbar(tab)
       } else {
-        tab.active = false
+        if (tab.active) {
+          tab.active = false
+          this.renderTab(tab)
+        }
       }
     }
   }
