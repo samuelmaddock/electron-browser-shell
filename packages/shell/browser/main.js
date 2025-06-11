@@ -341,7 +341,10 @@ class Browser {
             outlivesOpener: true,
             createWindow: ({ webContents: guest, webPreferences }) => {
               const win = this.getWindowFromWebContents(webContents)
-              const tab = win.tabs.create({ webContents: guest, webPreferences })
+              let opts = {};
+              if (guest != null) opts.webContents = guest;
+              if (webPreferences != null) opts.webPreferences = webPreferences;
+              const tab = win.tabs.create(opts)
               tab.loadURL(details.url)
               return tab.webContents
             },
