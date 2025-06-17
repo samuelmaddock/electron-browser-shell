@@ -77,10 +77,11 @@ app.whenReady().then(() => {
 
   const browserWindow = new BrowserWindow({
     webPreferences: {
-      // Same session given to Extensions class
+      // Use same session given to Extensions class
       session: browserSession,
-      // Recommended options for loading remote content
+      // Required for extension preload scripts
       sandbox: true,
+      // Recommended for loading remote content
       contextIsolation: true,
     },
   })
@@ -491,6 +492,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 - Usage of Electron's `webRequest` API will prevent `chrome.webRequest` listeners from being called.
 - Chrome extensions are not supported in non-persistent/incognito sessions.
 - `chrome.webNavigation.onDOMContentLoaded` is only emitted for the top frame until [support for iframes](https://github.com/electron/electron/issues/27344) is added.
+- Service worker preload scripts require Electron's sandbox to be enabled. This is the default behavior, but might be overridden by the `--no-sandbox` flag or `sandbox: false` in the `webPreferences` of a `BrowserWindow`. Check for the `--no-sandbox` flag using `ps -eaf | grep <appname>`.
 
 ## License
 
