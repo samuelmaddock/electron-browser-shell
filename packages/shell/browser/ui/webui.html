@@ -49,7 +49,7 @@
 
       #tabstrip {
         width: 100%;
-        height: calc(env(titlebar-area-height) + 1px);
+        height: calc(env(titlebar-area-height, 31px) + 1px);
       }
 
       .tab-container {
@@ -57,7 +57,7 @@
         left: env(titlebar-area-x);
         top: env(titlebar-area-y);
         width: env(titlebar-area-width);
-        height: calc(env(titlebar-area-height) + 1px);
+        height: calc(env(titlebar-area-height, 31px) + 1px);
         display: flex;
         flex-direction: row;
       }
