@@ -4,10 +4,16 @@ const { WebContentsView } = require('electron')
 const toolbarHeight = 64
 
 class Tab {
-  constructor(parentWindow, webContentsViewOptions = {}) {
+  constructor(parentWindow, wcvOpts = {}) {
     this.invalidateLayout = this.invalidateLayout.bind(this)
 
-    this.view = new WebContentsView(webContentsViewOptions)
+    // Delete undefined properties which cause WebContentsView constructor to
+    // throw. This should probably be fixed in Electron upstream.
+    if (wcvOpts.hasOwnProperty('webContents') && !wcvOpts.webContents) delete wcvOpts.webContents
+    if (wcvOpts.hasOwnProperty('webPreferences') && !wcvOpts.webPreferences)
+      delete wcvOpts.webPreferences
+
+    this.view = new WebContentsView(wcvOpts)
     this.id = this.view.webContents.id
     this.window = parentWindow
     this.webContents = this.view.webContents
