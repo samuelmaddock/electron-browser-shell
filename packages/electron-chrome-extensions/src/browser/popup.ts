@@ -202,15 +202,28 @@ export class PopupView {
     if (!this.browserWindow || !this.parent) return
 
     const winBounds = this.parent.getBounds()
+    const winContentBounds = this.parent.getContentBounds()
+    const nativeTitlebarHeight = winBounds.height - winContentBounds.height
+
     const viewBounds = this.browserWindow.getBounds()
 
     let x = winBounds.x + this.anchorRect.x + this.anchorRect.width - viewBounds.width
-    let y = winBounds.y + this.anchorRect.y + this.anchorRect.height + PopupView.POSITION_PADDING
+    let y =
+      winBounds.y +
+      nativeTitlebarHeight +
+      this.anchorRect.y +
+      this.anchorRect.height +
+      PopupView.POSITION_PADDING
 
     // If aligned to a differently then we need to offset the popup position
     if (this.alignment?.includes('right')) x = winBounds.x + this.anchorRect.x
     if (this.alignment?.includes('top'))
-      y = winBounds.y - viewBounds.height + this.anchorRect.y - PopupView.POSITION_PADDING
+      y =
+        winBounds.y +
+        nativeTitlebarHeight -
+        viewBounds.height +
+        this.anchorRect.y -
+        PopupView.POSITION_PADDING
 
     // Convert to ints
     x = Math.floor(x)
