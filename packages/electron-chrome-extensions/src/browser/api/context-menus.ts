@@ -160,7 +160,11 @@ export class ContextMenusAPI {
         opts.submenu.forEach((item) => submenu.append(buildFromTemplate(item)))
         opts.submenu = submenu
       }
-      return new MenuItem(opts)
+      return new MenuItem({
+        ...opts,
+        // Force submenu type when submenu items are present
+        type: opts.type === 'normal' && opts.submenu ? 'submenu' : opts.type,
+      })
     }
 
     // Build all final MenuItems in-order
@@ -238,8 +242,11 @@ export class ContextMenusAPI {
 
         menuItemOptions = [...menuItemOptions, groupMenuItemOptions, ...children]
       } else if (extensionMenuItemOptions.length > 0) {
-        // Set all children to show icon
-        const children = extensionMenuItemOptions.map((opt) => ({ ...opt, showIcon: true }))
+        // Set all top-level children to show icon
+        const children = extensionMenuItemOptions.map((opt) => ({
+          ...opt,
+          showIcon: !opt.props.parentId,
+        }))
         menuItemOptions = [...menuItemOptions, ...children]
       }
     }
