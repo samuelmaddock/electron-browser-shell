@@ -67,7 +67,7 @@ export const injectExtensionAPIs = () => {
       receive(message)
     }
     ipcRenderer.on(`crx-native-msg-${connectionId}`, onMessage)
-    ipcRenderer.once(`crx-native-msg-${connectNative}-disconnect`, () => {
+    ipcRenderer.once(`crx-native-msg-${connectionId}-disconnect`, () => {
       ipcRenderer.off(`crx-native-msg-${connectionId}`, onMessage)
       disconnect()
     })
