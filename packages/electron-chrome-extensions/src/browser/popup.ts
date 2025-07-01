@@ -62,6 +62,8 @@ export class PopupView {
       movable: false,
       maximizable: false,
       minimizable: false,
+      // https://github.com/electron/electron/issues/47579
+      fullscreenable: false,
       resizable: false,
       skipTaskbar: true,
       backgroundColor: '#ffffff',
