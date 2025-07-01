@@ -125,7 +125,6 @@ export class NativeMessagingHost {
   }
 
   destroy() {
-    if (!this.connected) return
     this.connected = false
     if (this.process) {
       this.process.kill()
