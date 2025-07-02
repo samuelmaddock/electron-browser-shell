@@ -2294,6 +2294,16 @@ ee-first@1.1.1:
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
+electron-chrome-web-store@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/electron-chrome-web-store/-/electron-chrome-web-store-0.10.0.tgz#39e8a2d6497c2024fdef223bcff81b6a260e9fd7"
+  integrity sha512-Zd1L+yv21SJ4cG24NMM0fMfro6xhqMx1kiB319xmOePUk+bnpHXKiLUMdU2jTb8uPO+1vqS6x3mCbn7o1E5UHQ==
+  dependencies:
+    "@types/chrome" "^0.0.287"
+    adm-zip "^0.5.16"
+    debug "^4.3.7"
+    pbf "^4.0.1"
+
 electron-installer-dmg@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/electron-installer-dmg/-/electron-installer-dmg-5.0.1.tgz#309662eccce4a8585a79fe4bce79c23976a950f0"
@@ -2330,19 +2340,10 @@ electron-winstaller@^5.3.0:
   optionalDependencies:
     "@electron/windows-sign" "^1.1.2"
 
-electron@35.0.0-beta.12:
-  version "35.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.12.tgz#3c13488ecb08b55f5d8e8f007db71ef563616073"
-  integrity sha512-p7TaVKGbowiDg0ltiPZ4ldlQy4/JBURHs2Fyr34Ul82wXg930pLbWA7RUV0UXX3mOaeYYDBKP04eLLVHZi6JdQ==
-  dependencies:
-    "@electron/get" "^2.0.0"
-    "@types/node" "^22.7.7"
-    extract-zip "^2.0.1"
-
-electron@^35.0.0-beta.3:
-  version "35.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-35.0.0-beta.3.tgz#395b246d1767be73ff39ee834f9025756c12a7de"
-  integrity sha512-huZMU1He5WdWcdIw41sAHQbbpf+WAs+NBrFP4e8nFovysqvjN49edsttkf23cD9wYDsYgarRdr26m1kDyz+/Ug==
+electron@^37.1.0:
+  version "37.1.0"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-37.1.0.tgz#6d6d1891f8add5d2d44007e2ee5d4542140fc4b4"
+  integrity sha512-Fcr3yfAw4oU392waVZSlrFUQx4P+h/k31+PRgkBY9tFx9E/zxzdPQQj0achZlG1HRDusw3ooQB+OXb9PvufdzA==
   dependencies:
     "@electron/get" "^2.0.0"
     "@types/node" "^22.7.7"
