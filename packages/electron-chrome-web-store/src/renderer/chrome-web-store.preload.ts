@@ -76,6 +76,13 @@ function overrideUserAgent() {
   )
 }
 
+const DEBUG = process.env.NODE_ENV === 'development'
+
+function log(...args: any[]) {
+  if (!DEBUG) return
+  console.debug(...args)
+}
+
 function setupChromeWebStoreApi() {
   let appName: string | undefined
 
@@ -107,52 +114,52 @@ function setupChromeWebStoreApi() {
     WebGlStatus,
 
     beginInstallWithManifest3: async (details, callback) => {
-      console.log('webstorePrivate.beginInstallWithManifest3', details)
+      log('webstorePrivate.beginInstallWithManifest3', details)
       const { result, message } = await ipcRenderer.invoke('chromeWebstore.beginInstall', details)
-      console.log('webstorePrivate.beginInstallWithManifest3 result:', result)
+      log('webstorePrivate.beginInstallWithManifest3 result:', result)
       setExtensionError(result === Result.SUCCESS ? null : message)
       if (callback) callback(result)
       return result
     },
 
     completeInstall: async (id, callback) => {
-      console.log('webstorePrivate.completeInstall', id)
+      log('webstorePrivate.completeInstall', id)
       const result = await ipcRenderer.invoke('chromeWebstore.completeInstall', id)
-      console.log('webstorePrivate.completeInstall result:', result)
+      log('webstorePrivate.completeInstall result:', result)
       if (callback) callback(result)
       maybeUpdateBranding()
       return result
     },
 
     enableAppLauncher: async (enable, callback) => {
-      console.log('webstorePrivate.enableAppLauncher', enable)
+      log('webstorePrivate.enableAppLauncher', enable)
       const result = await ipcRenderer.invoke('chromeWebstore.enableAppLauncher', enable)
-      console.log('webstorePrivate.enableAppLauncher result:', result)
+      log('webstorePrivate.enableAppLauncher result:', result)
       if (callback) callback(result)
       return result
     },
 
     getBrowserLogin: async (callback) => {
-      console.log('webstorePrivate.getBrowserLogin called')
+      log('webstorePrivate.getBrowserLogin called')
       const result = await ipcRenderer.invoke('chromeWebstore.getBrowserLogin')
-      console.log('webstorePrivate.getBrowserLogin result:', result)
+      log('webstorePrivate.getBrowserLogin result:', result)
       if (callback) callback(result)
       return result
     },
 
     getExtensionStatus: async (id, manifestJson, callback) => {
-      console.log('webstorePrivate.getExtensionStatus', id, { id, manifestJson, callback })
+      log('webstorePrivate.getExtensionStatus', id, { id, manifestJson, callback })
       const result = await ipcRenderer.invoke('chromeWebstore.getExtensionStatus', id, manifestJson)
-      console.log('webstorePrivate.getExtensionStatus result:', id, result)
+      log('webstorePrivate.getExtensionStatus result:', id, result)
       if (callback) callback(result)
       maybeUpdateBranding()
       return result
     },
 
     getFullChromeVersion: async (callback) => {
-      console.log('webstorePrivate.getFullChromeVersion called')
+      log('webstorePrivate.getFullChromeVersion called')
       const result = await ipcRenderer.invoke('chromeWebstore.getFullChromeVersion')
-      console.log('webstorePrivate.getFullChromeVersion result:', result)
+      log('webstorePrivate.getFullChromeVersion result:', result)
 
       if (result.app_name) {
         setAppName(result.app_name)
@@ -164,73 +171,73 @@ function setupChromeWebStoreApi() {
     },
 
     getIsLauncherEnabled: async (callback) => {
-      console.log('webstorePrivate.getIsLauncherEnabled called')
+      log('webstorePrivate.getIsLauncherEnabled called')
       const result = await ipcRenderer.invoke('chromeWebstore.getIsLauncherEnabled')
-      console.log('webstorePrivate.getIsLauncherEnabled result:', result)
+      log('webstorePrivate.getIsLauncherEnabled result:', result)
       if (callback) callback(result)
       return result
     },
 
     getMV2DeprecationStatus: async (callback) => {
-      console.log('webstorePrivate.getMV2DeprecationStatus called')
+      log('webstorePrivate.getMV2DeprecationStatus called')
       const result = await ipcRenderer.invoke('chromeWebstore.getMV2DeprecationStatus')
-      console.log('webstorePrivate.getMV2DeprecationStatus result:', result)
+      log('webstorePrivate.getMV2DeprecationStatus result:', result)
       if (callback) callback(result)
       return result
     },
 
     getReferrerChain: async (callback) => {
-      console.log('webstorePrivate.getReferrerChain called')
+      log('webstorePrivate.getReferrerChain called')
       const result = await ipcRenderer.invoke('chromeWebstore.getReferrerChain')
-      console.log('webstorePrivate.getReferrerChain result:', result)
+      log('webstorePrivate.getReferrerChain result:', result)
       if (callback) callback(result)
       return result
     },
 
     getStoreLogin: async (callback) => {
-      console.log('webstorePrivate.getStoreLogin called')
+      log('webstorePrivate.getStoreLogin called')
       const result = await ipcRenderer.invoke('chromeWebstore.getStoreLogin')
-      console.log('webstorePrivate.getStoreLogin result:', result)
+      log('webstorePrivate.getStoreLogin result:', result)
       if (callback) callback(result)
       return result
     },
 
     getWebGLStatus: async (callback) => {
-      console.log('webstorePrivate.getWebGLStatus called')
+      log('webstorePrivate.getWebGLStatus called')
       const result = await ipcRenderer.invoke('chromeWebstore.getWebGLStatus')
-      console.log('webstorePrivate.getWebGLStatus result:', result)
+      log('webstorePrivate.getWebGLStatus result:', result)
       if (callback) callback(result)
       return result
     },
 
     install: async (id, silentInstall, callback) => {
-      console.log('webstorePrivate.install', { id, silentInstall })
+      log('webstorePrivate.install', { id, silentInstall })
       const result = await ipcRenderer.invoke('chromeWebstore.install', id, silentInstall)
-      console.log('webstorePrivate.install result:', result)
+      log('webstorePrivate.install result:', result)
       if (callback) callback(result)
       return result
     },
 
     isInIncognitoMode: async (callback) => {
-      console.log('webstorePrivate.isInIncognitoMode called')
+      log('webstorePrivate.isInIncognitoMode called')
       const result = await ipcRenderer.invoke('chromeWebstore.isInIncognitoMode')
-      console.log('webstorePrivate.isInIncognitoMode result:', result)
+      log('webstorePrivate.isInIncognitoMode result:', result)
       if (callback) callback(result)
       return result
     },
 
     isPendingCustodianApproval: async (id, callback) => {
-      console.log('webstorePrivate.isPendingCustodianApproval', id)
+      log('webstorePrivate.isPendingCustodianApproval', id)
       const result = await ipcRenderer.invoke('chromeWebstore.isPendingCustodianApproval', id)
-      console.log('webstorePrivate.isPendingCustodianApproval result:', result)
+      log('webstorePrivate.isPendingCustodianApproval result:', result)
       if (callback) callback(result)
       return result
     },
 
     setStoreLogin: async (login, callback) => {
-      console.log('webstorePrivate.setStoreLogin', login)
+      log('webstorePrivate.setStoreLogin', login)
       const result = await ipcRenderer.invoke('chromeWebstore.setStoreLogin', login)
-      console.log('webstorePrivate.setStoreLogin result:', result)
+      log('webstorePrivate.setStoreLogin result:', result)
       if (callback) callback(result)
       return result
     },
@@ -243,7 +250,7 @@ function setupChromeWebStoreApi() {
   const runtime = {
     lastError: null,
     getManifest: async () => {
-      console.log('chrome.runtime.getManifest called')
+      log('chrome.runtime.getManifest called')
       return {}
     },
   }
@@ -252,41 +259,41 @@ function setupChromeWebStoreApi() {
   const management = {
     onInstalled: {
       addListener: (callback: () => void) => {
-        console.log('chrome.management.onInstalled.addListener called')
+        log('chrome.management.onInstalled.addListener called')
         ipcRenderer.on('chrome.management.onInstalled', callback)
       },
       removeListener: (callback: () => void) => {
-        console.log('chrome.management.onInstalled.removeListener called')
+        log('chrome.management.onInstalled.removeListener called')
         ipcRenderer.removeListener('chrome.management.onInstalled', callback)
       },
     },
     onUninstalled: {
       addListener: (callback: () => void) => {
-        console.log('chrome.management.onUninstalled.addListener called')
+        log('chrome.management.onUninstalled.addListener called')
         ipcRenderer.on('chrome.management.onUninstalled', callback)
       },
       removeListener: (callback: () => void) => {
-        console.log('chrome.management.onUninstalled.removeListener called')
+        log('chrome.management.onUninstalled.removeListener called')
         ipcRenderer.removeListener('chrome.management.onUninstalled', callback)
       },
     },
     getAll: (callback: (extensions: any[]) => void) => {
-      console.log('chrome.management.getAll called')
+      log('chrome.management.getAll called')
       ipcRenderer.invoke('chrome.management.getAll').then((result) => {
-        console.log('chrome.management.getAll result:', result)
+        log('chrome.management.getAll result:', result)
         callback(result)
       })
     },
     setEnabled: async (id: string, enabled: boolean) => {
-      console.log('chrome.management.setEnabled', { id, enabled })
+      log('chrome.management.setEnabled', { id, enabled })
       const result = await ipcRenderer.invoke('chrome.management.setEnabled', id, enabled)
-      console.log('chrome.management.setEnabled result:', result)
+      log('chrome.management.setEnabled result:', result)
       return result
     },
     uninstall: (id: string, options: { showConfirmDialog: boolean }, callback?: () => void) => {
-      console.log('chrome.management.uninstall', { id, options })
+      log('chrome.management.uninstall', { id, options })
       ipcRenderer.invoke('chrome.management.uninstall', id, options).then((result) => {
-        console.log('chrome.management.uninstall result:', result)
+        log('chrome.management.uninstall result:', result)
         if (callback) callback()
       })
     },
@@ -314,6 +321,6 @@ function setupChromeWebStoreApi() {
 }
 
 if (location.href.startsWith('https://chromewebstore.google.com')) {
-  console.log('Injecting Chrome Web Store API')
+  log('Injecting Chrome Web Store API')
   setupChromeWebStoreApi()
 }
