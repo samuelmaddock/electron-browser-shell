@@ -202,11 +202,12 @@ export class BrowserActionAPI {
   }
 
   private setupSession(session: Electron.Session) {
-    session.on('extension-loaded', (event, extension) => {
+    const sessionExtensions = session.extensions || session
+    sessionExtensions.on('extension-loaded', (event, extension) => {
       this.processExtension(extension)
     })
 
-    session.on('extension-unloaded', (event, extension) => {
+    sessionExtensions.on('extension-unloaded', (event, extension) => {
       this.removeActions(extension.id)
     })
   }
@@ -227,7 +228,8 @@ export class BrowserActionAPI {
           const imageSize = parseInt(fragments[2], 10)
           const resizeType = parseInt(fragments[3], 10) || ResizeType.Up
 
-          const extension = this.ctx.session.getExtension(extensionId)
+          const sessionExtensions = this.ctx.session.extensions || this.ctx.session
+          const extension = sessionExtensions.getExtension(extensionId)
 
           let iconDetails: chrome.browserAction.TabIconDetails | undefined
 
@@ -433,7 +435,8 @@ export class BrowserActionAPI {
   private activateContextMenu(details: ActivateDetails) {
     const { extensionId, anchorRect } = details
 
-    const extension = this.ctx.session.getExtension(extensionId)
+    const sessionExtensions = this.ctx.session.extensions || this.ctx.session
+    const extension = sessionExtensions.getExtension(extensionId)
     if (!extension) {
       throw new Error(`Unregistered extension '${extensionId}'`)
     }
@@ -480,7 +483,7 @@ export class BrowserActionAPI {
         label: 'Remove extension',
         click: () => {
           d(`removing extension "${extension.name}" (${extension.id})`)
-          this.ctx.session.removeExtension(extension.id)
+          sessionExtensions.removeExtension(extension.id)
         },
       })
     }

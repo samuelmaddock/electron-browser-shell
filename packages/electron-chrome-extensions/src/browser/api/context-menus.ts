@@ -89,7 +89,8 @@ export class ContextMenusAPI {
     handle('contextMenus.remove', this.remove)
     handle('contextMenus.removeAll', this.removeAll)
 
-    this.ctx.session.on('extension-unloaded', (event, extension) => {
+    const sessionExtensions = ctx.session.extensions || ctx.session
+    sessionExtensions.on('extension-unloaded', (event, extension) => {
       if (this.menus.has(extension.id)) {
         this.menus.delete(extension.id)
       }
@@ -193,8 +194,10 @@ export class ContextMenusAPI {
       documentUrl: params.frameURL || params.pageURL,
     }
 
+    const sessionExtensions = this.ctx.session.extensions || this.ctx.session
+
     for (const [extensionId, propItems] of this.menus) {
-      const extension = this.ctx.session.getExtension(extensionId)
+      const extension = sessionExtensions.getExtension(extensionId)
       if (!extension) continue
 
       const extensionMenuItemOptions: ContextItemConstructorOptions[] = []
@@ -259,7 +262,8 @@ export class ContextMenusAPI {
     menuType: ContextMenuType,
   ): Electron.MenuItem[] {
     const extensionItems = this.menus.get(extensionId)
-    const extension = this.ctx.session.getExtension(extensionId)
+    const sessionExtensions = this.ctx.session.extensions || this.ctx.session
+    const extension = sessionExtensions.getExtension(extensionId)
     const activeTab = this.ctx.store.getActiveTabOfCurrentWindow()
 
     const menuItemOptions = []

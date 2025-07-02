@@ -211,7 +211,7 @@ class Browser {
       }
     })
 
-    const webuiExtension = await this.session.loadExtension(PATHS.WEBUI)
+    const webuiExtension = await this.session.extensions.loadExtension(PATHS.WEBUI)
     webuiExtensionId = webuiExtension.id
 
     // Wait for web store extensions to finish loading as they may change the
@@ -247,7 +247,7 @@ class Browser {
     }
 
     await Promise.all(
-      this.session.getAllExtensions().map(async (extension) => {
+      this.session.extensions.getAllExtensions().map(async (extension) => {
         const manifest = extension.manifest
         if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
           await this.session.serviceWorkers.startWorkerForScope(extension.url).catch((error) => {

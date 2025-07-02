@@ -175,7 +175,8 @@ export class ElectronChromeExtensions extends EventEmitter {
   }
 
   private listenForExtensions() {
-    this.ctx.session.addListener('extension-loaded', (_event, extension) => {
+    const sessionExtensions = this.ctx.session.extensions || this.ctx.session
+    sessionExtensions.addListener('extension-loaded', (_event, extension) => {
       readLoadedExtensionManifest(this.ctx, extension)
     })
   }

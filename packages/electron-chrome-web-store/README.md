@@ -109,7 +109,7 @@ Installs Chrome extension from the Chrome Web Store.
 - `options`
   - `session`: The Electron session to load extensions in. Defaults to `session.defaultSession`.
   - `extensionsPath`: The path to the extensions directory. Defaults to 'Extensions/' in the app's userData path.
-  - `loadExtensionOptions`: Extension options passed into `session.loadExtension`.
+  - `loadExtensionOptions`: Extension options passed into `session.extensions.loadExtension`.
 
 ### `uninstallExtension`
 

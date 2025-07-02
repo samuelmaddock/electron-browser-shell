@@ -215,10 +215,11 @@ export async function installExtension(
   d('installing %s', extensionId)
 
   const session = opts.session || electronSession.defaultSession
+  const sessionExtensions = session.extensions || session
   const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
 
   // Check if already loaded
-  const existingExtension = session.getExtension(extensionId)
+  const existingExtension = sessionExtensions.getExtension(extensionId)
   if (existingExtension) {
     d('%s already loaded', extensionId)
     return existingExtension
@@ -228,12 +229,15 @@ export async function installExtension(
   const existingExtensionInfo = await findExtensionInstall(extensionId, extensionsPath)
   if (existingExtensionInfo && existingExtensionInfo.type === 'store') {
     d('%s already installed', extensionId)
-    return await session.loadExtension(existingExtensionInfo.path, opts.loadExtensionOptions)
+    return await sessionExtensions.loadExtension(
+      existingExtensionInfo.path,
+      opts.loadExtensionOptions,
+    )
   }
 
   // Download and load new extension
   const extensionPath = await downloadExtension(extensionId, extensionsPath)
-  const extension = await session.loadExtension(extensionPath, opts.loadExtensionOptions)
+  const extension = await sessionExtensions.loadExtension(extensionPath, opts.loadExtensionOptions)
   d('installed %s', extensionId)
 
   return extension
@@ -249,12 +253,13 @@ export async function uninstallExtension(
   d('uninstalling %s', extensionId)
 
   const session = opts.session || electronSession.defaultSession
+  const sessionExtensions = session.extensions || session
   const extensionsPath = opts.extensionsPath || getDefaultExtensionsPath()
 
-  const extensions = session.getAllExtensions()
+  const extensions = sessionExtensions.getAllExtensions()
   const existingExt = extensions.find((ext) => ext.id === extensionId)
   if (existingExt) {
-    session.removeExtension(extensionId)
+    sessionExtensions.removeExtension(extensionId)
   }
 
   const extensionDir = path.join(extensionsPath, extensionId)

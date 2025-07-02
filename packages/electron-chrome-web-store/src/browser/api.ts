@@ -62,7 +62,8 @@ function getExtensionInstallStatus(
     return ExtensionInstallStatus.BLOCKED_BY_POLICY
   }
 
-  const extensions = state.session.getAllExtensions()
+  const sessionExtensions = state.session.extensions || state.session
+  const extensions = sessionExtensions.getAllExtensions()
   const extension = extensions.find((ext) => ext.id === extensionId)
 
   if (!extension) {
@@ -219,7 +220,8 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
 
     if (result.result === Result.SUCCESS) {
       queueMicrotask(() => {
-        const ext = webStoreState.session.getExtension(details.id)
+        const sessionExtensions = webStoreState.session.extensions || webStoreState.session
+        const ext = sessionExtensions.getExtension(details.id)
         if (ext && senderFrame && !senderFrame.isDestroyed()) {
           try {
             senderFrame.send('chrome.management.onInstalled', getExtensionInfo(ext))
@@ -314,7 +316,8 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
   })
 
   handle('chrome.management.getAll', async (event) => {
-    const extensions = webStoreState.session.getAllExtensions()
+    const sessionExtensions = webStoreState.session.extensions || webStoreState.session
+    const extensions = sessionExtensions.getAllExtensions()
     return extensions.map(getExtensionInfo)
   })
 

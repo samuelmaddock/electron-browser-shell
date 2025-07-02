@@ -8,11 +8,12 @@ export class CommandsAPI {
     const handle = this.ctx.router.apiHandler()
     handle('commands.getAll', this.getAll)
 
-    ctx.session.on('extension-loaded', (_event, extension) => {
+    const sessionExtensions = ctx.session.extensions || ctx.session
+    sessionExtensions.on('extension-loaded', (_event, extension) => {
       this.processExtension(extension)
     })
 
-    ctx.session.on('extension-unloaded', (_event, extension) => {
+    sessionExtensions.on('extension-unloaded', (_event, extension) => {
       this.removeCommands(extension)
     })
   }

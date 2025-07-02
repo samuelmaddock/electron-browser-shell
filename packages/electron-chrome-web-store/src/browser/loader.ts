@@ -125,6 +125,8 @@ export async function loadAllExtensions(
     allowUnpacked?: boolean
   } = {},
 ) {
+  const sessionExtensions = session.extensions || session
+
   let extensions = await discoverExtensions(extensionsPath)
   extensions = filterOutdatedExtensions(extensions)
   d('discovered %d extension(s) in %s', extensions.length, extensionsPath)
@@ -133,16 +135,16 @@ export async function loadAllExtensions(
     try {
       let extension: Electron.Extension | undefined
       if (ext.type === 'store') {
-        const existingExt = session.getExtension(ext.id)
+        const existingExt = sessionExtensions.getExtension(ext.id)
         if (existingExt) {
           d('skipping loading existing extension %s', ext.id)
           continue
         }
         d('loading extension %s', `${ext.id}@${ext.manifest.version}`)
-        extension = await session.loadExtension(ext.path)
+        extension = await sessionExtensions.loadExtension(ext.path)
       } else if (options.allowUnpacked) {
         d('loading unpacked extension %s', ext.path)
-        extension = await session.loadExtension(ext.path)
+        extension = await sessionExtensions.loadExtension(ext.path)
       }
 
       if (

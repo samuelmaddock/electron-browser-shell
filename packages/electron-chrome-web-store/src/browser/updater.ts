@@ -210,6 +210,7 @@ async function fetchAvailableUpdates(extensions: Electron.Extension[]): Promise<
 }
 
 async function updateExtension(session: Electron.Session, update: ExtensionUpdate) {
+  const sessionExtensions = session.extensions || session
   const extensionId = update.id
   const oldExtension = update.extension
   d('updating %s %s -> %s', extensionId, oldExtension.version, update.version)
@@ -234,9 +235,9 @@ async function updateExtension(session: Electron.Session, update: ExtensionUpdat
   d('downloaded update %s@%s', extensionId, update.version)
 
   // Reload extension if already loaded
-  if (session.getExtension(extensionId)) {
-    session.removeExtension(extensionId)
-    await session.loadExtension(updatePath)
+  if (sessionExtensions.getExtension(extensionId)) {
+    sessionExtensions.removeExtension(extensionId)
+    await sessionExtensions.loadExtension(updatePath)
     d('loaded update %s@%s', extensionId, update.version)
   }
 
@@ -246,7 +247,8 @@ async function updateExtension(session: Electron.Session, update: ExtensionUpdat
 
 async function checkForUpdates(session: Electron.Session) {
   // Only check for extensions from the store
-  const extensions = session.getAllExtensions().filter(filterWebStoreExtension)
+  const sessionExtensions = session.extensions || session
+  const extensions = sessionExtensions.getAllExtensions().filter(filterWebStoreExtension)
   d('checking for updates: %s', extensions.map((ext) => `${ext.id}@${ext.version}`).join(','))
 
   const updates = await fetchAvailableUpdates(extensions)

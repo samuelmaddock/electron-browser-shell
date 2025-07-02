@@ -21,13 +21,14 @@ export class PermissionsAPI {
     handle('permissions.remove', this.remove)
     handle('permissions.request', this.request)
 
-    ctx.session.getAllExtensions().forEach((ext) => this.processExtension(ext))
+    const sessionExtensions = ctx.session.extensions || ctx.session
+    sessionExtensions.getAllExtensions().forEach((ext) => this.processExtension(ext))
 
-    ctx.session.on('extension-loaded', (_event, extension) => {
+    sessionExtensions.on('extension-loaded', (_event, extension) => {
       this.processExtension(extension)
     })
 
-    ctx.session.on('extension-unloaded', (_event, extension) => {
+    sessionExtensions.on('extension-unloaded', (_event, extension) => {
       this.permissionMap.delete(extension.id)
     })
   }

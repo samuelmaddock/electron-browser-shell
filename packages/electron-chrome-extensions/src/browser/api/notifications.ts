@@ -56,7 +56,8 @@ export class NotificationsAPI {
     handle('notifications.getPermissionLevel', this.getPermissionLevel)
     handle('notifications.update', this.update)
 
-    this.ctx.session.on('extension-unloaded', (event, extension) => {
+    const sessionExtensions = ctx.session.extensions || ctx.session
+    sessionExtensions.on('extension-unloaded', (event, extension) => {
       for (const [key, notification] of this.registry) {
         if (key.startsWith(extension.id)) {
           notification.close()

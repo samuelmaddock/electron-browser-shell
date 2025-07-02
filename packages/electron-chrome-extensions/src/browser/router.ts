@@ -236,7 +236,8 @@ export class ExtensionRouter {
   ) {
     this.delegate.addObserver(this)
 
-    session.on('extension-unloaded', (event, extension) => {
+    const sessionExtensions = session.extensions || session
+    sessionExtensions.on('extension-unloaded', (event, extension) => {
       this.filterListeners((listener) => listener.extensionId !== extension.id)
     })
 
@@ -297,7 +298,8 @@ export class ExtensionRouter {
   addListener(listener: EventListener, extensionId: string, eventName: string) {
     const { listeners, session } = this
 
-    const extension = session.getExtension(extensionId)
+    const sessionExtensions = session.extensions || session
+    const extension = sessionExtensions.getExtension(extensionId)
     if (!extension) {
       throw new Error(`extension not registered in session [extensionId:${extensionId}]`)
     }
@@ -358,13 +360,14 @@ export class ExtensionRouter {
   ) {
     const { session } = this
     const eventSession = getSessionFromEvent(event)
+    const eventSessionExtensions = eventSession.extensions || eventSession
     const handler = this.getHandler(handlerName)
 
     if (eventSession !== session && !handler.allowRemote) {
       throw new Error(`${handlerName} does not support calling from a remote session`)
     }
 
-    const extension = extensionId ? eventSession.getExtension(extensionId) : undefined
+    const extension = extensionId ? eventSessionExtensions.getExtension(extensionId) : undefined
     if (!extension && handler.extensionContext) {
       throw new Error(`${handlerName} was sent from an unknown extension context`)
     }
