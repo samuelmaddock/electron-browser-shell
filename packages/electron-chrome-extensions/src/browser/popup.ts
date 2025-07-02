@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { BrowserWindow, Session } from 'electron'
 import { getAllWindows } from './api/common'
 import debug from 'debug'
@@ -25,7 +26,7 @@ const supportsPreferredSize = () => {
   return major >= 12
 }
 
-export class PopupView {
+export class PopupView extends EventEmitter {
   static POSITION_PADDING = 5
 
   static BOUNDS = {
@@ -50,6 +51,8 @@ export class PopupView {
   private readyPromise: Promise<void>
 
   constructor(opts: PopupViewOptions) {
+    super()
+
     this.parent = opts.parent
     this.extensionId = opts.extensionId
     this.anchorRect = opts.anchorRect
@@ -173,13 +176,17 @@ export class PopupView {
       Math.min(PopupView.BOUNDS.maxHeight, Math.max(rect.height || 0, PopupView.BOUNDS.minHeight)),
     )
 
-    d(`setSize`, { width, height })
+    const size = { width, height }
+    d(`setSize`, size)
+
+    this.emit('will-resize', size)
 
     this.browserWindow?.setBounds({
       ...this.browserWindow.getBounds(),
-      width,
-      height,
+      ...size,
     })
+
+    this.emit('resized')
   }
 
   private maybeClose = () => {
@@ -231,13 +238,17 @@ export class PopupView {
     x = Math.floor(x)
     y = Math.floor(y)
 
-    d(`updatePosition`, { x, y })
+    const position = { x, y }
+    d(`updatePosition`, position)
+
+    this.emit('will-move', position)
 
     this.browserWindow.setBounds({
       ...this.browserWindow.getBounds(),
-      x,
-      y,
+      ...position,
     })
+
+    this.emit('moved')
   }
 
   /** Backwards compat for Electron <12 */
