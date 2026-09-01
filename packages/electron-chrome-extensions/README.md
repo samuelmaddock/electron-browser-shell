@@ -406,6 +406,7 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 
 - [x] chrome.storage.local
 - [x] chrome.storage.managed - fallback to `local`
+- [x] chrome.storage.session
 - [x] chrome.storage.sync - fallback to `local`
 
 ### [`chrome.tabs`](https://developer.chrome.com/extensions/tabs)

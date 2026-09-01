@@ -523,8 +523,60 @@ export const injectExtensionAPIs = () => {
       storage: {
         factory: (base) => {
           const local = base && base.local
+
+          // chrome.storage.session implementation backed by the main process.
+          // Electron does not natively support chrome.storage.session.
+          const session = {
+            onChanged: new ExtensionEvent('storage.session.onChanged'),
+            get: invokeExtension('storage.session.get'),
+            set: invokeExtension('storage.session.set'),
+            remove: invokeExtension('storage.session.remove'),
+            clear: invokeExtension('storage.session.clear'),
+            getKeys: invokeExtension('storage.session.getKeys'),
+            getBytesInUse: invokeExtension('storage.session.getBytesInUse'),
+            setAccessLevel: invokeExtension('storage.session.setAccessLevel'),
+            QUOTA_BYTES: 10485760,
+          }
+
+          // Make storage.onChanged subscribe to storage.session.onChanged too.
+          const onChanged = base.onChanged as chrome.storage.StorageChangedEvent | undefined
+          if (onChanged) {
+            type StorageChangeRecord = Record<string, chrome.storage.StorageChange>
+            type StorageCallback = (
+              changes: StorageChangeRecord,
+              areaName: 'local' | 'sync' | 'managed' | 'session',
+            ) => void
+
+            let sessionListener: StorageCallback | undefined
+
+            const originalAddListener = onChanged.addListener.bind(onChanged)
+            onChanged.addListener = (callback: StorageCallback) => {
+              // Connect to additional onChanged listeners.
+              const hasListeners = onChanged.hasListeners()
+              if (!hasListeners) {
+                sessionListener = (changes: StorageChangeRecord) => callback(changes, 'session')
+                session.onChanged.addListener(sessionListener)
+              }
+
+              originalAddListener(callback)
+            }
+
+            const originalRemoveListener = onChanged.removeListener.bind(onChanged)
+            onChanged.removeListener = (callback: StorageCallback) => {
+              originalRemoveListener(callback)
+
+              // Disconnect from additional onChanged listeners.
+              const hasListeners = onChanged.hasListeners()
+              if (!hasListeners && sessionListener) {
+                session.onChanged.removeListener(sessionListener)
+                sessionListener = undefined
+              }
+            }
+          }
+
           return {
             ...base,
+            session,
             // TODO: provide a backend for browsers to opt-in to
             managed: local,
             sync: local,
