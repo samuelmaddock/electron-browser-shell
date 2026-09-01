@@ -52,6 +52,16 @@ export class WindowsAPI {
     d(`Observing window[${windowId}]`)
   }
 
+  private createWindowTabsDetails(win: Electron.BaseWindow) {
+    return Array.from(this.ctx.store.tabs)
+      .filter((tab) => {
+        const ownerWindow = this.ctx.store.tabToWindow.get(tab)
+        return ownerWindow?.isDestroyed() ? false : ownerWindow?.id === win.id
+      })
+      .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
+      .filter(Boolean)
+  }
+
   private createWindowDetails(win: Electron.BaseWindow) {
     const details: Partial<chrome.windows.Window> = {
       id: win.id,
@@ -60,13 +70,7 @@ export class WindowsAPI {
       left: win.getPosition()[0],
       width: win.getSize()[0],
       height: win.getSize()[1],
-      tabs: Array.from(this.ctx.store.tabs)
-        .filter((tab) => {
-          const ownerWindow = this.ctx.store.tabToWindow.get(tab)
-          return ownerWindow?.isDestroyed() ? false : ownerWindow?.id === win.id
-        })
-        .map((tab) => this.ctx.store.tabDetailsCache.get(tab.id) as chrome.tabs.Tab)
-        .filter(Boolean),
+      tabs: this.createWindowTabsDetails(win),
       incognito: !this.ctx.session.isPersistent(),
       type: 'normal', // TODO
       state: getWindowState(win),
@@ -80,7 +84,12 @@ export class WindowsAPI {
 
   private getWindowDetails(win: Electron.BaseWindow) {
     if (this.ctx.store.windowDetailsCache.has(win.id)) {
-      return this.ctx.store.windowDetailsCache.get(win.id)
+      const cachedDetails = this.ctx.store.windowDetailsCache.get(win.id)
+      // Update the cached details with the latest tabs, otherwise it will be stale.
+      if (cachedDetails) {
+        cachedDetails.tabs = this.createWindowTabsDetails(win)
+      }
+      return cachedDetails
     }
     const details = this.createWindowDetails(win)
     return details
