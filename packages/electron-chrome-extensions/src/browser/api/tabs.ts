@@ -1,26 +1,16 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
-import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
+import {
+  getAllWindows,
+  matchesPattern,
+  matchesTitlePattern,
+  TabContents,
+  validateExtensionUrl,
+} from './common'
 import { WindowsAPI } from './windows'
 import debug from 'debug'
 
 const d = debug('electron-chrome-extensions:tabs')
-
-const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
-  // Convert relative URLs to absolute if needed
-  try {
-    url = new URL(url, extension.url).href
-  } catch (e) {
-    throw new Error('Invalid URL')
-  }
-
-  // Prevent creating chrome://kill or other debug commands
-  if (url.startsWith('chrome:') || url.startsWith('javascript:')) {
-    throw new Error('Invalid URL')
-  }
-
-  return url
-}
 
 export class TabsAPI {
   static TAB_ID_NONE = -1

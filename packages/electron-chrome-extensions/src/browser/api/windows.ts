@@ -1,5 +1,6 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
+import { validateExtensionUrl } from './common'
 import debug from 'debug'
 
 const d = debug('electron-chrome-extensions:windows')
@@ -109,6 +110,11 @@ export class WindowsAPI {
   }
 
   private async create(event: ExtensionEvent, details: chrome.windows.CreateData) {
+    if (details.url) {
+      const urls = Array.isArray(details.url) ? details.url : [details.url]
+      const resolved = urls.map((u) => validateExtensionUrl(u, event.extension))
+      details = { ...details, url: Array.isArray(details.url) ? resolved : resolved[0] }
+    }
     const win = await this.ctx.store.createWindow(event, details)
     return this.getWindowDetails(win)
   }

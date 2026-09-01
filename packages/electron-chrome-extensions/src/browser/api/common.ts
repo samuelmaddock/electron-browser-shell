@@ -36,6 +36,20 @@ export const getExtensionUrl = (extension: Electron.Extension, uri: string) => {
   } catch {}
 }
 
+export const validateExtensionUrl = (url: string, extension: Electron.Extension) => {
+  try {
+    url = new URL(url, extension.url).href
+  } catch (e) {
+    throw new Error('Invalid URL')
+  }
+
+  if (url.startsWith('chrome:') || url.startsWith('javascript:')) {
+    throw new Error('Invalid URL')
+  }
+
+  return url
+}
+
 export const resolveExtensionPath = (
   extension: Electron.Extension,
   uri: string,
