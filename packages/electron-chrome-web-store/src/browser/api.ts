@@ -11,7 +11,7 @@ import {
   WebGlStatus,
 } from '../common/constants'
 import { installExtension, uninstallExtension } from './installer'
-import { ExtensionId, WebStoreState } from './types'
+import { ExtensionId, ExtensionStatusDetails, WebStoreState } from './types'
 
 const d = debug('electron-chrome-web-store:api')
 
@@ -50,6 +50,19 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
+  if (state.getExtensionInstallStatus) {
+    const details: ExtensionStatusDetails = {
+      session: state.session,
+      extensionsPath: state.extensionsPath,
+    }
+
+    const customStatus: unknown = state.getExtensionInstallStatus?.(extensionId, details, manifest)
+
+    if (typeof customStatus === 'string') {
+      return customStatus
+    }
+  }
+
   if (manifest && manifest.manifest_version < state.minimumManifestVersion) {
     return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
   }
@@ -156,6 +169,19 @@ async function beginInstall(
 
     state.installing.add(extensionId)
     await installExtension(extensionId, state)
+
+    if (state.afterInstall) {
+      // Doesn't need to await, just a callback
+      state.afterInstall({
+        id: extensionId,
+        localizedName: details.localizedName,
+        manifest,
+        icon,
+        frame: senderFrame,
+        browserWindow: browserWindow || undefined,
+      })
+    }
+
     return { result: Result.SUCCESS }
   } catch (error) {
     console.error('Extension installation failed:', error)
@@ -322,7 +348,14 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
   })
 
   handle('chrome.management.setEnabled', async (event, id, enabled) => {
-    // TODO: Implement enabling/disabling extension
+    // Allows the host app to implement its own logic for enabling/disabling extensions.
+    if (webStoreState.setExtensionEnabled) {
+      const details: ExtensionStatusDetails = {
+        session: webStoreState.session,
+        extensionsPath: webStoreState.extensionsPath,
+      }
+      await webStoreState.setExtensionEnabled(id, details, enabled)
+    }
     return true
   })
 
@@ -335,9 +368,15 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
 
       try {
         await uninstallExtension(id, webStoreState)
+
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
         })
+
+        if (webStoreState.afterUninstall) {
+          webStoreState.afterUninstall?.({ id })
+        }
+
         return Result.SUCCESS
       } catch (error) {
         console.error(error)
