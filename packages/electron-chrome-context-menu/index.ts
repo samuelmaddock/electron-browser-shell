@@ -20,6 +20,7 @@ const LABELS = {
   addToDictionary: 'Add to dictionary',
   exitFullScreen: 'Exit full screen',
   emoji: 'Emoji',
+  copyLinkToHighlight: 'Copy link to highlight',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -192,6 +193,20 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         clipboard.writeText(params.selectionText)
       },
     })
+
+    if (params.pageURL) {
+      append({
+        label: labels.copyLinkToHighlight,
+        click: () => {
+          // https://web.dev/text-fragments/
+          const textFragment = encodeURIComponent(params.selectionText.trim())
+          const url = new URL(params.pageURL)
+          url.hash = `#:~:text=${textFragment}`
+          clipboard.writeText(url.toString())
+        },
+      })
+    }
+
     appendSeparator()
   }
 
