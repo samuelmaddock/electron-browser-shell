@@ -84,6 +84,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebCon
     reload: [],
     print: [],
     savePage: [],
+    copyImageAt: [],
   }
 
   return {
@@ -101,6 +102,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebCon
     reload: () => calls.reload.push(true),
     print: () => calls.print.push(true),
     savePage: (fullPath: string, saveType: string) => calls.savePage.push({ fullPath, saveType }),
+    copyImageAt: (x: number, y: number) => calls.copyImageAt.push({ x, y }),
     getURL: () => 'https://example.com',
     getTitle: () => 'Example Page',
     navigationHistory: {
@@ -114,6 +116,18 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebCon
     },
     _calls: calls,
     ...overrides,
+  } as any
+}
+
+const createMockFrame = () => {
+  const calls: any = {
+    copyVideoFrameAt: [],
+    saveVideoFrameAs: [],
+  }
+  return {
+    copyVideoFrameAt: (x: number, y: number) => calls.copyVideoFrameAt.push({ x, y }),
+    saveVideoFrameAs: (x: number, y: number) => calls.saveVideoFrameAs.push({ x, y }),
+    _calls: calls,
   } as any
 }
 
@@ -160,6 +174,7 @@ const createMockParams = (
       canEditRichly: false,
     },
     formControlType: '',
+    frame: null,
     ...overrides,
   } as Electron.ContextMenuParams
 }
@@ -437,6 +452,225 @@ describe('buildChromeContextMenu', () => {
       const labels = menu.items.map((item: any) => item.label).filter(Boolean)
       assert.ok(labels.includes('Open video in new tab'))
       assert.ok(labels.includes('Copy video address'))
+    })
+  })
+
+  describe('copy image', () => {
+    it('should create "Copy image" menu item for images with content', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+        hasImageContents: true,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(labels.includes('Copy image'))
+    })
+
+    it('should NOT create "Copy image" menu item for images without content', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+        hasImageContents: false,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Copy image'))
+    })
+
+    it('should NOT create "Copy image" menu item for non-image media', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        hasImageContents: false,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Copy image'))
+    })
+
+    it('should call webContents.copyImageAt with correct coordinates', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        x: 150,
+        y: 250,
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+        hasImageContents: true,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const copyImageItem = menu.items.find((item: any) => item.label === 'Copy image')
+      assert.ok(copyImageItem)
+      copyImageItem.click()
+
+      assert.strictEqual(webContents._calls.copyImageAt.length, 1)
+      assert.strictEqual(webContents._calls.copyImageAt[0].x, 150)
+      assert.strictEqual(webContents._calls.copyImageAt[0].y, 250)
+    })
+
+    it('should place "Copy image" between "Open in new tab" and "Copy image address"', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+        hasImageContents: true,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      const openInNewTabIndex = labels.indexOf('Open image in new tab')
+      const copyImageIndex = labels.indexOf('Copy image')
+      const copyImageAddressIndex = labels.indexOf('Copy image address')
+
+      assert.ok(openInNewTabIndex !== -1)
+      assert.ok(copyImageIndex !== -1)
+      assert.ok(copyImageAddressIndex !== -1)
+      assert.ok(openInNewTabIndex < copyImageIndex)
+      assert.ok(copyImageIndex < copyImageAddressIndex)
+    })
+  })
+
+  describe('video frame operations', () => {
+    it('should create video frame menu items for videos with frame', () => {
+      const webContents = createMockWebContents()
+      const frame = createMockFrame()
+      const params = createMockParams({
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        frame,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(labels.includes('Save video frame as...'))
+      assert.ok(labels.includes('Copy video frame'))
+    })
+
+    it('should NOT create video frame menu items for videos without frame', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        frame: null,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Save video frame as...'))
+      assert.ok(!labels.includes('Copy video frame'))
+    })
+
+    it('should NOT create video frame menu items for non-video media', () => {
+      const webContents = createMockWebContents()
+      const frame = createMockFrame()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+        frame,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Save video frame as...'))
+      assert.ok(!labels.includes('Copy video frame'))
+    })
+
+    it('should call frame.saveVideoFrameAs with correct coordinates', () => {
+      const webContents = createMockWebContents()
+      const frame = createMockFrame()
+      const params = createMockParams({
+        x: 100,
+        y: 200,
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        frame,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveVideoFrameItem = menu.items.find(
+        (item: any) => item.label === 'Save video frame as...',
+      )
+      assert.ok(saveVideoFrameItem)
+      saveVideoFrameItem.click()
+
+      assert.strictEqual(frame._calls.saveVideoFrameAs.length, 1)
+      assert.strictEqual(frame._calls.saveVideoFrameAs[0].x, 100)
+      assert.strictEqual(frame._calls.saveVideoFrameAs[0].y, 200)
+    })
+
+    it('should call frame.copyVideoFrameAt with correct coordinates', () => {
+      const webContents = createMockWebContents()
+      const frame = createMockFrame()
+      const params = createMockParams({
+        x: 100,
+        y: 200,
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        frame,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const copyVideoFrameItem = menu.items.find((item: any) => item.label === 'Copy video frame')
+      assert.ok(copyVideoFrameItem)
+      copyVideoFrameItem.click()
+
+      assert.strictEqual(frame._calls.copyVideoFrameAt.length, 1)
+      assert.strictEqual(frame._calls.copyVideoFrameAt[0].x, 100)
+      assert.strictEqual(frame._calls.copyVideoFrameAt[0].y, 200)
+    })
+
+    it('should place video frame items after "Open in new tab" and before "Copy video address"', () => {
+      const webContents = createMockWebContents()
+      const frame = createMockFrame()
+      const params = createMockParams({
+        mediaType: 'video',
+        srcURL: 'https://example.com/video.mp4',
+        frame,
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      const openInNewTabIndex = labels.indexOf('Open video in new tab')
+      const saveVideoFrameIndex = labels.indexOf('Save video frame as...')
+      const copyVideoFrameIndex = labels.indexOf('Copy video frame')
+      const copyVideoAddressIndex = labels.indexOf('Copy video address')
+
+      assert.ok(openInNewTabIndex !== -1)
+      assert.ok(saveVideoFrameIndex !== -1)
+      assert.ok(copyVideoFrameIndex !== -1)
+      assert.ok(copyVideoAddressIndex !== -1)
+      assert.ok(openInNewTabIndex < saveVideoFrameIndex)
+      assert.ok(saveVideoFrameIndex < copyVideoFrameIndex)
+      assert.ok(copyVideoFrameIndex < copyVideoAddressIndex)
     })
   })
 

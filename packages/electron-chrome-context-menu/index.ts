@@ -24,6 +24,9 @@ const LABELS = {
   print: 'Print...',
   saveAs: 'Save as...',
   viewSource: 'View page source',
+  copyImage: 'Copy image',
+  copyVideoFrame: 'Copy video frame',
+  saveVideoFrameAs: 'Save video frame as...',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -123,7 +126,6 @@ const isViewSourceEnabled = (
 }
 
 const generateDefaultFilename = (webContents: Electron.WebContents, titleText: string): string => {
-  // Prefer page title, then titleText param, then URL-based name
   let filename = webContents.getTitle() || titleText
 
   if (!filename) {
@@ -135,12 +137,11 @@ const generateDefaultFilename = (webContents: Electron.WebContents, titleText: s
     }
   }
 
-  // Sanitize filename - remove invalid characters
   filename = filename
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
     .replace(/\s+/g, ' ')
     .trim()
-    .substring(0, 200) // Limit length
+    .substring(0, 200)
 
   return filename || 'page'
 }
@@ -272,6 +273,32 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
         openLink(params.srcURL, 'default', params)
       },
     })
+
+    if (params.mediaType === 'image' && params.hasImageContents) {
+      append({
+        label: labels.copyImage,
+        click: () => {
+          // TODO: upstream frame-level API
+          webContents.copyImageAt(params.x, params.y)
+        },
+      })
+    }
+
+    if (params.mediaType === 'video' && params.frame) {
+      append({
+        label: labels.saveVideoFrameAs,
+        click: () => {
+          params.frame!.saveVideoFrameAs(params.x, params.y)
+        },
+      })
+      append({
+        label: labels.copyVideoFrame,
+        click: () => {
+          params.frame!.copyVideoFrameAt(params.x, params.y)
+        },
+      })
+    }
+
     append({
       label: labels.copyAddress(params.mediaType),
       click: () => {
