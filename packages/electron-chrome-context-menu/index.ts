@@ -23,6 +23,7 @@ const LABELS = {
   copyLinkToHighlight: 'Copy link to highlight',
   print: 'Print...',
   saveAs: 'Save as...',
+  viewSource: 'View page source',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -111,6 +112,16 @@ const isSavablePage = (webContents: Electron.WebContents): boolean => {
   return true
 }
 
+const isViewSourceEnabled = (
+  params: Electron.ContextMenuParams,
+  webContents: Electron.WebContents,
+): boolean => {
+  const url = params.pageURL || webContents.getURL()
+  if (url && url.startsWith('view-source:')) return false
+  // TODO: Expose frame.mimeType to determine if we can view its source
+  return Boolean(url) && !params.hasImageContents && params.mediaType === 'none'
+}
+
 const generateDefaultFilename = (webContents: Electron.WebContents, titleText: string): string => {
   // Prefer page title, then titleText param, then URL-based name
   let filename = webContents.getTitle() || titleText
@@ -192,10 +203,25 @@ const appendDeveloperItems = (
   params: Electron.ContextMenuParams,
   webContents: Electron.WebContents,
   labels: ChromeContextMenuLabels,
+  openLink: ChromeContextMenuOptions['openLink'],
   { append, appendSeparator }: AppendHelpers,
 ) => {
   // Developer items section (separate from page items, matches Chromium)
   appendSeparator()
+
+  const canViewSource = isViewSourceEnabled(params, webContents)
+  const pageURL = params.pageURL || webContents.getURL()
+
+  append({
+    label: labels.viewSource,
+    enabled: canViewSource,
+    click: () => {
+      if (pageURL && canViewSource) {
+        openLink(`view-source:${pageURL}`, 'default', params)
+      }
+    },
+  })
+
   append({
     label: labels.inspect,
     click: () => {
@@ -386,7 +412,7 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   }
 
   appendPageItems(params, webContents, labels, { append, appendSeparator })
-  appendDeveloperItems(params, webContents, labels, { append, appendSeparator })
+  appendDeveloperItems(params, webContents, labels, openLink, { append, appendSeparator })
 
   return menu
 }
