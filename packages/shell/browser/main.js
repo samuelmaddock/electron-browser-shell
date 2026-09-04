@@ -371,7 +371,10 @@ class Browser {
         },
       })
 
-      menu.popup()
+      menu.popup({
+        frame: params.frame,
+        sourceType: params.menuSourceType,
+      })
     })
   }
 }
