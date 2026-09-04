@@ -59,6 +59,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): WebContent
     selectAll: [],
     inspectElement: [],
     reload: [],
+    print: [],
   }
 
   return {
@@ -74,6 +75,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): WebContent
     isDevToolsFocused: () => false,
     devToolsWebContents: null,
     reload: () => calls.reload.push(true),
+    print: () => calls.print.push(true),
     navigationHistory: {
       canGoBack: () => false,
       canGoForward: () => false,
@@ -424,6 +426,70 @@ describe('buildChromeContextMenu', () => {
       assert.ok(labels.includes('Forward'))
       assert.ok(labels.includes('Reload'))
       assert.ok(labels.includes('Inspect'))
+    })
+  })
+
+  describe('print context menu', () => {
+    it('should create Print menu item on default page context menu', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(labels.includes('Print...'))
+    })
+
+    it('should NOT create Print menu item for media elements', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Print...'))
+    })
+
+    it('should call webContents.print when clicking Print', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const printItem = menu.items.find((item: any) => item.label === 'Print...')
+      assert.ok(printItem)
+      printItem.click()
+
+      assert.strictEqual(webContents._calls.print.length, 1)
+    })
+
+    it('should create Print menu item before Inspect (in separate section)', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label || item.type).filter(Boolean)
+      const printIndex = labels.indexOf('Print...')
+      const inspectIndex = labels.indexOf('Inspect')
+
+      assert.ok(printIndex !== -1, 'Print menu item should exist')
+      assert.ok(inspectIndex !== -1, 'Inspect menu item should exist')
+      assert.ok(printIndex < inspectIndex, 'Print should appear before Inspect')
+
+      // Check that there's a separator between Print and Inspect
+      const itemsBetween = labels.slice(printIndex + 1, inspectIndex)
+      assert.ok(
+        itemsBetween.includes('separator'),
+        'Should have separator between Print and Inspect',
+      )
     })
   })
 

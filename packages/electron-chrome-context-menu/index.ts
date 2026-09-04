@@ -21,6 +21,7 @@ const LABELS = {
   exitFullScreen: 'Exit full screen',
   emoji: 'Emoji',
   copyLinkToHighlight: 'Copy link to highlight',
+  print: 'Print...',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -68,6 +69,48 @@ interface ChromeContextMenuOptions {
    * @deprecated Use 'labels' instead.
    */
   strings?: ChromeContextMenuLabels
+}
+
+interface AppendHelpers {
+  append: (opts: Electron.MenuItemConstructorOptions) => void
+  appendSeparator: () => void
+}
+
+const appendPageItems = (
+  params: Electron.ContextMenuParams,
+  webContents: Electron.WebContents,
+  labels: ChromeContextMenuLabels,
+  { append }: AppendHelpers,
+) => {
+  // Only show print option when not on media elements (matches Chromium behavior)
+  if (params.mediaType === 'none') {
+    append({
+      label: labels.print,
+      click: () => {
+        webContents.print()
+      },
+    })
+  }
+}
+
+const appendDeveloperItems = (
+  params: Electron.ContextMenuParams,
+  webContents: Electron.WebContents,
+  labels: ChromeContextMenuLabels,
+  { append, appendSeparator }: AppendHelpers,
+) => {
+  // Developer items section (separate from page items, matches Chromium)
+  appendSeparator()
+  append({
+    label: labels.inspect,
+    click: () => {
+      webContents.inspectElement(params.x, params.y)
+
+      if (!webContents.isDevToolsFocused()) {
+        webContents.devToolsWebContents?.focus()
+      }
+    },
+  })
 }
 
 export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => {
@@ -247,16 +290,8 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
     if (extensionMenuItems.length > 0) appendSeparator()
   }
 
-  append({
-    label: labels.inspect,
-    click: () => {
-      webContents.inspectElement(params.x, params.y)
-
-      if (!webContents.isDevToolsFocused()) {
-        webContents.devToolsWebContents?.focus()
-      }
-    },
-  })
+  appendPageItems(params, webContents, labels, { append, appendSeparator })
+  appendDeveloperItems(params, webContents, labels, { append, appendSeparator })
 
   return menu
 }
