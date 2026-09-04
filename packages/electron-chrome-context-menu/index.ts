@@ -10,8 +10,8 @@ const LABELS = {
   redo: 'Redo',
   cut: 'Cut',
   copy: 'Copy',
-  delete: 'Delete',
   paste: 'Paste',
+  pasteAndMatchStyle: 'Paste and match style',
   selectAll: 'Select All',
   back: 'Back',
   forward: 'Forward',
@@ -27,6 +27,9 @@ const LABELS = {
   copyImage: 'Copy image',
   copyVideoFrame: 'Copy video frame',
   saveVideoFrameAs: 'Save video frame as...',
+  speech: 'Speech',
+  startSpeaking: 'Start Speaking',
+  stopSpeaking: 'Stop Speaking',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -165,8 +168,7 @@ const appendPageItems = (
   labels: ChromeContextMenuLabels,
   { append }: AppendHelpers,
 ) => {
-  // Only show print option when not on media elements (matches Chromium behavior)
-  if (params.mediaType === 'none') {
+  if (params.mediaType === 'none' && !params.isEditable) {
     append({
       label: labels.saveAs,
       enabled: isSavablePage(webContents),
@@ -191,6 +193,9 @@ const appendPageItems = (
         }
       },
     })
+  }
+
+  if (params.mediaType === 'none') {
     append({
       label: labels.print,
       click: () => {
@@ -365,18 +370,16 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
       click: () => webContents.paste(),
     })
     append({
-      label: labels.delete,
-      enabled: params.editFlags.canDelete,
-      click: () => webContents.delete(),
+      label: labels.pasteAndMatchStyle,
+      enabled: params.editFlags.canPaste,
+      click: () => webContents.pasteAndMatchStyle(),
+    })
+    append({
+      label: labels.selectAll,
+      enabled: params.editFlags.canSelectAll,
+      click: () => webContents.selectAll(),
     })
     appendSeparator()
-    if (params.editFlags.canSelectAll) {
-      append({
-        label: labels.selectAll,
-        click: () => webContents.selectAll(),
-      })
-      appendSeparator()
-    }
   } else if (params.selectionText) {
     append({
       label: labels.copy,
@@ -439,6 +442,24 @@ export const buildChromeContextMenu = (opts: ChromeContextMenuOptions): Menu => 
   }
 
   appendPageItems(params, webContents, labels, { append, appendSeparator })
+
+  if (process.platform === 'darwin' && params.selectionText) {
+    appendSeparator()
+    append({
+      label: labels.speech,
+      submenu: [
+        {
+          label: labels.startSpeaking,
+          role: 'startSpeaking',
+        },
+        {
+          label: labels.stopSpeaking,
+          role: 'stopSpeaking',
+        },
+      ],
+    })
+  }
+
   appendDeveloperItems(params, webContents, labels, openLink, { append, appendSeparator })
 
   return menu
