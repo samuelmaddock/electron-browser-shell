@@ -9,6 +9,9 @@ const clipboardWrites: string[] = []
 // Mock app calls
 const appCalls: string[] = []
 
+// Mock dialog calls
+const dialogCalls: any[] = []
+
 // Create mock implementations before importing the module
 const electronMock = {
   app: {
@@ -20,6 +23,16 @@ const electronMock = {
   clipboard: {
     writeText: (text: string) => {
       clipboardWrites.push(text)
+    },
+  },
+  dialog: {
+    showSaveDialog: async (browserWindow: any, options: any) => {
+      dialogCalls.push({ browserWindow, options })
+      // Return a mock result - can be overridden in tests
+      return {
+        canceled: false,
+        filePath: options.defaultPath + '.html',
+      }
     },
   },
   Menu: class MockMenu {
@@ -39,7 +52,11 @@ const electronMock = {
   },
   BrowserWindow: {
     getAllWindows: () => [],
-    fromWebContents: () => null,
+    fromWebContents: () => ({
+      // Return a mock browser window
+      id: 1,
+      webContents: null,
+    }),
   },
 }
 
@@ -66,6 +83,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebCon
     inspectElement: [],
     reload: [],
     print: [],
+    savePage: [],
   }
 
   return {
@@ -82,6 +100,9 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebCon
     devToolsWebContents: null,
     reload: () => calls.reload.push(true),
     print: () => calls.print.push(true),
+    savePage: (fullPath: string, saveType: string) => calls.savePage.push({ fullPath, saveType }),
+    getURL: () => 'https://example.com',
+    getTitle: () => 'Example Page',
     navigationHistory: {
       canGoBack: () => false,
       canGoForward: () => false,
@@ -541,6 +562,251 @@ describe('buildChromeContextMenu', () => {
 
       const labels = menu.items.map((item: any) => item.label).filter(Boolean)
       assert.ok(labels.includes('Custom Copy'))
+    })
+  })
+
+  describe('save page context menu', () => {
+    it('should create Save As menu item on default page context menu', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(labels.includes('Save as...'))
+    })
+
+    it('should NOT create Save As menu item for media elements', () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({
+        mediaType: 'image',
+        srcURL: 'https://example.com/image.png',
+      })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const labels = menu.items.map((item: any) => item.label).filter(Boolean)
+      assert.ok(!labels.includes('Save as...'))
+    })
+
+    it('should use page title as default filename', async () => {
+      const webContents = createMockWebContents({
+        getTitle: () => 'My Amazing Page',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      dialogCalls.length = 0
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      assert.ok(saveAsItem.enabled !== false, 'Save As should be enabled')
+
+      await saveAsItem.click()
+
+      assert.strictEqual(dialogCalls.length, 1)
+      assert.strictEqual(dialogCalls[0].options.defaultPath, 'My Amazing Page')
+    })
+
+    it('should use titleText param as fallback for filename', async () => {
+      const webContents = createMockWebContents({
+        getTitle: () => '',
+      } as any)
+      const params = createMockParams({
+        mediaType: 'none',
+        titleText: 'Fallback Title',
+      })
+      const openLink = () => {}
+
+      dialogCalls.length = 0
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(dialogCalls.length, 1)
+      assert.strictEqual(dialogCalls[0].options.defaultPath, 'Fallback Title')
+    })
+
+    it('should use URL hostname as fallback for filename', async () => {
+      const webContents = createMockWebContents({
+        getTitle: () => '',
+        getURL: () => 'https://example.com/page',
+      } as any)
+      const params = createMockParams({
+        mediaType: 'none',
+        titleText: '',
+      })
+      const openLink = () => {}
+
+      dialogCalls.length = 0
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(dialogCalls.length, 1)
+      assert.strictEqual(dialogCalls[0].options.defaultPath, 'example.com')
+    })
+
+    it('should sanitize filename by removing invalid characters', async () => {
+      const webContents = createMockWebContents({
+        getTitle: () => 'My<>:"/\\|?*File',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      dialogCalls.length = 0
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(dialogCalls.length, 1)
+      const filename = dialogCalls[0].options.defaultPath
+      assert.ok(!filename.match(/[<>:"/\\|?*]/), 'Filename should not contain invalid characters')
+      assert.strictEqual(filename, 'My_________File')
+    })
+
+    it('should show three save format options in dialog', async () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      dialogCalls.length = 0
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(dialogCalls.length, 1)
+      const filters = dialogCalls[0].options.filters
+      assert.strictEqual(filters.length, 3)
+      assert.strictEqual(filters[0].name, 'Webpage, Complete')
+      assert.strictEqual(filters[1].name, 'Webpage, HTML Only')
+      assert.strictEqual(filters[2].name, 'Webpage, Single File')
+    })
+
+    it('should call savePage with HTMLComplete for .html file', async () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      // Override the dialog mock for this test
+      electronMock.dialog.showSaveDialog = async () => ({
+        canceled: false,
+        filePath: '/path/to/page.html',
+      })
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(webContents._calls.savePage.length, 1)
+      assert.strictEqual(webContents._calls.savePage[0].fullPath, '/path/to/page.html')
+      assert.strictEqual(webContents._calls.savePage[0].saveType, 'HTMLComplete')
+    })
+
+    it('should call savePage with MHTML for .mhtml file', async () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      electronMock.dialog.showSaveDialog = async () => ({
+        canceled: false,
+        filePath: '/path/to/page.mhtml',
+      })
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(webContents._calls.savePage.length, 1)
+      assert.strictEqual(webContents._calls.savePage[0].fullPath, '/path/to/page.mhtml')
+      assert.strictEqual(webContents._calls.savePage[0].saveType, 'MHTML')
+    })
+
+    it('should not save when dialog is canceled', async () => {
+      const webContents = createMockWebContents()
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      electronMock.dialog.showSaveDialog = async () => ({
+        canceled: true,
+        filePath: undefined as any,
+      })
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      await saveAsItem.click()
+
+      assert.strictEqual(webContents._calls.savePage.length, 0)
+    })
+
+    it('should disable Save As for unsavable URLs', () => {
+      const webContents = createMockWebContents({
+        getURL: () => 'javascript:alert("test")',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      assert.strictEqual(saveAsItem.enabled, false)
+    })
+
+    it('should enable Save As for http URLs', () => {
+      const webContents = createMockWebContents({
+        getURL: () => 'http://example.com',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      assert.ok(saveAsItem.enabled !== false)
+    })
+
+    it('should enable Save As for https URLs', () => {
+      const webContents = createMockWebContents({
+        getURL: () => 'https://example.com',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      assert.ok(saveAsItem.enabled !== false)
+    })
+
+    it('should enable Save As for file URLs', () => {
+      const webContents = createMockWebContents({
+        getURL: () => 'file:///path/to/file.html',
+      } as any)
+      const params = createMockParams({ mediaType: 'none' })
+      const openLink = () => {}
+
+      const menu = buildChromeContextMenu({ params, webContents, openLink })
+
+      const saveAsItem = menu.items.find((item: any) => item.label === 'Save as...')
+      assert.ok(saveAsItem)
+      assert.ok(saveAsItem.enabled !== false)
     })
   })
 })

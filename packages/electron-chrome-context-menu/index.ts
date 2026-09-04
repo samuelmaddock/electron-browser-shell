@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, Menu, MenuItem } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, Menu, MenuItem } from 'electron'
 
 const LABELS = {
   openInNewTab: (type: 'link' | Electron.ContextMenuParams['mediaType']) =>
@@ -22,6 +22,7 @@ const LABELS = {
   emoji: 'Emoji',
   copyLinkToHighlight: 'Copy link to highlight',
   print: 'Print...',
+  saveAs: 'Save as...',
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
@@ -87,6 +88,65 @@ interface AppendHelpers {
   appendSeparator: () => void
 }
 
+const isSavableURL = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url)
+    // Savable schemes based on Chromium's implementation
+    const savableSchemes = ['http', 'https', 'file', 'ftp', 'data']
+    return savableSchemes.includes(parsedUrl.protocol.replace(':', ''))
+  } catch {
+    return false
+  }
+}
+
+const isSavablePage = (webContents: Electron.WebContents): boolean => {
+  const url = webContents.getURL()
+  if (!url || !isSavableURL(url)) return false
+
+  // Note: In Electron, we rely on webContents.savePage() to handle MIME type
+  // validation internally. Chrome checks for specific MIME types (text/html,
+  // text/xml, etc.), but Electron's API will fail gracefully if the page
+  // cannot be saved.
+
+  return true
+}
+
+const generateDefaultFilename = (webContents: Electron.WebContents, titleText: string): string => {
+  // Prefer page title, then titleText param, then URL-based name
+  let filename = webContents.getTitle() || titleText
+
+  if (!filename) {
+    try {
+      const url = new URL(webContents.getURL())
+      filename = url.hostname || 'page'
+    } catch {
+      filename = 'page'
+    }
+  }
+
+  // Sanitize filename - remove invalid characters
+  filename = filename
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 200) // Limit length
+
+  return filename || 'page'
+}
+
+const getSaveTypeFromFilePath = (filePath: string): 'HTMLOnly' | 'HTMLComplete' | 'MHTML' => {
+  const ext = filePath.toLowerCase().split('.').pop()
+
+  if (ext === 'mhtml' || ext === 'mht') {
+    return 'MHTML'
+  }
+
+  // For .html/.htm, we default to HTMLComplete
+  // In a more sophisticated implementation, we could track which filter
+  // the user selected, but Electron's dialog API doesn't provide this
+  return 'HTMLComplete'
+}
+
 const appendPageItems = (
   params: Electron.ContextMenuParams,
   webContents: Electron.WebContents,
@@ -95,6 +155,30 @@ const appendPageItems = (
 ) => {
   // Only show print option when not on media elements (matches Chromium behavior)
   if (params.mediaType === 'none') {
+    append({
+      label: labels.saveAs,
+      enabled: isSavablePage(webContents),
+      click: async () => {
+        const browserWindow = getBrowserWindowFromWebContents(webContents)
+        if (!browserWindow) return
+
+        const defaultFilename = generateDefaultFilename(webContents, params.titleText)
+
+        const result = await dialog.showSaveDialog(browserWindow, {
+          defaultPath: defaultFilename,
+          filters: [
+            { name: 'Webpage, Complete', extensions: ['html', 'htm'] },
+            { name: 'Webpage, HTML Only', extensions: ['html', 'htm'] },
+            { name: 'Webpage, Single File', extensions: ['mhtml', 'mht'] },
+          ],
+        })
+
+        if (!result.canceled && result.filePath) {
+          const saveType = getSaveTypeFromFilePath(result.filePath)
+          webContents.savePage(result.filePath, saveType)
+        }
+      },
+    })
     append({
       label: labels.print,
       click: () => {
