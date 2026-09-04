@@ -25,21 +25,32 @@ const LABELS = {
 }
 
 const getBrowserWindowFromWebContents = (webContents: Electron.WebContents) => {
+  const directWindow = BrowserWindow.fromWebContents(webContents)
+  if (directWindow) return directWindow
+
   return BrowserWindow.getAllWindows().find((win) => {
-    if (win.webContents === webContents) return true
-
-    let browserViews: Electron.BrowserView[]
-
     if ('getBrowserViews' in win) {
-      browserViews = win.getBrowserViews()
+      const views = win.getBrowserViews()
+      if (views.some((view) => view.webContents === webContents)) return true
     } else if ('getBrowserView' in win) {
       // @ts-ignore
-      browserViews = [win.getBrowserView()]
-    } else {
-      browserViews = []
+      const view = win.getBrowserView()
+      if (view?.webContents === webContents) return true
     }
 
-    return browserViews.some((view) => view.webContents === webContents)
+    if ('contentView' in win && win.contentView) {
+      // @ts-ignore
+      const findInView = (view: any): boolean => {
+        if (view?.webContents === webContents) return true
+        if (view?.children) {
+          return view.children.some((child: any) => findInView(child))
+        }
+        return false
+      }
+      if (findInView(win.contentView)) return true
+    }
+
+    return false
   })
 }
 

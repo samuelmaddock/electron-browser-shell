@@ -1,4 +1,5 @@
-import { describe, it, mock } from 'node:test'
+import { describe, it } from 'node:test'
+import { mock } from 'node:test'
 import assert from 'node:assert'
 import type { WebContents } from 'electron'
 
@@ -38,6 +39,7 @@ const electronMock = {
   },
   BrowserWindow: {
     getAllWindows: () => [],
+    fromWebContents: () => null,
   },
 }
 
@@ -47,7 +49,11 @@ mock.module('electron', { namedExports: electronMock })
 // Now import the module under test
 const { buildChromeContextMenu } = await import('./index.ts')
 
-const createMockWebContents = (overrides: Partial<WebContents> = {}): WebContents => {
+interface MockWebContents extends WebContents {
+  _calls: any
+}
+
+const createMockWebContents = (overrides: Partial<WebContents> = {}): MockWebContents => {
   const calls: any = {
     replaceMisspelling: [],
     redo: [],
@@ -83,7 +89,7 @@ const createMockWebContents = (overrides: Partial<WebContents> = {}): WebContent
       goForward: () => {},
     },
     session: {
-      addWordToSpellCheckerDictionary: (word: string) => {},
+      addWordToSpellCheckerDictionary: () => {},
     },
     _calls: calls,
     ...overrides,
@@ -504,7 +510,12 @@ describe('buildChromeContextMenu', () => {
         new MenuItem({ label: 'Extension Action 2', click: () => {} }),
       ]
 
-      const menu = buildChromeContextMenu({ params, webContents, openLink, extensionMenuItems })
+      const menu = buildChromeContextMenu({
+        params,
+        webContents,
+        openLink,
+        extensionMenuItems: extensionMenuItems as any,
+      })
 
       const labels = menu.items.map((item: any) => item.label).filter(Boolean)
       assert.ok(labels.includes('Extension Action 1'))
