@@ -243,6 +243,12 @@ export const injectExtensionAPIs = () => {
       }
     }
 
+    const patchApiObject = <T extends object>(target: T | undefined, patch: object) => {
+      const api = (target || {}) as T
+      Object.defineProperties(api, Object.getOwnPropertyDescriptors(patch))
+      return api
+    }
+
     const browserActionFactory = (base: DeepPartial<typeof globalThis.chrome.browserAction>) => {
       const api = {
         ...base,
@@ -502,8 +508,7 @@ export const injectExtensionAPIs = () => {
 
       runtime: {
         factory: (base) => {
-          return {
-            ...base,
+          return patchApiObject(base, {
             connectNative: (application: string) => {
               const port = new NativePort()
               const receive = port._receive.bind(port)
@@ -516,7 +521,7 @@ export const injectExtensionAPIs = () => {
             },
             openOptionsPage: invokeExtension('runtime.openOptionsPage'),
             sendNativeMessage: invokeExtension('runtime.sendNativeMessage'),
-          }
+          })
         },
       },
 
@@ -646,13 +651,18 @@ export const injectExtensionAPIs = () => {
     Object.keys(apiDefinitions).forEach((key: any) => {
       const apiName: keyof typeof chrome = key
       const baseApi = chrome[apiName] as any
-      const api = apiDefinitions[apiName]!
+      const definition = apiDefinitions[apiName]!
 
       // Allow APIs to opt-out of being available in this context.
-      if (api.shouldInject && !api.shouldInject()) return
+      if (definition.shouldInject && !definition.shouldInject()) return
+
+      const injectedApi = definition.factory(baseApi)
+
+      // Factories can patch native-backed APIs in place to preserve identity.
+      if (baseApi && injectedApi === baseApi) return
 
       Object.defineProperty(chrome, apiName, {
-        value: api.factory(baseApi),
+        value: injectedApi,
         enumerable: true,
         configurable: true,
       })
