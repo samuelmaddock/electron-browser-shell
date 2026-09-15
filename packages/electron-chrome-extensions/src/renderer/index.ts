@@ -426,6 +426,20 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      identity: {
+        shouldInject: () => !!(manifest.permissions as string[] | undefined)?.includes('identity'),
+        factory: (base) => {
+          return {
+            ...base,
+            getRedirectURL: (path?: string) => {
+              const cleanPath = (path || '').replace(/^\//, '')
+              return `https://${extensionId}.chromiumapp.org/${cleanPath}`
+            },
+            launchWebAuthFlow: invokeExtension('identity.launchWebAuthFlow'),
+          }
+        },
+      },
+
       i18n: {
         shouldInject: () => manifest.manifest_version === 3,
         factory: (base) => {

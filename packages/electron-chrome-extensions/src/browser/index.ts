@@ -10,6 +10,7 @@ import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
 import { ContextMenusAPI } from './api/context-menus'
+import { IdentityAPI } from './api/identity'
 import { RuntimeAPI } from './api/runtime'
 import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
@@ -125,6 +126,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     contextMenus: ContextMenusAPI
     commands: CommandsAPI
     cookies: CookiesAPI
+    identity: IdentityAPI
     notifications: NotificationsAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
@@ -162,6 +164,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       contextMenus: new ContextMenusAPI(this.ctx),
       commands: new CommandsAPI(this.ctx),
       cookies: new CookiesAPI(this.ctx),
+      identity: new IdentityAPI(this.ctx),
       notifications: new NotificationsAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
