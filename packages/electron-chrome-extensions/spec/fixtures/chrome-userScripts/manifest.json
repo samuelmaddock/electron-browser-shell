@@ -1,0 +1,10 @@
+{
+  "name": "chrome-userScripts",
+  "version": "1.0",
+  "manifest_version": 2,
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "permissions": ["userScripts", "offscreen", "tabs", "<all_urls>"]
+}
