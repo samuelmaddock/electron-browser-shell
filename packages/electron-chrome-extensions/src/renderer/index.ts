@@ -520,6 +520,20 @@ export const injectExtensionAPIs = () => {
         },
       },
 
+      userScripts: {
+        shouldInject: () => !!manifest.permissions?.includes('userScripts' as any),
+        factory: (base) => {
+          return {
+            ...base,
+            register: invokeExtension('userScripts.register'),
+            update: invokeExtension('userScripts.update'),
+            unregister: invokeExtension('userScripts.unregister'),
+            getScripts: invokeExtension('userScripts.getScripts'),
+            configureWorld: invokeExtension('userScripts.configureWorld'),
+          }
+        },
+      },
+
       storage: {
         factory: (base) => {
           const local = base && base.local

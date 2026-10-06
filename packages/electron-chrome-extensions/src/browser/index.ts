@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
+import { UserScriptsAPI } from './api/user-scripts'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
@@ -129,6 +130,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     permissions: PermissionsAPI
     runtime: RuntimeAPI
     tabs: TabsAPI
+    userScripts: UserScriptsAPI
     webNavigation: WebNavigationAPI
     windows: WindowsAPI
   }
@@ -166,6 +168,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),
+      userScripts: new UserScriptsAPI(this.ctx),
       webNavigation: new WebNavigationAPI(this.ctx),
       windows: new WindowsAPI(this.ctx),
     }
