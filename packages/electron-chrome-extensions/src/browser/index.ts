@@ -14,6 +14,7 @@ import { ContextMenusAPI } from './api/context-menus'
 import { RuntimeAPI } from './api/runtime'
 import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
+import { OffscreenAPI } from './api/offscreen'
 import { ChromeExtensionImpl } from './impl'
 import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
@@ -127,6 +128,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     commands: CommandsAPI
     cookies: CookiesAPI
     notifications: NotificationsAPI
+    offscreen: OffscreenAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
     tabs: TabsAPI
@@ -165,6 +167,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       commands: new CommandsAPI(this.ctx),
       cookies: new CookiesAPI(this.ctx),
       notifications: new NotificationsAPI(this.ctx),
+      offscreen: new OffscreenAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),

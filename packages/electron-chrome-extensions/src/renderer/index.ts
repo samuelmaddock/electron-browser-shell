@@ -514,8 +514,22 @@ export const injectExtensionAPIs = () => {
               electron.connectNative(extensionId, application, receive, disconnect, callback)
               return port
             },
+            getContexts: invokeExtension('runtime.getContexts'),
             openOptionsPage: invokeExtension('runtime.openOptionsPage'),
             sendNativeMessage: invokeExtension('runtime.sendNativeMessage'),
+          }
+        },
+      },
+
+      offscreen: {
+        shouldInject: () => !!manifest.permissions?.includes('offscreen' as any),
+        factory: (base) => {
+          return {
+            ...base,
+            Reason: (base as any)?.Reason || {},
+            createDocument: invokeExtension('offscreen.createDocument'),
+            closeDocument: invokeExtension('offscreen.closeDocument'),
+            hasDocument: invokeExtension('offscreen.hasDocument'),
           }
         },
       },
