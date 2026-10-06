@@ -52,8 +52,13 @@ function resolvePreloadPath(modulePath?: string) {
     return path.join(modulePath, 'dist', preloadFilename)
   }
 
-  // Fallback to preload relative to entrypoint directory
-  return path.join(__dirname, preloadFilename)
+  // Fallback to preload relative to entrypoint directory. The bundled entry
+  // lives in dist/cjs or dist/esm while the preload is built to dist/.
+  const candidates = [
+    path.join(__dirname, preloadFilename),
+    path.join(__dirname, '..', preloadFilename),
+  ]
+  return candidates.find((candidate) => existsSync(candidate)) || candidates[0]
 }
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
