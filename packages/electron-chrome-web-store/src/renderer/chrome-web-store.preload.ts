@@ -320,7 +320,9 @@ function setupChromeWebStoreApi() {
   }
 }
 
-if (location.href.startsWith('https://chromewebstore.google.com')) {
+// Compare origins exactly; a prefix check on the URL would also match
+// lookalike hosts such as https://chromewebstore.google.com.example.com
+if (location.origin === 'https://chromewebstore.google.com') {
   log('Injecting Chrome Web Store API')
   setupChromeWebStoreApi()
 }
