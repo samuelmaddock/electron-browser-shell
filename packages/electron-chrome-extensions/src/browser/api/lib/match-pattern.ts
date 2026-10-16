@@ -1,8 +1,8 @@
 // Match patterns and globs as used by content scripts and user scripts.
 // https://developer.chrome.com/docs/extensions/develop/concepts/match-patterns
 
-const ALL_URLS_SCHEMES = new Set(['http:', 'https:', 'file:', 'ftp:', 'ws:', 'wss:'])
-const PATTERN_RE = /^(\*|https?|file|ftp|wss?|urn):\/\/(\*|\*\.[^/*]+|[^/*]*)(\/.*)$/
+export const ALL_URLS_SCHEMES = new Set(['http:', 'https:', 'file:', 'ftp:', 'ws:', 'wss:'])
+export const PATTERN_RE = /^(\*|https?|file|ftp|wss?|urn):\/\/(\*|\*\.[^/*]+|[^/*]*)(\/.*)$/
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 

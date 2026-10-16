@@ -1,0 +1,11 @@
+{
+  "name": "chrome-permissions-mv2",
+  "version": "1.0",
+  "manifest_version": 2,
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "permissions": ["storage", "tabs", "<all_urls>", "https://*.example.com/*"],
+  "optional_permissions": ["notifications", "*://optional.test/*"]
+}
