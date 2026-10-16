@@ -70,6 +70,12 @@ export class UserScriptsAPI {
     }
     for (const script of scripts) existing.set(script.id, script)
     d('registered %s', scripts.map((s) => s.id).join(', '))
+    // Registered scripts only reach later navigations; hosts listen to reload views loaded too early.
+    this.ctx.emit(
+      'user-scripts-registered',
+      extension.id,
+      scripts.map((s) => s.id),
+    )
   }
 
   private update = ({ extension }: ExtensionEvent, scripts: RegisteredUserScript[]) => {

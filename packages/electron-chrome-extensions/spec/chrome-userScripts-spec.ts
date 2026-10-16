@@ -37,6 +37,24 @@ describe('chrome.userScripts', () => {
     expect(main).to.equal(true)
   })
 
+  it('emits user-scripts-registered with the extension id and script ids', async () => {
+    const bg = webContents
+      .getAllWebContents()
+      .find((wc) => wc.session === browser.session && wc.getType() === 'backgroundPage')
+    if (!bg) throw new Error('background page not found')
+    const event = new Promise<[string, string[]]>((resolve) =>
+      browser.extensions.once('user-scripts-registered', (id: string, ids: string[]) =>
+        resolve([id, ids]),
+      ),
+    )
+    await bg.executeJavaScript(
+      `chrome.userScripts.register([{ id: 'evt-test', matches: ['http://*/*'], js: [{ code: '1' }] }])`,
+    )
+    const [id, ids] = await event
+    expect(id).to.equal(browser.extension.id)
+    expect(ids).to.deep.equal(['evt-test'])
+  })
+
   it('honors excludeMatches', async () => {
     await browser.webContents.loadURL(server.getUrl())
     await waitFor(
