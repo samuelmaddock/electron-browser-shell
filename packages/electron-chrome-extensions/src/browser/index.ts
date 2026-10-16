@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
+import { UserScriptsAPI } from './api/user-scripts'
 import { WindowsAPI } from './api/windows'
 import { WebNavigationAPI } from './api/web-navigation'
 import { ExtensionStore } from './store'
@@ -13,6 +14,7 @@ import { ContextMenusAPI } from './api/context-menus'
 import { RuntimeAPI } from './api/runtime'
 import { CookiesAPI } from './api/cookies'
 import { NotificationsAPI } from './api/notifications'
+import { OffscreenAPI } from './api/offscreen'
 import { ChromeExtensionImpl } from './impl'
 import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
@@ -50,8 +52,13 @@ function resolvePreloadPath(modulePath?: string) {
     return path.join(modulePath, 'dist', preloadFilename)
   }
 
-  // Fallback to preload relative to entrypoint directory
-  return path.join(__dirname, preloadFilename)
+  // Fallback to preload relative to entrypoint directory. The bundled entry
+  // lives in dist/cjs or dist/esm while the preload is built to dist/.
+  const candidates = [
+    path.join(__dirname, preloadFilename),
+    path.join(__dirname, '..', preloadFilename),
+  ]
+  return candidates.find((candidate) => existsSync(candidate)) || candidates[0]
 }
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
@@ -126,9 +133,11 @@ export class ElectronChromeExtensions extends EventEmitter {
     commands: CommandsAPI
     cookies: CookiesAPI
     notifications: NotificationsAPI
+    offscreen: OffscreenAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
     tabs: TabsAPI
+    userScripts: UserScriptsAPI
     webNavigation: WebNavigationAPI
     windows: WindowsAPI
   }
@@ -163,9 +172,11 @@ export class ElectronChromeExtensions extends EventEmitter {
       commands: new CommandsAPI(this.ctx),
       cookies: new CookiesAPI(this.ctx),
       notifications: new NotificationsAPI(this.ctx),
+      offscreen: new OffscreenAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),
+      userScripts: new UserScriptsAPI(this.ctx),
       webNavigation: new WebNavigationAPI(this.ctx),
       windows: new WindowsAPI(this.ctx),
     }
