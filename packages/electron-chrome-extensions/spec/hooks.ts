@@ -67,7 +67,6 @@ export const useExtensionBrowser = (opts: {
     addCrxPreload(customSession)
 
     extensions = new ElectronChromeExtensions({
-      license: 'internal-license-do-not-use' as any,
       session: customSession,
       async createTab(details) {
         const tab = (webContents as any).create({ sandbox: true })

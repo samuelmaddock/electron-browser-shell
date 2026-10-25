@@ -65,17 +65,8 @@ To test local unpacked extensions, include them in `./extensions` then launch th
 
 ## License
 
-Most packages in this project use MIT with the exception of electron-chrome-extensions.
+MIT License
 
-For proprietary use, please [contact me](mailto:sam@samuelmaddock.com?subject=electron-browser-shell%20license) or [sponsor me on GitHub](https://github.com/sponsors/samuelmaddock/) under the appropriate tier to [acquire a proprietary-use license](https://github.com/samuelmaddock/electron-browser-shell/blob/master/LICENSE-PATRON.md). These contributions help make development and maintenance of this project more sustainable and show appreciation for the work thus far.
+Copyright (c) 2021 Samuel Maddock
 
-### Contributor license agreement
-
-By sending a pull request, you hereby grant to owners and users of the
-electron-browser-shell project a perpetual, worldwide, non-exclusive,
-no-charge, royalty-free, irrevocable copyright license to reproduce, prepare
-derivative works of, publicly display, publicly perform, sublicense, and
-distribute your contributions and such derivative works.
-
-The owners of the electron-browser-shell project will also be granted the right to relicense the
-contributed source code and its derivative works.
+All packages in this project are licensed under the MIT License.

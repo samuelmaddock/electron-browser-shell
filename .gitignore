@@ -5,6 +5,5 @@ extensions/*
 disabled/
 node_modules
 
-noncompliant.txt
 yarn-error.log
 .DS_Store

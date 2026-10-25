@@ -37,7 +37,7 @@
   ],
   "repository": "https://github.com/samuelmaddock/electron-browser-shell",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "MIT",
   "dependencies": {
     "debug": "^4.3.1"
   },

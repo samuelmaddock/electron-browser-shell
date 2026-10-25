@@ -17,7 +17,6 @@ import { ChromeExtensionImpl } from './impl'
 import { CommandsAPI } from './api/commands'
 import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
-import { checkLicense, License } from './license'
 import { readLoadedExtensionManifest } from './manifest'
 import { PermissionsAPI } from './api/permissions'
 import { resolvePartition } from './partition'
@@ -55,13 +54,6 @@ function resolvePreloadPath(modulePath?: string) {
 }
 
 export interface ChromeExtensionOptions extends ChromeExtensionImpl {
-  /**
-   * License used to distribute electron-chrome-extensions.
-   *
-   * See LICENSE.md for more details.
-   */
-  license: License
-
   /**
    * Session to add Chrome extension support in.
    * Defaults to `session.defaultSession`.
@@ -136,10 +128,9 @@ export class ElectronChromeExtensions extends EventEmitter {
   constructor(opts: ChromeExtensionOptions) {
     super()
 
-    const { license, session = electronSession.defaultSession, ...impl } = opts || {}
+    const { session = electronSession.defaultSession, ...impl } = opts || {}
 
     checkVersion()
-    checkLicense(license)
 
     if (sessionMap.has(session)) {
       throw new Error(`Extensions instance already exists for the given session`)

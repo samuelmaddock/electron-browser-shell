@@ -131,8 +131,6 @@ module.exports = {
 #### `new ElectronChromeExtensions([options])`
 
 - `options` Object
-  - `license` String - Distribution license compatible with your application. See LICENSE.md for more details. \
-     Valid options include `GPL-3.0`, `Patron-License-2020-11-19`
   - `session` Electron.Session (optional) - Session which should support
     Chrome extension APIs. `session.defaultSession` is used by default.
   - `createTab(details) => Promise<[Electron.WebContents, Electron.BrowserWindow]>` (optional) -
@@ -496,6 +494,6 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 
 ## License
 
-GPL-3
+MIT License
 
-For proprietary use, please [contact me](mailto:sam@samuelmaddock.com?subject=electron-chrome-extensions%20license) or [sponsor me on GitHub](https://github.com/sponsors/samuelmaddock/) under the appropriate tier to [acquire a proprietary-use license](https://github.com/samuelmaddock/electron-browser-shell/blob/master/LICENSE-PATRON.md). These contributions help make development and maintenance of this project more sustainable and show appreciation for the work thus far.
+Copyright (c) 2021 Samuel Maddock

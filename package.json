@@ -25,10 +25,9 @@
     "test:context-menu": "yarn --cwd ./packages/electron-chrome-context-menu test",
     "test:extensions": "yarn --cwd ./packages/electron-chrome-extensions test",
     "prepare": "husky",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css}\"",
-    "generate-noncompliant": "cat noncompliant.txt | awk '{print tolower($0)}' | xargs -I {} node ./scripts/generate-hash.js {}"
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css}\""
   },
-  "license": "GPL-3.0",
+  "license": "MIT",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "dependencies": {},
   "devDependencies": {

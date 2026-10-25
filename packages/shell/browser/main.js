@@ -152,7 +152,6 @@ class Browser {
     }
 
     this.extensions = new ElectronChromeExtensions({
-      license: 'internal-license-do-not-use',
       session: this.session,
 
       createTab: async (details) => {
