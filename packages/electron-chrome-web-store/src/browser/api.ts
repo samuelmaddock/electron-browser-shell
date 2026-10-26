@@ -187,8 +187,10 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
       ipcMain.handle(channel, async function handleWebStoreIpc(event, ...args) {
         d('received %s', channel)
 
+        // Exact match: a prefix check would also admit lookalike hosts such as
+        // https://chromewebstore.google.com.example.com
         const senderOrigin = event.senderFrame?.origin
-        if (!senderOrigin || !senderOrigin.startsWith(WEBSTORE_URL)) {
+        if (senderOrigin !== WEBSTORE_URL) {
           d('ignoring webstore request from %s', senderOrigin)
           return
         }
