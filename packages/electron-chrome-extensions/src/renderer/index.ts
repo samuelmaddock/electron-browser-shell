@@ -663,6 +663,18 @@ export const injectExtensionAPIs = () => {
 
     Object.freeze(chrome)
 
+    // Chromium also exposes a native `browser` namespace, separate from `chrome`. Point it at the
+    // patched `chrome` so extensions using `browser.*` (e.g. uBlock Origin, Plasmo) get the APIs
+    // above. defineProperty replaces the native global whether it's a value or an accessor.
+    if ('browser' in globalThis) {
+      Object.defineProperty(globalThis, 'browser', {
+        value: chrome,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      })
+    }
+
     void 0 // no return
   }
 
