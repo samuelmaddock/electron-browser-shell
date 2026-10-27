@@ -10,7 +10,17 @@ export { installExtension, uninstallExtension, downloadExtension } from './insta
 import { initUpdater } from './updater'
 export { updateExtensions } from './updater'
 import { getDefaultExtensionsPath } from './utils'
-import { BeforeInstall, ExtensionId, WebStoreState } from './types'
+import {
+  BeforeInstall,
+  AfterInstall,
+  ExtensionId,
+  WebStoreState,
+  GetExtensionInstallStatus,
+  AfterUninstall,
+  SetExtensionEnabled,
+} from './types'
+import { ExtensionInstallStatus } from '../common/constants'
+export { ExtensionInstallStatus }
 
 function resolvePreloadPath(modulePath?: string) {
   // Attempt to resolve preload path from module exports
@@ -97,6 +107,26 @@ interface ElectronChromeWebStoreOptions {
    * to be taken.
    */
   beforeInstall?: BeforeInstall
+
+  /**
+   * Used to implement `chrome.management.setEnabled`
+   */
+  setExtensionEnabled?: SetExtensionEnabled
+
+  /**
+   * Called when determining the install status of an extension.
+   */
+  getExtensionInstallStatus?: GetExtensionInstallStatus
+
+  /**
+   * Called after an extension is installed.
+   */
+  afterInstall?: AfterInstall
+
+  /**
+   * Called after an extension is uninstalled.
+   */
+  afterUninstall?: AfterUninstall
 }
 
 /**
@@ -113,7 +143,18 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
   const autoUpdate = typeof opts.autoUpdate === 'boolean' ? opts.autoUpdate : true
   const minimumManifestVersion =
     typeof opts.minimumManifestVersion === 'number' ? opts.minimumManifestVersion : 3
+
   const beforeInstall = typeof opts.beforeInstall === 'function' ? opts.beforeInstall : undefined
+  const afterInstall = typeof opts.afterInstall === 'function' ? opts.afterInstall : undefined
+  const afterUninstall = typeof opts.afterUninstall === 'function' ? opts.afterUninstall : undefined
+
+  const setExtensionEnabled =
+    typeof opts.setExtensionEnabled === 'function' ? opts.setExtensionEnabled : undefined
+
+  const getExtensionInstallStatus =
+    typeof opts.getExtensionInstallStatus === 'function'
+      ? opts.getExtensionInstallStatus
+      : undefined
 
   const webStoreState: WebStoreState = {
     session,
@@ -123,6 +164,10 @@ export async function installChromeWebStore(opts: ElectronChromeWebStoreOptions 
     denylist: opts.denylist ? new Set(opts.denylist) : undefined,
     minimumManifestVersion,
     beforeInstall,
+    afterInstall,
+    afterUninstall,
+    setExtensionEnabled,
+    getExtensionInstallStatus,
   }
 
   // Add preload script to session
