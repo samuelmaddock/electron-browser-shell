@@ -29,7 +29,6 @@
   },
   "license": "MIT",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
-  "dependencies": {},
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",

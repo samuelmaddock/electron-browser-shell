@@ -46,20 +46,26 @@ const getBrowserActionDefaults = (extension: Electron.Extension): ExtensionActio
       : manifest.manifest_version === 2
         ? manifest.browser_action
         : undefined
+
+  const iconPath = getIconPath(extension)
+
   if (typeof browserAction === 'object') {
     const manifestAction: chrome.runtime.ManifestAction = browserAction
-    const action: ExtensionAction = {}
-
-    action.title = manifestAction.default_title || manifest.name
-
-    const iconPath = getIconPath(extension)
-    if (iconPath) action.icon = { path: iconPath }
-
-    if (manifestAction.default_popup) {
-      action.popup = manifestAction.default_popup
+    const action: ExtensionAction = {
+      title: manifestAction.default_title || manifest.name,
+      ...(iconPath && { icon: { path: iconPath } }),
+      ...(manifestAction.default_popup && { popup: manifestAction.default_popup }),
     }
 
     return action
+  }
+
+  // Fallback: Create action icon for extensions without explicit action.
+  if (iconPath) {
+    return {
+      title: manifest.name,
+      icon: { path: iconPath },
+    }
   }
 }
 
