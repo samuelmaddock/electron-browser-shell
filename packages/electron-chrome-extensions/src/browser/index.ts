@@ -19,6 +19,7 @@ import { ExtensionContext } from './context'
 import { ExtensionRouter } from './router'
 import { readLoadedExtensionManifest } from './manifest'
 import { PermissionsAPI } from './api/permissions'
+import { StorageAPI } from './api/storage'
 import { resolvePartition } from './partition'
 
 function checkVersion() {
@@ -120,6 +121,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     notifications: NotificationsAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
+    storage: StorageAPI
     tabs: TabsAPI
     webNavigation: WebNavigationAPI
     windows: WindowsAPI
@@ -156,6 +158,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       notifications: new NotificationsAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
+      storage: new StorageAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),
       webNavigation: new WebNavigationAPI(this.ctx),
       windows: new WindowsAPI(this.ctx),
