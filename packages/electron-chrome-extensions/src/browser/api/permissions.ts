@@ -1,9 +1,18 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
+import { originCovered, splitPermissions } from './lib/host-permissions'
+
+type ManifestWithOptionalHosts = chrome.runtime.Manifest & {
+  optional_host_permissions?: string[]
+}
 
 /**
  * This is a very basic implementation of the permissions API. Likely
  * more work will be needed to integrate with the native permissions.
+ *
+ * Host permissions are granted from `host_permissions` (MV3) and from match
+ * patterns inside `permissions` (MV2). Requested origins are held when a
+ * granted match pattern covers them, as in Chrome.
  */
 export class PermissionsAPI {
   private permissionMap = new Map<
@@ -35,9 +44,10 @@ export class PermissionsAPI {
 
   private processExtension(extension: Electron.Extension) {
     const manifest: chrome.runtime.Manifest = extension.manifest
+    const { permissions, origins } = splitPermissions(manifest.permissions || [])
     this.permissionMap.set(extension.id, {
-      permissions: (manifest.permissions || []) as chrome.runtime.ManifestPermissions[],
-      origins: manifest.host_permissions || [],
+      permissions: permissions as chrome.runtime.ManifestPermissions[],
+      origins: [...new Set([...(manifest.host_permissions || []), ...origins])],
     })
   }
 
@@ -52,13 +62,14 @@ export class PermissionsAPI {
         )
       : true
     const hasOrigins = permissions.origins
-      ? permissions.origins.every((origin) => currentPermissions.origins.includes(origin))
+      ? permissions.origins.every((origin) => originCovered(currentPermissions.origins, origin))
       : true
     return hasPermissions && hasOrigins
   }
 
   private getAll = ({ extension }: ExtensionEvent) => {
-    return this.permissionMap.get(extension.id)
+    const current = this.permissionMap.get(extension.id)!
+    return { permissions: [...current.permissions], origins: [...current.origins] }
   }
 
   private remove = ({ extension }: ExtensionEvent, permissions: chrome.permissions.Permissions) => {
@@ -70,32 +81,42 @@ export class PermissionsAPI {
     { extension }: ExtensionEvent,
     request: chrome.permissions.Permissions,
   ) => {
-    const declaredPermissions = new Set([
-      ...(extension.manifest.permissions || []),
-      ...(extension.manifest.optional_permissions || []),
-    ])
+    const manifest: ManifestWithOptionalHosts = extension.manifest
+    const permissions = this.permissionMap.get(extension.id)!
+    const optional = splitPermissions(manifest.optional_permissions || [])
+    const declaredPermissions = new Set([...permissions.permissions, ...optional.permissions])
+    const declaredOrigins = [
+      ...permissions.origins,
+      ...(manifest.optional_host_permissions || []),
+      ...optional.origins,
+    ]
 
     if (request.permissions && !request.permissions.every((p) => declaredPermissions.has(p))) {
       throw new Error('Permissions request includes undeclared permission')
     }
+    if (request.origins && !request.origins.every((o) => originCovered(declaredOrigins, o))) {
+      throw new Error('Permissions request includes undeclared origin')
+    }
 
-    const granted = await this.ctx.store.requestPermissions(extension, request)
+    const missing: chrome.permissions.Permissions = {}
+    const missingPermissions = (request.permissions || []).filter(
+      (p) => !permissions.permissions.includes(p),
+    )
+    const missingOrigins = (request.origins || []).filter(
+      (o) => !originCovered(permissions.origins, o),
+    )
+    if (missingPermissions.length) missing.permissions = missingPermissions
+    if (missingOrigins.length) missing.origins = missingOrigins
+    if (!missingPermissions.length && !missingOrigins.length) return true
+
+    const granted = await this.ctx.store.requestPermissions(extension, missing)
     if (!granted) return false
 
-    const permissions = this.permissionMap.get(extension.id)!
-    if (request.origins) {
-      for (const origin of request.origins) {
-        if (!permissions.origins.includes(origin)) {
-          permissions.origins.push(origin)
-        }
-      }
+    for (const origin of missingOrigins) {
+      if (!permissions.origins.includes(origin)) permissions.origins.push(origin)
     }
-    if (request.permissions) {
-      for (const permission of request.permissions) {
-        if (!permissions.permissions.includes(permission)) {
-          permissions.permissions.push(permission)
-        }
-      }
+    for (const permission of missingPermissions) {
+      if (!permissions.permissions.includes(permission)) permissions.permissions.push(permission)
     }
     return true
   }

@@ -1,0 +1,7 @@
+{
+  "name": "chrome-permissions-mv3",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["storage"],
+  "optional_host_permissions": ["https://optional.test/*"]
+}
