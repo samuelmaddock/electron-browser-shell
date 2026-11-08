@@ -42,6 +42,72 @@ async function extensionSearch(dirPath: string, depth: number = 0): Promise<stri
   return results
 }
 
+const CONTENT_SCRIPT_POLYFILL_FILENAME = '__crx_polyfill__.js'
+
+const CONTENT_SCRIPT_POLYFILL_CODE = `\
+// Auto-injected polyfill: Electron doesn't provide chrome.extension to content scripts.
+(function() {
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+    if (!chrome.extension) {
+      Object.defineProperty(chrome, 'extension', {
+        value: {
+          inIncognitoContext: false,
+          isAllowedFileSchemeAccess: function(cb) { if (cb) cb(false); return Promise.resolve(false); },
+          isAllowedIncognitoAccess: function(cb) { if (cb) cb(false); return Promise.resolve(false); },
+          getViews: function() { return []; },
+        },
+        enumerable: true,
+        configurable: true,
+      });
+    } else if (!('inIncognitoContext' in chrome.extension)) {
+      chrome.extension.inIncognitoContext = false;
+    }
+  }
+})();
+`
+
+/**
+ * Ensure a chrome.extension polyfill content script exists in the extension directory
+ * and is listed first in all content_scripts entries. This is needed because Electron
+ * doesn't natively provide chrome.extension in content script isolated worlds.
+ */
+async function ensureContentScriptPolyfill(
+  extPath: string,
+  manifest: chrome.runtime.Manifest,
+): Promise<boolean> {
+  if (!manifest.content_scripts?.length) return false
+
+  let modified = false
+
+  // Write polyfill file if it doesn't exist or has changed
+  const polyfillPath = path.join(extPath, CONTENT_SCRIPT_POLYFILL_FILENAME)
+  try {
+    const existing = await fs.promises.readFile(polyfillPath, 'utf8')
+    if (existing !== CONTENT_SCRIPT_POLYFILL_CODE) {
+      await fs.promises.writeFile(polyfillPath, CONTENT_SCRIPT_POLYFILL_CODE)
+    }
+  } catch {
+    await fs.promises.writeFile(polyfillPath, CONTENT_SCRIPT_POLYFILL_CODE)
+  }
+
+  // Prepend polyfill to each content_scripts entry's js array
+  for (const cs of manifest.content_scripts) {
+    if (!cs.js) cs.js = []
+    if (!cs.js.includes(CONTENT_SCRIPT_POLYFILL_FILENAME)) {
+      cs.js.unshift(CONTENT_SCRIPT_POLYFILL_FILENAME)
+      modified = true
+    }
+  }
+
+  if (modified) {
+    const manifestPath = path.join(extPath, 'manifest.json')
+    await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
+    d('injected content script polyfill into %s', extPath)
+  }
+
+  return modified
+}
+
 /**
  * Discover list of extensions in the given path.
  */
@@ -133,6 +199,9 @@ export async function loadAllExtensions(
 
   for (const ext of extensions) {
     try {
+      // Ensure chrome.extension polyfill exists for content scripts
+      await ensureContentScriptPolyfill(ext.path, ext.manifest)
+
       let extension: Electron.Extension | undefined
       if (ext.type === 'store') {
         const existingExt = sessionExtensions.getExtension(ext.id)
