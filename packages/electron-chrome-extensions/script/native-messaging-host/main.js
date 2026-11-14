@@ -8,7 +8,10 @@ function readMessage() {
 
   let messageLength = buffer.readUInt32LE(0)
   let messageBuffer = Buffer.alloc(messageLength)
-  fs.readSync(0, messageBuffer, 0, messageLength, null)
+  let offset = 0
+  while (offset < messageLength) {
+    offset += fs.readSync(0, messageBuffer, offset, messageLength - offset, null)
+  }
 
   return JSON.parse(messageBuffer.toString())
 }

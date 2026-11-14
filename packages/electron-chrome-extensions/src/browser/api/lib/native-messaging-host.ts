@@ -103,6 +103,7 @@ export class NativeMessagingHost {
   private connectionId: string
   private connected: boolean = false
   private pending?: any[]
+  private received?: Buffer
   private keepAlive: boolean
   private resolveResponse?: (message: any) => void
 
@@ -214,13 +215,28 @@ export class NativeMessagingHost {
   }
 
   private receive = (data: Buffer) => {
-    const length = data.readUInt32LE(0)
-    const message = JSON.parse(data.subarray(4, 4 + length).toString())
-    d('receive: %s', message)
-    if (this.keepAlive && this.sender) {
-      this.sender.send(`crx-native-msg-${this.connectionId}`, message)
-    } else {
-      this.resolveResponse?.(message)
+    // stdout chunks don't line up with messages: a message larger than the
+    // pipe's buffer spans several chunks, and one chunk may carry several.
+    this.received = this.received ? Buffer.concat([this.received, data]) : data
+    while (this.received.length >= 4) {
+      const length = this.received.readUInt32LE(0)
+      if (this.received.length < 4 + length) break
+      const body = this.received.subarray(4, 4 + length)
+      this.received = this.received.subarray(4 + length)
+
+      let message: any
+      try {
+        message = JSON.parse(body.toString())
+      } catch (error) {
+        d('receive: unable to parse message', error)
+        continue
+      }
+      d('receive: %s', message)
+      if (this.keepAlive && this.sender) {
+        this.sender.send(`crx-native-msg-${this.connectionId}`, message)
+      } else {
+        this.resolveResponse?.(message)
+      }
     }
   }
 

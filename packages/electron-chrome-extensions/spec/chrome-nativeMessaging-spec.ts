@@ -38,6 +38,12 @@ if (process.platform !== 'linux') {
         const result = await browser.crx.exec('runtime.sendNativeMessage', hostApplication, value)
         expect(result).to.deep.equal(value)
       })
+
+      it('receives a message larger than one stdout chunk', async () => {
+        const value = { json: randomUUID(), padding: 'x'.repeat(256 * 1024) }
+        const result = await browser.crx.exec('runtime.sendNativeMessage', hostApplication, value)
+        expect(result).to.deep.equal(value)
+      })
     })
   })
 }
